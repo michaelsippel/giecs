@@ -1,0 +1,12 @@
+*.o
+*.orig
+*.c~
+*.cpp~
+*.swp
+*.swo
+*.swn
+makefile~
+Makefile~
+.gitignore~
+vm
+
