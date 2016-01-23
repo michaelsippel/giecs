@@ -39,6 +39,6 @@ void Context::resize(unsigned int num_pages_)
 void* Context::base(vword_t addr)
 {
     // TODO
-    return (void*) (this->pages[0].base + addr);
+    return (void*) ((uintptr_t)this->pages[0].base + addr);
 }
 

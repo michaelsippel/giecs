@@ -30,16 +30,16 @@ int ll_eval(Context* context, vword_t addr_in, vword_t addr_out)
     }
 }
 
-int ll_add(void* in, void* out)
+int ll_addi(void* in, void* out)
 {
-    ((int*)out)[-1] = ((int*)in)[0] + ((int*)in)[1];
+    ((vword_t*)out)[-1] = ((vword_t*)in)[0] + ((vword_t*)in)[1];
 
-    return sizeof(int);
+    return sizeof(vword_t);
 }
 
 int ll_printi(void* in, void* out)
 {
-    printf("%d\n", ((int*)in)[0]);
+    printf("%d\n", ((vword_t*)in)[0]);
     return 0;
 }
 
@@ -51,8 +51,21 @@ int name (Context* context, vword_t addr_in, vword_t addr_out) \
 	return len; \
 }
 
-LL_STUB(stub_ll_add, ll_add);
+LL_STUB(stub_ll_addi, ll_addi);
 LL_STUB(stub_ll_printi, ll_printi);
+
+vword_t add_ll_fn(Context* context, int (*fn)(Context*, vword_t, vword_t))
+{
+    static vword_t addr = 0x1;
+    vword_t ret = addr;
+
+    vword_t* ptr = (vword_t*) context->base(addr);
+    *ptr++ = -1;
+    *ptr++ = (vword_t) fn;
+    addr += 2 * sizeof(vword_t);
+
+    return ret;
+}
 
 int main(int argc, char** argv)
 {
@@ -60,21 +73,17 @@ int main(int argc, char** argv)
 
     Context* context = new Context(4096);
 
-    uint32_t* ptr = (uint32_t*) context->base(0x1);
-    *ptr++ = -1;
-    *ptr++ = (uint32_t) &stub_ll_printi;
+    vword_t addr_eval   = add_ll_fn(context, ll_eval);
+    vword_t addr_printi = add_ll_fn(context, stub_ll_printi);
+    vword_t addr_addi   = add_ll_fn(context, stub_ll_addi);
 
-    ptr = (uint32_t*) context->base(0xa);
-    *ptr++ = -1;
-    *ptr++ = (uint32_t) &stub_ll_add;
-
-    ptr = (uint32_t*) context->base(0x20);
+    vword_t* ptr = (vword_t*) context->base(0x100);
     *ptr++ = 12;
-    *ptr++ = 0xa;
+    *ptr++ = addr_addi;
     *ptr++ = 123;
     *ptr++ = 234;
 
-    int l = ll_eval(context, 0x20, 0x1000);
+    int l = ll_eval(context, 0x100, 0x1000);
     stub_ll_printi(context, 0x1000 - 12, 0x1000);
 
     delete context;
