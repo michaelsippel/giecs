@@ -1,6 +1,7 @@
 #ifndef _context_h_
 #define _context_h_
 
+#include <stddef.h>
 #include <stdint.h>
 
 typedef uint8_t vbyte_t;
@@ -25,6 +26,8 @@ class Context
         void write(vword_t addr, vbyte_t value);
 
         void* base(vword_t addr);
+
+        vword_t add_ll_fn(int (*fn)(Context*, vword_t, vword_t));
 
     private:
         size_t page_size;
