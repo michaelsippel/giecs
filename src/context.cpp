@@ -42,7 +42,7 @@ void* Context::base(vword_t addr)
     return (void*) ((uintptr_t)this->pages[0].base + addr);
 }
 
-vword_t Context::add_ll_fn(int (*fn)(Context*, vword_t, vword_t))
+vword_t Context::add_ll_fn(vword_t (*fn)(Context*, vword_t))
 {
     static vword_t addr = 0x1;
     vword_t ret = addr;

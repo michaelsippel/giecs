@@ -3,17 +3,17 @@
 #include <ll.h>
 #include <context.h>
 
-int ll_addi(void* in, void* out)
+int ll_addi(void* p)
 {
-    ((vword_t*)out)[-1] = ((vword_t*)in)[0] + ((vword_t*)in)[1];
+    ((vword_t*)p)[-1] = ((vword_t*)p)[0] + ((vword_t*)p)[1];
 
-    return sizeof(vword_t);
+    return (-sizeof(vword_t));
 }
 
-int ll_printi(void* in, void* out)
+int ll_printi(void* p)
 {
-    printf("%d\n", ((vword_t*)in)[0]);
-    return 0;
+    printf("%d\n", ((vword_t*)p)[0]);
+    return (-sizeof(vword_t));
 }
 
 LL_STUB(stub_ll_addi, ll_addi);
@@ -31,9 +31,9 @@ int main(int argc, char** argv)
     vword_t addr_addi   = context->add_ll_fn(stub_ll_addi);
 
     vword_t* ptr = (vword_t*) context->base(0x100);
-    *ptr++ = 12;
-    *ptr++ = addr_deval;
+    *ptr++ = 8;
     *ptr++ = addr_printi;
+    *ptr++ = 123;
     *ptr++ = 0x150;
 
     ptr = (vword_t*) context->base(0x150);
@@ -47,7 +47,10 @@ int main(int argc, char** argv)
     *ptr++ = 1234;
     *ptr++ = 2345;
 
-    int l = ll_eval(context, 0x100, 0x1000);
+    // set entry point
+    ptr = (vword_t*) context->base(0x1000-0x4);
+    *ptr++ = 0x100;
+    ll_eval(context, 0x1000-0x4);
 
     delete context;
 

@@ -27,7 +27,7 @@ class Context
 
         void* base(vword_t addr);
 
-        vword_t add_ll_fn(int (*fn)(Context*, vword_t, vword_t));
+        vword_t add_ll_fn(vword_t (*fn)(Context*, vword_t));
 
     private:
         size_t page_size;
