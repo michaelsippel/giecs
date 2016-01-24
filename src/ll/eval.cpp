@@ -38,48 +38,50 @@ vword_t ll_eval(Context* context, vword_t p)
 
 vword_t ll_deval(Context* context, vword_t p)
 {
-    /*    vword_t* in = (vword_t*) context->base(p);
-        vword_t addr_fn = in[0];
-        vword_t addr_list = in[1];
+    vword_t* in = (vword_t*) context->base(p);
+    vword_t addr_fn = in[0];
+    vword_t addr_list = in[1];
 
-        vword_t* list = (vword_t*) context->base(addr_list);
-        vword_t num_list = *list++;
+    p += 2 * sizeof(vword_t);
 
-        uintptr_t buf = 0;
-        size_t buflen = 0;
+    vword_t* list = (vword_t*) context->base(addr_list);
+    vword_t num_list = *list++;
 
-        int i;
-        for(i = 0; i < num_list; i++)
+    void** list_index = (void**) malloc(num_list * sizeof(void*));
+    int i;
+    for(i = 0; i < num_list; i++)
+    {
+        vword_t attr = *list;
+
+        list_index[i] = (void*) list++;
+        list += (attr == -1) ? sizeof(vword_t) : attr;
+    }
+
+    for(i = num_list-1; i >= 0; i--)
+    {
+        vword_t* list = (vword_t*) list_index[i];
+        vword_t attr = *list++;
+
+        if(attr == -1)
         {
-            vword_t attr = *list++;
+            // execute
+            p -= sizeof(vword_t);
+            *((vword_t*)context->base(p)) = *list;
 
-            void* pbase;
-            size_t plength;
-
-            if(attr == -1)
-            {
-                // execute
-                vword_t addr = *list++;
-
-                plength = ll_eval(context, addr, addr_out);
-                pbase = context->base(addr_out - plength);
-            }
-            else
-            {
-                pbase = list;
-                plength = attr;
-                list = (vword_t*) (((uintptr_t)list) + plength);
-            }
-
-            // attach new parameters
-            buf = (uintptr_t) realloc((void*)buf, buflen+plength);
-            memcpy((void*)(buf+buflen), pbase, plength);
-            buflen += plength;
+            p = ll_eval(context, p);
         }
+        else
+        {
+            p -= attr;
+            memcpy(context->base(p), (void*) list, attr);
+        }
+    }
 
-        addr_out -= buflen;
-        memcpy(context->base(addr_out), (void*)buf, buflen);
-        return ll_eval(context, p);*/
-    return p;
+    free(list_index);
+
+    p -= sizeof(vword_t);
+    *((vword_t*) context->base(p)) = addr_fn;
+
+    return ll_eval(context, p);
 }
 

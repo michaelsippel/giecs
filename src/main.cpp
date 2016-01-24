@@ -5,7 +5,11 @@
 
 int ll_addi(void* p)
 {
-    ((vword_t*)p)[-1] = ((vword_t*)p)[0] + ((vword_t*)p)[1];
+    vword_t* in = (vword_t*) p;
+    vword_t a = in[0];
+    vword_t b = in[1];
+
+    in[1] = a + b;
 
     return (-sizeof(vword_t));
 }
@@ -31,14 +35,14 @@ int main(int argc, char** argv)
     vword_t addr_addi   = context->add_ll_fn(stub_ll_addi);
 
     vword_t* ptr = (vword_t*) context->base(0x100);
-    *ptr++ = 8;
+    *ptr++ = 12;
+    *ptr++ = addr_deval;
     *ptr++ = addr_printi;
-    *ptr++ = 123;
     *ptr++ = 0x150;
 
     ptr = (vword_t*) context->base(0x150);
     *ptr++ = 1; // number of elements
-    *ptr++ = -1; // copy 4 bytes
+    *ptr++ = -1;
     *ptr++ = 0x180;
 
     ptr = (vword_t*) context->base(0x180);
