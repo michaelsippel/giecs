@@ -4,6 +4,7 @@
 #include <context.h>
 
 int ll_eval(Context* context, vword_t addr_in, vword_t addr_out);
+int ll_deval(Context* context, vword_t addr_in, vword_t addr_out);
 
 #define LL_STUB(name, fn) \
 int name (Context* context, vword_t addr_in, vword_t addr_out) \
