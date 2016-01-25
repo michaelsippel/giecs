@@ -2,6 +2,7 @@
 
 #include <ll.h>
 #include <context.h>
+#include <reader.h>
 
 int ll_addi(void* p)
 {
@@ -26,6 +27,9 @@ LL_STUB(stub_ll_printi, ll_printi);
 int main(int argc, char** argv)
 {
     printf("Hello World!\n");
+
+    SNode* sn = new SNode(INTEGER, (char*) "	9823");
+    sn->dump();
 
     Context* context = new Context(4096);
 
