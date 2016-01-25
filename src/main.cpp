@@ -28,7 +28,7 @@ int main(int argc, char** argv)
 {
     printf("Hello World!\n");
 
-    SNode* sn = new SNode(INTEGER, (char*) "	9823");
+    SNode* sn = new SNode(LIST, (char*) "12 deval printi (1 -1 (12 addi 2 3))");
     sn->dump();
 
     Context* context = new Context(4096);

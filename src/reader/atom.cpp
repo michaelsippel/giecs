@@ -6,6 +6,11 @@
 void SNode::read_symbol(char* start, char* end)
 {
     this->type = SYMBOL;
+
+    size_t len = end - start;
+    this->string = (char*) malloc(len + 1);
+    memcpy(this->string, start, len);
+    this->string[len] = '\0';
 }
 
 void SNode::read_string(char* start, char* end)
