@@ -3,6 +3,7 @@
 #include <ll.h>
 #include <context.h>
 #include <reader.h>
+#include <parser.h>
 
 int ll_addi(void* p)
 {
