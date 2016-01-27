@@ -6,14 +6,13 @@
 
 vword_t ll_eval(Context* context, vword_t p)
 {
-    vword_t* in = (vword_t*) context->base(p);
-    vword_t addr = *in++;
+    vword_t addr = *((vword_t*) context->base(p));
     p += sizeof(vword_t);
 
-    in = (vword_t*) context->base(addr);
+    vword_t* in = (vword_t*) context->base(addr);
     vword_t len = *in++;
 
-    if(len != -1)
+    if(len != (vword_t)-1)
     {
         // apply parameters
         vbyte_t* src = (vbyte_t*) context->base(addr + sizeof(vword_t) + len);
@@ -55,7 +54,7 @@ vword_t ll_deval(Context* context, vword_t p)
         vword_t attr = *((vword_t*)ptr);
         list_index[i] = (void*) ptr;
 
-        ptr += (attr == -1) ? sizeof(vword_t) : attr;
+        ptr += (attr == (vword_t)-1) ? sizeof(vword_t) : attr;
     }
 
     for(i = num_list-1; i >= 0; i--)
@@ -63,7 +62,7 @@ vword_t ll_deval(Context* context, vword_t p)
         vword_t* list = (vword_t*) list_index[i];
         vword_t attr = *list++;
 
-        if(attr == -1)
+        if(attr == (vword_t)-1)
         {
             // execute
             p -= sizeof(vword_t);

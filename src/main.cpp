@@ -29,37 +29,27 @@ int main(int argc, char** argv)
 {
     printf("Hello World!\n");
 
-    SNode* sn = new SNode(LIST, (char*) "12 deval printi (1 -1 (12 addi 2 3))");
-    sn->dump();
+    Context* context = new Context(0x1000);
 
-    Context* context = new Context(4096);
+    add_symbol("eval", context->add_ll_fn(ll_eval));
+    add_symbol("deval", context->add_ll_fn(ll_deval));
+    add_symbol("printi", context->add_ll_fn(stub_ll_printi));
+    add_symbol("addi", context->add_ll_fn(stub_ll_addi));
 
-    vword_t addr_eval   = context->add_ll_fn(ll_eval);
-    vword_t addr_deval  = context->add_ll_fn(ll_deval);
-    vword_t addr_printi = context->add_ll_fn(stub_ll_printi);
-    vword_t addr_addi   = context->add_ll_fn(stub_ll_addi);
+    SNode* ast = new SNode(LIST, (char*) "16 deval printi 1 (-1 (12 addi 2 3))");
+    ast->dump();
+//	parse_list(context, 0x100, ast);
 
-    vword_t* ptr = (vword_t*) context->base(0x100);
-    *ptr++ = 16;
-    *ptr++ = addr_deval;
-    *ptr++ = addr_printi;
-    *ptr++ = 1; // num of elements in list
-    *ptr++ = 0x180; // pointer to list
-
-    ptr = (vword_t*) context->base(0x180);
-    *ptr++ = -1;
-    *ptr++ = 0x200;
-
-    ptr = (vword_t*) context->base(0x200);
-    *ptr++ = 12;
-    *ptr++ = addr_addi;
-    *ptr++ = 1234;
-    *ptr++ = 2345;
+    vword_t p = 0x100;
+    p += parse(context, p, new SNode(INTEGER, (char*) "8"));
+    p += parse(context, p, new SNode(SYMBOL, (char*) "printi"));
+    p += parse(context, p, new SNode(INTEGER, (char*) "123"));
 
     // set entry point
-    ptr = (vword_t*) context->base(0x1000-0x4);
-    *ptr++ = 0x100;
-    ll_eval(context, 0x1000-0x4);
+    *((vword_t*) context->base(0x1000-sizeof(vword_t))) = 0x100;
+
+    // run
+    ll_eval(context, 0x1000-sizeof(vword_t));
 
     delete context;
 
