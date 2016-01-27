@@ -7,11 +7,11 @@
 vword_t ll_eval(Context* context, vword_t p)
 {
     vword_t* in = (vword_t*) context->base(p);
-    vword_t addr = in[0];
+    vword_t addr = *in++;
     p += sizeof(vword_t);
 
     in = (vword_t*) context->base(addr);
-    vword_t len = in[0];
+    vword_t len = *in++;
 
     if(len != -1)
     {
@@ -31,7 +31,7 @@ vword_t ll_eval(Context* context, vword_t p)
     else
     {
         // call low-level function
-        vword_t (*fn)(Context*, vword_t) = (vword_t (*)(Context*, vword_t)) in[1];
+        vword_t (*fn)(Context*, vword_t) = (vword_t (*)(Context*, vword_t)) *((void**) in);
         return fn(context, p);
     }
 }
@@ -40,21 +40,22 @@ vword_t ll_deval(Context* context, vword_t p)
 {
     vword_t* in = (vword_t*) context->base(p);
     vword_t addr_fn = in[0];
-    vword_t addr_list = in[1];
+    vword_t num_list = in[1];
+    vword_t addr_list = in[2];
 
-    p += 2 * sizeof(vword_t);
+    p += 3 * sizeof(vword_t);
 
-    vword_t* list = (vword_t*) context->base(addr_list);
-    vword_t num_list = *list++;
-
+    // TODO: without malloc?
     void** list_index = (void**) malloc(num_list * sizeof(void*));
+    uintptr_t ptr = (uintptr_t) context->base(addr_list);
+
     int i;
     for(i = 0; i < num_list; i++)
     {
-        vword_t attr = *list;
+        vword_t attr = *((vword_t*)ptr);
+        list_index[i] = (void*) ptr;
 
-        list_index[i] = (void*) list++;
-        list += (attr == -1) ? sizeof(vword_t) : attr;
+        ptr += (attr == -1) ? sizeof(vword_t) : attr;
     }
 
     for(i = num_list-1; i >= 0; i--)

@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include <context.h>
 
@@ -49,8 +50,8 @@ vword_t Context::add_ll_fn(vword_t (*fn)(Context*, vword_t))
 
     vword_t* ptr = (vword_t*) this->base(addr);
     *ptr++ = -1;
-    *ptr++ = (vword_t) fn;
-    addr += 2 * sizeof(vword_t);
+    *((void**)ptr) = (void*) fn;
+    addr += sizeof(vword_t) + sizeof(void*);
 
     return ret;
 }

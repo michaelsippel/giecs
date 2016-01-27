@@ -13,13 +13,13 @@ int ll_addi(void* p)
 
     in[1] = a + b;
 
-    return (-sizeof(vword_t));
+    return (int)(-sizeof(vword_t));
 }
 
 int ll_printi(void* p)
 {
     printf("%d\n", ((vword_t*)p)[0]);
-    return (-sizeof(vword_t));
+    return (int)(-sizeof(vword_t));
 }
 
 LL_STUB(stub_ll_addi, ll_addi);
@@ -40,17 +40,17 @@ int main(int argc, char** argv)
     vword_t addr_addi   = context->add_ll_fn(stub_ll_addi);
 
     vword_t* ptr = (vword_t*) context->base(0x100);
-    *ptr++ = 12;
+    *ptr++ = 16;
     *ptr++ = addr_deval;
     *ptr++ = addr_printi;
-    *ptr++ = 0x150;
-
-    ptr = (vword_t*) context->base(0x150);
-    *ptr++ = 1; // number of elements
-    *ptr++ = -1;
-    *ptr++ = 0x180;
+    *ptr++ = 1; // num of elements in list
+    *ptr++ = 0x180; // pointer to list
 
     ptr = (vword_t*) context->base(0x180);
+    *ptr++ = -1;
+    *ptr++ = 0x200;
+
+    ptr = (vword_t*) context->base(0x200);
     *ptr++ = 12;
     *ptr++ = addr_addi;
     *ptr++ = 1234;
