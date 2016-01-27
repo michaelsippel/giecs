@@ -54,6 +54,7 @@ vword_t ll_deval(Context* context, vword_t p)
         vword_t attr = *((vword_t*)ptr);
         list_index[i] = (void*) ptr;
 
+        ptr += sizeof(vword_t);
         ptr += (attr == (vword_t)-1) ? sizeof(vword_t) : attr;
     }
 

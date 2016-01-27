@@ -9,9 +9,9 @@ INCLUDE = -Iinclude
 AS = g++
 CC = g++
 LD = g++
-CFLAGS = -std=c++11 $(INCLUDE)
+CFLAGS = -Os -std=c++11 $(INCLUDE)
 ASMFLAGS =
-LDFLAGS =
+LDFLAGS = -Os -s
 BIN = vm
 
 $(BIN): $(OBJS)

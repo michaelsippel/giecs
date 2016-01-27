@@ -7,7 +7,6 @@ int parse_list(Context* context, vword_t addr, SNode* ast)
 {
     // needed space
     size_t len = ast->subnodes->numOfElements() * sizeof(vword_t);
-
     vword_t lptr = addr;
 
     ListIterator<SNode*> it = ListIterator<SNode*>(ast->subnodes);
@@ -30,7 +29,6 @@ int parse_list(Context* context, vword_t addr, SNode* ast)
                 len += parse(context, subaddr, sn);
 
                 *((vword_t*) context->base(lptr)) = subaddr;
-
                 break;
         }
 
