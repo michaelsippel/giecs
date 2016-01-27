@@ -21,6 +21,23 @@ Context::~Context()
     free((void*)this->pages);
 }
 
+void Context::dump(vword_t start, size_t length)
+{
+    printf("MEMORY-DUMP\n");
+
+    vword_t* ptr = (vword_t*) this->base(start);
+
+    printf("...\n");
+
+    int i;
+    for(i = 0; i < length; i += sizeof(vword_t))
+    {
+        printf("0x%X: 0x%x\n", start+i, *ptr++);
+    }
+
+    printf("...\n");
+}
+
 void Context::resize(unsigned int num_pages_)
 {
     // TODO

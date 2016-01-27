@@ -29,6 +29,7 @@ int main(int argc, char** argv)
 {
     printf("Hello World!\n");
 
+    // set up vm
     Context* context = new Context(0x1000);
 
     add_symbol("eval", context->add_ll_fn(ll_eval));
@@ -36,14 +37,9 @@ int main(int argc, char** argv)
     add_symbol("printi", context->add_ll_fn(stub_ll_printi));
     add_symbol("addi", context->add_ll_fn(stub_ll_addi));
 
+    // parse a simple program
     SNode* ast = new SNode(LIST, (char*) "16 deval printi 1 (-1 (12 addi 2 3))");
-    ast->dump();
-//	parse_list(context, 0x100, ast);
-
-    vword_t p = 0x100;
-    p += parse(context, p, new SNode(INTEGER, (char*) "8"));
-    p += parse(context, p, new SNode(SYMBOL, (char*) "printi"));
-    p += parse(context, p, new SNode(INTEGER, (char*) "123"));
+    parse_list(context, 0x100, ast);
 
     // set entry point
     *((vword_t*) context->base(0x1000-sizeof(vword_t))) = 0x100;

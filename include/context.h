@@ -22,6 +22,8 @@ class Context
 
         void resize(unsigned int num_pages_);
 
+        void dump(vword_t start, size_t length);
+
         vbyte_t read(vword_t addr);
         void write(vword_t addr, vbyte_t value);
 
