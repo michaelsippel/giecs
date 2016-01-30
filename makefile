@@ -9,7 +9,7 @@ INCLUDE = -I./include
 AS = g++
 CC = g++
 LD = g++
-CFLAGS = -std=c++11 -std=c++11 $(INCLUDE)
+CFLAGS = -std=c++11 $(INCLUDE)
 ASMFLAGS =
 LDFLAGS =
 
