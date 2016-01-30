@@ -21,5 +21,7 @@ int parse_symbol(Context* context, vword_t addr, SNode* ast);
 int parse_string(Context* context, vword_t addr, SNode* ast);
 int parse_integer(Context* context, vword_t addr, SNode* ast);
 
+int parse_brainfuck(Context* context, vword_t addr, char* prg);
+
 #endif
 

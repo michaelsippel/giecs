@@ -16,6 +16,13 @@ vword_t ll_printi(Context* context, vword_t p);
 vword_t ll_printb(Context* context, vword_t p);
 vword_t ll_addi(Context* context, vword_t p);
 
+vword_t ll_bf_in(Context* context, vword_t p);
+vword_t ll_bf_out(Context* context, vword_t p);
+vword_t ll_bf_prev(Context* context, vword_t p);
+vword_t ll_bf_next(Context* context, vword_t p);
+vword_t ll_bf_inc(Context* context, vword_t p);
+vword_t ll_bf_dec(Context* context, vword_t p);
+
 #define LL_STUB(name, fn) \
 vword_t name (Context* context, vword_t p) \
 { \

@@ -42,9 +42,24 @@ int main(int argc, char** argv)
     add_symbol("printb", context->add_ll_fn(ll_printb));
     add_symbol("addi", context->add_ll_fn(ll_addi));
 
+
+    add_symbol("bf_in", context->add_ll_fn(ll_bf_in));
+    add_symbol("bf_out", context->add_ll_fn(ll_bf_out));
+    add_symbol("bf_next", context->add_ll_fn(ll_bf_next));
+    add_symbol("bf_prev", context->add_ll_fn(ll_bf_prev));
+    add_symbol("bf_inc", context->add_ll_fn(ll_bf_inc));
+    add_symbol("bf_dec", context->add_ll_fn(ll_bf_dec));
+
+    add_symbol("bf_memptr", 0xfc);
+
+    *((vword_t*) context->base(resolve_symbol("bf_memptr"))) = 0x500;
+    *((vbyte_t*) context->base(0x500)) = 'A';
+
     // parse a simple program
-    SNode* ast = new SNode(LIST, (char*) "16 deval printi 1 (-1 (12 addi 2 3))");
-    parse_list(context, 0x100, ast);
+//    SNode* ast = new SNode(LIST, (char*) "16 deval printi 1 (-1 (12 addi 2 3))");
+//    parse_list(context, 0x100, ast);
+
+    parse_brainfuck(context, 0x100, ".+.++.");
     // set entry point
     *((vword_t*) context->base(0x1000-sizeof(vword_t))) = 0x100;
     // run
