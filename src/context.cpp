@@ -2,7 +2,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <logger.h>
 #include <context.h>
+
+Logger* Context::logger = new Logger("context");
 
 Context::Context(size_t page_size_)
     : page_size(page_size_)
@@ -56,6 +59,12 @@ void Context::resize(unsigned int num_pages_)
 
 void* Context::base(vword_t addr)
 {
+    if(addr > this->page_size)
+    {
+        this->logger->log(lerror, "memory access out of range");
+        return NULL;
+    }
+
     // TODO
     return (void*) ((uintptr_t)this->pages[0].base + addr*sizeof(vbyte_t));
 }

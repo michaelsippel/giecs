@@ -26,6 +26,8 @@ vword_t resolve_symbol(char* name)
 
         it.next();
     }
+
+    return 0;
 }
 
 void add_symbol(const char* name, vword_t start)

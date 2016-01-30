@@ -59,7 +59,7 @@ int main(int argc, char** argv)
         write(1, "\033[0m", 4);
 
         SNode* ast = new SNode(LIST, str);
-        ast->dump();
+//        ast->dump();
         parse_list(context, 0x100, ast);
 
         *((vword_t*) context->base(0x1000-sizeof(vword_t))) = 0x100;

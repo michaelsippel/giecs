@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <logger.h>
+
 typedef uint8_t vbyte_t;
 typedef uint32_t vword_t;
 
@@ -32,6 +34,8 @@ class Context
         vword_t add_ll_fn(vword_t (*fn)(Context*, vword_t));
 
     private:
+        static Logger* logger;
+
         size_t page_size;
 
         unsigned int num_pages;
