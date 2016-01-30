@@ -4,14 +4,15 @@ C_HDRS = $(shell find -name '*.h')
 SRCS = $(C_SRCS) $(A_SRCS)
 OBJS = $(addsuffix .o,$(basename $(SRCS)))
 
-INCLUDE = -Iinclude
+INCLUDE = -I./include
 
 AS = g++
 CC = g++
 LD = g++
-CFLAGS = -Os -std=c++11 $(INCLUDE)
+CFLAGS = -std=c++11 -std=c++11 $(INCLUDE)
 ASMFLAGS =
-LDFLAGS = -Os -s
+LDFLAGS =
+
 BIN = vm
 
 $(BIN): $(OBJS)

@@ -57,7 +57,7 @@ void Context::resize(unsigned int num_pages_)
 void* Context::base(vword_t addr)
 {
     // TODO
-    return (void*) ((uintptr_t)this->pages[0].base + addr);
+    return (void*) ((uintptr_t)this->pages[0].base + addr*sizeof(vbyte_t));
 }
 
 vword_t Context::add_ll_fn(vword_t (*fn)(Context*, vword_t))
