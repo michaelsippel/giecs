@@ -5,17 +5,21 @@
 
 vword_t ll_eval(Context* context, vword_t p);
 vword_t ll_deval(Context* context, vword_t p);
+vword_t ll_nop(Context* context, vword_t p);
+
+vword_t ll_eq(Context* context, vword_t p);
+vword_t ll_gtb(Context* context, vword_t p);
 
 vword_t ll_map(Context* context, vword_t p);
 vword_t ll_cond(Context* context, vword_t p);
-
-vword_t ll_eq(Context* context, vword_t p);
 
 vword_t ll_exit(Context* context, vword_t p);
 vword_t ll_printi(Context* context, vword_t p);
 vword_t ll_printb(Context* context, vword_t p);
 vword_t ll_addi(Context* context, vword_t p);
 
+// brainfuck
+vword_t ll_bf_case(Context* context, vword_t p);
 vword_t ll_bf_in(Context* context, vword_t p);
 vword_t ll_bf_out(Context* context, vword_t p);
 vword_t ll_bf_prev(Context* context, vword_t p);

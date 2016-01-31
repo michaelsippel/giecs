@@ -37,8 +37,15 @@ int ll_printb_(void* p)
     return (int)(-sizeof(vbyte_t));
 }
 
+int ll_nop_(void* p)
+{
+    return 0;
+}
+
+LL_STUB(ll_nop, ll_nop_);
 LL_STUB(ll_exit, ll_exit_);
 LL_STUB(ll_addi, ll_addi_);
 LL_STUB(ll_printi, ll_printi_);
 LL_STUB(ll_printb, ll_printb_);
+
 
