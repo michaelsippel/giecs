@@ -38,11 +38,10 @@ vword_t ll_eval(Context* context, vword_t p)
 vword_t ll_deval(Context* context, vword_t p)
 {
     vword_t* in = (vword_t*) context->base(p);
-    vword_t addr_fn = in[0];
-    vword_t num_list = in[1];
-    vword_t addr_list = in[2];
+    vword_t num_list = in[0];
+    vword_t addr_list = in[1];
 
-    p += 3 * sizeof(vword_t);
+    p += 2 * sizeof(vword_t);
 
     // TODO: without malloc?
     void** list_index = (void**) malloc(num_list * sizeof(void*));
@@ -79,9 +78,6 @@ vword_t ll_deval(Context* context, vword_t p)
     }
 
     free(list_index);
-
-    p -= sizeof(vword_t);
-    *((vword_t*) context->base(p)) = addr_fn;
 
     return ll_eval(context, p);
 }
