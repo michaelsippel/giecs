@@ -44,35 +44,19 @@ int main(int argc, char** argv)
     add_symbol("printb", context->add_ll_fn(ll_printb));
     add_symbol("addi", context->add_ll_fn(ll_addi));
 
-    add_symbol("brainfuck", context->add_ll_fn(ll_parse_brainfuck));
-
-    add_symbol("bf_case", context->add_ll_fn(ll_bf_case));
-    add_symbol("bf_in", context->add_ll_fn(ll_bf_in));
-    add_symbol("bf_out", context->add_ll_fn(ll_bf_out));
-    add_symbol("bf_next", context->add_ll_fn(ll_bf_next));
-    add_symbol("bf_prev", context->add_ll_fn(ll_bf_prev));
-    add_symbol("bf_inc", context->add_ll_fn(ll_bf_inc));
-    add_symbol("bf_dec", context->add_ll_fn(ll_bf_dec));
-
-    add_symbol("bf_memptr", 0x1000 - sizeof(vword_t));
-
-    vword_t stack_top = 0x1000 - 2*sizeof(vword_t);
+    vword_t stack_top = 0x1000 - sizeof(vword_t);
     vword_t entry_point = 0x100;
 
-    *((vword_t*) context->base(resolve_symbol("bf_memptr"))) = 0x500;
-    vbyte_t* bf_mem = (vbyte_t*) context->base(0x500);
-    memset(bf_mem, 0, 16);
-
+    init_brainfuck(context);
     parse_brainfuck(context, entry_point, (char*)"++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.");
-
-    // parse a simple program
-//    SNode* ast = new SNode(LIST, (char*) "16 deval printi 1 (-1 (12 addi 2 3))");
-//    parse_list(context, 0x100, ast);
-
+    /*
+        // parse a simple program
+        SNode* ast = new SNode(LIST, (char*) "12 deval 2 (4 printi -1 (12 addi 2 3))");
+        parse_list(context, entry_point, ast);
+    	*/
     // set entry point and run
     *((vword_t*) context->base(stack_top)) = entry_point;
     ll_eval(context, stack_top);
-
 
     // interpreter loop (read-eval-print)
     printf("\n\033[0;49;32mType S-expressions\033[0m\n");

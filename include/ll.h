@@ -31,7 +31,7 @@ vword_t ll_bf_dec(Context* context, vword_t p);
 vword_t name (Context* context, vword_t p) \
 { \
 	int len = fn (context->base(p)); \
-	return p-len; \
+	return (p-(vword_t)len); \
 }
 
 #endif

@@ -73,6 +73,25 @@ vword_t ll_bf_dec(Context* context, vword_t p)
     return p;
 }
 
+void init_brainfuck(Context* context)
+{
+    add_symbol("brainfuck", context->add_ll_fn(ll_parse_brainfuck));
+
+    add_symbol("bf_case", context->add_ll_fn(ll_bf_case));
+    add_symbol("bf_in", context->add_ll_fn(ll_bf_in));
+    add_symbol("bf_out", context->add_ll_fn(ll_bf_out));
+    add_symbol("bf_next", context->add_ll_fn(ll_bf_next));
+    add_symbol("bf_prev", context->add_ll_fn(ll_bf_prev));
+    add_symbol("bf_inc", context->add_ll_fn(ll_bf_inc));
+    add_symbol("bf_dec", context->add_ll_fn(ll_bf_dec));
+
+    add_symbol("bf_memptr", 0x4fc);
+
+    *((vword_t*) context->base(resolve_symbol("bf_memptr"))) = 0x500;
+    vbyte_t* bf_mem = (vbyte_t*) context->base(0x500);
+    memset(bf_mem, 0, 0x100);
+}
+
 int parse_brainfuck(Context* context, vword_t addr, char* prg)
 {
     size_t len = strlen(prg);
@@ -91,7 +110,7 @@ int parse_brainfuck(Context* context, vword_t addr, char* prg, char* end)
     *v++ = 5 * sizeof(vword_t);
     *v++ = resolve_symbol("map");
     *v++ = resolve_symbol("eval");
-    *v++ = n;
+    vword_t* nn = v++;
     *v++ = sizeof(vword_t);
     *v++ = addr + len;
 
@@ -100,6 +119,7 @@ int parse_brainfuck(Context* context, vword_t addr, char* prg, char* end)
     vword_t* ve = &v[n];
 
     int m = 0;
+    int i = 0;
     char* start = NULL;
     while(prg < end)
     {
@@ -164,11 +184,7 @@ int parse_brainfuck(Context* context, vword_t addr, char* prg, char* end)
         prg++;
     }
 
-    while(v < ve)
-    {
-        *v++ = resolve_symbol("nop");
-//		printf("add nop\n");
-    }
+    *nn = n - ( ((uintptr_t)ve - (uintptr_t)v) / sizeof(vword_t) );
 
     return len;
 }
@@ -176,11 +192,14 @@ int parse_brainfuck(Context* context, vword_t addr, char* prg, char* end)
 vword_t ll_parse_brainfuck(Context* context, vword_t p)
 {
     vword_t* v = (vword_t*) context->base(p);
-    char* prg = (char*) context->base(*v++);
-    p += sizeof(vword_t);
+    char* prg = (char*) context->base(*v);
 
-    p -= (strlen(prg)+6)*sizeof(vword_t);
-    parse_brainfuck(context, p, prg);
+    *((vword_t*) context->base(resolve_symbol("bf_memptr"))) = 0x500;
+    vbyte_t* bf_mem = (vbyte_t*) context->base(0x500);
+    memset(bf_mem, 0, 0x100);
+
+    *v = 0x600; // TODO
+    parse_brainfuck(context, *v, prg);
 
     return p;
 }
