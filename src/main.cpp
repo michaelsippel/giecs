@@ -29,7 +29,17 @@ int main(int argc, char** argv)
 //    printf("Hello World!\n");
 
     // set up vm
-    Context* context = new Context(0x1000);
+    Context* context = new Context(0x1000, 64);
+
+    vbyte_t d0[5] = {3, 5, 3, 6, 8};
+    context->write(0x10ffe, 5, (vbyte_t*) &d0);
+
+    vbyte_t d1[7];
+    context->read(0x10ffc, 7, (vbyte_t*) &d1);
+
+    printf("%d\n", d1[5]);
+
+    return 0;
 
     add_symbol("eval", context->add_ll_fn(ll_eval));
     add_symbol("deval", context->add_ll_fn(ll_deval));
@@ -47,17 +57,17 @@ int main(int argc, char** argv)
     vword_t stack_top = 0x1000 - sizeof(vword_t);
     vword_t entry_point = 0x100;
 
-    init_brainfuck(context);
-    parse_brainfuck(context, entry_point, (char*)"++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.");
-    /*
-        // parse a simple program
-        SNode* ast = new SNode(LIST, (char*) "12 deval 2 (4 printi -1 (12 addi 2 3))");
-        parse_list(context, entry_point, ast);
-    	*/
-    // set entry point and run
-    *((vword_t*) context->base(stack_top)) = entry_point;
-    ll_eval(context, stack_top);
+    /*    init_brainfuck(context);
+        parse_brainfuck(context, entry_point, (char*) "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.");
 
+                // parse a simple program
+                SNode* ast = new SNode(LIST, (char*) "12 deval 2 (4 printi -1 (12 addi 2 3))");
+                parse_list(context, entry_point, ast);
+
+        // set entry point and run
+        *((vword_t*) context->base(stack_top)) = entry_point;
+        ll_eval(context, stack_top);
+    */
     // interpreter loop (read-eval-print)
     printf("\n\033[0;49;32mType S-expressions\033[0m\n");
     while(1)

@@ -119,7 +119,6 @@ int parse_brainfuck(Context* context, vword_t addr, char* prg, char* end)
     vword_t* ve = &v[n];
 
     int m = 0;
-    int i = 0;
     char* start = NULL;
     while(prg < end)
     {
@@ -184,7 +183,7 @@ int parse_brainfuck(Context* context, vword_t addr, char* prg, char* end)
         prg++;
     }
 
-    *nn = n - ( ((uintptr_t)ve - (uintptr_t)v) / sizeof(vword_t) );
+    *nn = n - (vword_t)( ((uintptr_t)ve - (uintptr_t)v) / sizeof(vword_t) );
 
     return len;
 }

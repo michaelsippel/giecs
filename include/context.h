@@ -19,15 +19,15 @@ struct page
 class Context
 {
     public:
-        Context(size_t page_size_);
+        Context(size_t page_size_, int num_pages_);
         ~Context();
 
         void resize(unsigned int num_pages_);
 
         void dump(vword_t start, size_t length);
 
-        vbyte_t read(vword_t addr);
-        void write(vword_t addr, vbyte_t value);
+        int read(vword_t addr, size_t length, vbyte_t* buf);
+        int write(vword_t addr, size_t length, vbyte_t* buf);
 
         void* base(vword_t addr);
 
