@@ -4,7 +4,7 @@
 
 #include <context.h>
 #include <ll.h>
-
+/*
 vword_t ll_cond(Context* context, vword_t p)
 {
     vbyte_t* ptr = (vbyte_t*) context->base(p);
@@ -57,4 +57,4 @@ vword_t ll_map(Context* context, vword_t p)
     }
     return p;
 }
-
+*/

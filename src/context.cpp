@@ -28,7 +28,8 @@ void Context::dump(vword_t start, size_t length)
 {
     printf("MEMORY-DUMP\n");
 
-    vword_t* ptr = (vword_t*) this->base(start);
+    vword_t* ptr = (vword_t*) calloc(length, sizeof(vbyte_t));
+    this->read(start, length, (vbyte_t*) ptr);
 
     printf("...\n");
 
@@ -39,6 +40,8 @@ void Context::dump(vword_t start, size_t length)
     }
 
     printf("...\n");
+
+    free(ptr);
 }
 
 void Context::resize(unsigned int num_pages_)
@@ -68,14 +71,13 @@ void Context::resize(unsigned int num_pages_)
 
 int Context::read(vword_t addr, size_t length, vbyte_t* buf)
 {
-    // TODO: checks
     int page_id = addr / this->page_size;
     int page_offset = addr % this->page_size;
 
     int end_page_id = (addr+length) / this->page_size;
     int end_page_offset = (addr+length) % this->page_size;
 
-    if(end_page_id >= this->num_pages)
+    if(end_page_id >= this->num_pages && end_page_offset > 0)
     {
         this->logger->log(lerror, "try to read out of memory (limit=0x%x)", this->num_pages * this->page_size);
         return 0;
@@ -100,14 +102,13 @@ int Context::read(vword_t addr, size_t length, vbyte_t* buf)
 
 int Context::write(vword_t addr, size_t length, vbyte_t* buf)
 {
-    // TODO: checks
     int page_id = addr / this->page_size;
     int page_offset = addr % this->page_size;
 
     int end_page_id = (addr+length) / this->page_size;
     int end_page_offset = (addr+length) % this->page_size;
 
-    if(end_page_id >= this->num_pages)
+    if(end_page_id >= this->num_pages && end_page_offset > 0)
     {
         this->logger->log(lerror, "try to write out of memory (limit=0x%x)", this->num_pages * this->page_size);
         return 0;
@@ -129,36 +130,17 @@ int Context::write(vword_t addr, size_t length, vbyte_t* buf)
     return length;
 }
 
-void* Context::base(vword_t addr)
-{
-    vword_t limit = this->num_pages * this->page_size;
-    if(addr >= limit)
-    {
-        this->logger->log(lerror, "memory access out of range (limit=0x%x, tried 0x%x)", limit, addr);
-        return NULL;
-    }
-
-    int page_id = addr / this->page_size;
-    int page_offset = addr % this->page_size;
-
-    printf("page_id %d\n", page_id);
-    if(this->pages[page_id].base == NULL)
-    {
-        printf("alloc page (id %d)\n", page_id);
-        this->pages[page_id].base = calloc(this->page_size, sizeof(vbyte_t));
-    }
-
-    return (void*) ((uintptr_t)this->pages[page_id].base + page_offset*sizeof(vbyte_t));
-}
-
 vword_t Context::add_ll_fn(vword_t (*fn)(Context*, vword_t))
 {
     static vword_t addr = 0x1;
     vword_t ret = addr;
 
-    vword_t* ptr = (vword_t*) this->base(addr);
-    *ptr++ = -1;
-    *((void**)ptr) = (void*) fn;
+    vword_t buf[32];
+    vword_t* p = (vword_t*) buf;
+    *p++ = -1;
+    *((void**) p) = (void*) fn;
+    this->write(addr, sizeof(vword_t) + sizeof(void*), (vbyte_t*) buf);
+
     addr += sizeof(vword_t) + sizeof(void*);
 
     return ret;

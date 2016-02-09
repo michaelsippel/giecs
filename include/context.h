@@ -29,8 +29,6 @@ class Context
         int read(vword_t addr, size_t length, vbyte_t* buf);
         int write(vword_t addr, size_t length, vbyte_t* buf);
 
-        void* base(vword_t addr);
-
         vword_t add_ll_fn(vword_t (*fn)(Context*, vword_t));
 
     private:

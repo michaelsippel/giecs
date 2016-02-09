@@ -4,48 +4,47 @@
 #include <context.h>
 #include <ll.h>
 
-int ll_exit_(void* p)
+vword_t ll_exit(Context* context, vword_t p)
 {
-    vword_t val = *((vword_t*) p);
+    vword_t val;
+    context->read(p, sizeof(vword_t), (vbyte_t*) &val);
 
     printf("Exit with value %d\n", val);
     exit(val);
 
-    return (int)(-sizeof(vword_t));
+    return p+sizeof(vword_t);
 }
 
-int ll_addi_(void* p)
+vword_t ll_addi(Context* context, vword_t p)
 {
-    vword_t* stack = (vword_t*) p;
-    vword_t a = *stack++;
-    vword_t b = *stack++;
+    vword_t val[2];
+    context->read(p, 2*sizeof(vword_t), (vbyte_t*) &val);
 
-    *--stack = a + b;
+    vword_t ret = val[0] + val[1];
+    context->write(p+sizeof(vword_t), sizeof(vword_t), (vbyte_t*) &ret);
 
-    return (int)(-sizeof(vword_t));
+    return p+sizeof(vword_t);
 }
 
-int ll_printi_(void* p)
+vword_t ll_printi(Context* context, vword_t p)
 {
-    printf("%d\n", ((vword_t*)p)[0]);
-    return (int)(-sizeof(vword_t));
+    vword_t val;
+    context->read(p, sizeof(vword_t), (vbyte_t*) &val);
+
+    printf("%d\n", val);
+    return p+sizeof(vword_t);
 }
 
-int ll_printb_(void* p)
+vword_t ll_printb(Context* context, vword_t p)
 {
-    printf("%s\n", ((vbyte_t*)p)[0] ? "true" : "false");
-    return (int)(-sizeof(vbyte_t));
+    vbyte_t val;
+    context->read(p, 1, &val);
+    printf("%s\n", val ? "true" : "false");
+    return p+1;
 }
 
-int ll_nop_(void* p)
+vword_t ll_nop(Context* context, vword_t p)
 {
-    return 0;
+    return p;
 }
-
-LL_STUB(ll_nop, ll_nop_);
-LL_STUB(ll_exit, ll_exit_);
-LL_STUB(ll_addi, ll_addi_);
-LL_STUB(ll_printi, ll_printi_);
-LL_STUB(ll_printb, ll_printb_);
-
 

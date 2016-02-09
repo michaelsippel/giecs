@@ -13,7 +13,7 @@ int parse_symbol(Context* context, vword_t addr, SNode* ast)
     vword_t res = resolve_symbol(ast->string);
     if(res != 0)
     {
-        *((vword_t*) context->base(addr)) = res;
+        context->write(addr, sizeof(vword_t), (vbyte_t*) &res);
     }
     else
     {
@@ -25,12 +25,14 @@ int parse_symbol(Context* context, vword_t addr, SNode* ast)
 
 int parse_string(Context* context, vword_t addr, SNode* ast)
 {
-    strcpy((char*) context->base(addr), ast->string);
-    return strlen(ast->string);
+    int len = strlen(ast->string)+1;
+    context->write(addr, len, (vbyte_t*) ast->string);
+    return len;
 }
 
 int parse_integer(Context* context, vword_t addr, SNode* ast)
 {
-    *((vword_t*) context->base(addr)) = (vword_t) ast->integer;
+    context->write(addr, sizeof(vword_t), (vbyte_t*) &ast->integer);
     return sizeof(vword_t);
 }
+

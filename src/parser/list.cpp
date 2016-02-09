@@ -28,7 +28,7 @@ int parse_list(Context* context, vword_t addr, SNode* ast)
                 vword_t subaddr = addr + len;
                 len += parse(context, subaddr, sn);
 
-                *((vword_t*) context->base(lptr)) = subaddr;
+                context->write(lptr, sizeof(vword_t), (vbyte_t*) &subaddr);
                 break;
         }
 
