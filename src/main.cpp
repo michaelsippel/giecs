@@ -56,7 +56,7 @@ int main(int argc, char** argv)
     parse_list(context, entry_point, ast);
 
     // set entry point and run
-    context->write(stack, sizeof(vword_t), (vbyte_t*) &entry_point);
+    context->write_word(stack, entry_point);
     ll_eval(context, stack);
 
     // interpreter loop (read-eval-print)
@@ -74,12 +74,10 @@ int main(int argc, char** argv)
             //ast->dump();
             parse_list(context, entry_point, ast);
 
-            context->write(stack, sizeof(vword_t), (vbyte_t*) &entry_point);
+            context->write_word(stack, entry_point);
             vword_t s = ll_eval(context, stack);
             if(s <= stack)
-            {
                 ll_printi(context, s);
-            }
         }
         delete ast;
     }

@@ -6,12 +6,10 @@
 
 vword_t ll_eval(Context* context, vword_t p)
 {
-    vword_t addr;
-    context->read(p, sizeof(vword_t), (vbyte_t*) &addr);
+    vword_t addr = context->read_word(p);
     p += sizeof(vword_t);
 
-    vword_t len;
-    context->read(addr, sizeof(vword_t), (vbyte_t*) &len);
+    vword_t len = context->read_word(addr);
     addr += sizeof(vword_t);
 
     if(len != (vword_t)-1)
@@ -72,9 +70,8 @@ vword_t ll_deval(Context* context, vword_t p)
         {
             // execute
             p -= sizeof(vword_t);
-            vword_t w;
-            context->read(list_addr, sizeof(vword_t), (vbyte_t*) &list_addr);
-            context->write(p, sizeof(vword_t), (vbyte_t*) &list_addr);
+            vword_t w = context->read_word(list_addr);
+            context->write_word(p, w);
 
             p = ll_eval(context, p);
         }

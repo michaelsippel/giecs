@@ -32,7 +32,7 @@ int parse_string(Context* context, vword_t addr, SNode* ast)
 
 int parse_integer(Context* context, vword_t addr, SNode* ast)
 {
-    context->write(addr, sizeof(vword_t), (vbyte_t*) &ast->integer);
+    context->write_word(addr, (vword_t) ast->integer);
     return sizeof(vword_t);
 }
 

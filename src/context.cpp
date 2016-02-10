@@ -130,6 +130,19 @@ int Context::write(vword_t addr, size_t length, vbyte_t* buf)
     return length;
 }
 
+vword_t Context::read_word(vword_t addr)
+{
+    vword_t val;
+    this->read(addr, sizeof(vword_t), (vbyte_t*) &val);
+
+    return val;
+}
+
+void Context::write_word(vword_t addr, vword_t val)
+{
+    this->write(addr, sizeof(vword_t), (vbyte_t*) &val);
+}
+
 vword_t Context::add_ll_fn(vword_t (*fn)(Context*, vword_t))
 {
     static vword_t addr = 0x1;
