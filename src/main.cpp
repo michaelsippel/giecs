@@ -45,7 +45,7 @@ int main(int argc, char** argv)
     add_symbol("addi", context->add_ll_fn(ll_addi));
 
     // place stack at end of memory
-    vword_t stack = 64*0x1000 - sizeof(vword_t);
+    vword_t stack = 64*0x1000 - VWORD_SIZE;
     vword_t entry_point = 0x100;
 
     /*    init_brainfuck(context);

@@ -34,7 +34,7 @@ void Context::dump(vword_t start, size_t length)
     printf("...\n");
 
     int i;
-    for(i = 0; i < length; i += sizeof(vword_t))
+    for(i = 0; i < length; i += VWORD_SIZE)
     {
         printf("0x%X: 0x%x\n", start+i, *ptr++);
     }
@@ -133,14 +133,14 @@ int Context::write(vword_t addr, size_t length, vbyte_t* buf)
 vword_t Context::read_word(vword_t addr)
 {
     vword_t val;
-    this->read(addr, sizeof(vword_t), (vbyte_t*) &val);
+    this->read(addr, VWORD_SIZE, (vbyte_t*) &val);
 
     return val;
 }
 
 void Context::write_word(vword_t addr, vword_t val)
 {
-    this->write(addr, sizeof(vword_t), (vbyte_t*) &val);
+    this->write(addr, VWORD_SIZE, (vbyte_t*) &val);
 }
 
 vword_t Context::add_ll_fn(vword_t (*fn)(Context*, vword_t))
@@ -148,13 +148,13 @@ vword_t Context::add_ll_fn(vword_t (*fn)(Context*, vword_t))
     static vword_t addr = 0x1;
     vword_t ret = addr;
 
-    vword_t buf[32];
+    vword_t buf[4];
     vword_t* p = (vword_t*) buf;
     *p++ = -1;
     *((void**) p) = (void*) fn;
-    this->write(addr, sizeof(vword_t) + sizeof(void*), (vbyte_t*) buf);
+    this->write(addr, VWORD_SIZE + IWORD_SIZE, (vbyte_t*) buf);
 
-    addr += sizeof(vword_t) + sizeof(void*);
+    addr += VWORD_SIZE + IWORD_SIZE;
 
     return ret;
 }

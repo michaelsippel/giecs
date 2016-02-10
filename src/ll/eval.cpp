@@ -7,10 +7,10 @@
 vword_t ll_eval(Context* context, vword_t p)
 {
     vword_t addr = context->read_word(p);
-    p += sizeof(vword_t);
+    p += VWORD_SIZE;
 
     vword_t len = context->read_word(addr);
-    addr += sizeof(vword_t);
+    addr += VWORD_SIZE;
 
     if(len != (vword_t)-1)
     {
@@ -29,7 +29,7 @@ vword_t ll_eval(Context* context, vword_t p)
     {
         // call low-level function
         vword_t (*fn)(Context*, vword_t);
-        context->read(addr, sizeof(void*), (vbyte_t*) &fn);
+        context->read(addr, IWORD_SIZE, (vbyte_t*) &fn);
 
         return fn(context, p);
     }
@@ -45,31 +45,29 @@ vword_t ll_deval(Context* context, vword_t p)
     p += 2 * sizeof(vword_t);
 
     // TODO: without malloc?
-    vword_t* list_index = (vword_t*) malloc(num_list * sizeof(void*));
+    vword_t* list_index = (vword_t*) malloc(num_list * sizeof(vword_t));
 
     int i;
     for(i = 0; i < num_list; i++)
     {
-        vword_t attr;
-        context->read(addr_list, sizeof(vword_t), (vbyte_t*) &attr);
+        vword_t attr = context->read_word(addr_list);
 
         list_index[i] = addr_list;
 
-        addr_list += sizeof(vword_t);
-        addr_list += (attr == (vword_t)-1) ? sizeof(vword_t) : attr;
+        addr_list += VWORD_SIZE;
+        addr_list += (attr == (vword_t)-1) ? VWORD_SIZE : attr;
     }
 
     for(i = num_list-1; i >= 0; i--)
     {
         vword_t list_addr = list_index[i];
-        vword_t attr;
-        context->read(list_addr, sizeof(vword_t), (vbyte_t*) &attr);
-        list_addr += sizeof(vword_t);
+        vword_t attr = context->read_word(list_addr);
+        list_addr += VWORD_SIZE;
 
         if(attr == (vword_t)-1)
         {
             // execute
-            p -= sizeof(vword_t);
+            p -= VWORD_SIZE;
             vword_t w = context->read_word(list_addr);
             context->write_word(p, w);
 

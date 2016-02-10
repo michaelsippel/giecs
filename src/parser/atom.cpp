@@ -13,7 +13,7 @@ int parse_symbol(Context* context, vword_t addr, SNode* ast)
     vword_t res = resolve_symbol(ast->string);
     if(res != 0)
     {
-        context->write(addr, sizeof(vword_t), (vbyte_t*) &res);
+        context->write_word(addr, res);
     }
     else
     {
