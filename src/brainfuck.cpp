@@ -4,7 +4,7 @@
 #include <ll.h>
 #include <context.h>
 #include <parser.h>
-/*
+/*/
 vword_t ll_bf_case(Context* context, vword_t p)
 {
     vword_t* v = (vword_t*) context->base(p);

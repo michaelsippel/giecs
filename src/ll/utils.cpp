@@ -4,57 +4,73 @@
 
 #include <context.h>
 #include <ll.h>
-/*
+
 vword_t ll_cond(Context* context, vword_t p)
 {
-    vbyte_t* ptr = (vbyte_t*) context->base(p);
-    vbyte_t c = *ptr++;
-    vword_t* v = (vword_t*) context->base(p + 1);
+    vbyte_t c;
+    context->read(p, 1, &c);
+    vword_t v0 = context->read_word(p + 1);
 
     if(c)
-        v[1] = v[0];
+        context->write_word(p + 1 + VWORD_SIZE, v0);
 
-    return (vword_t) p + 1 + sizeof(vword_t);
+    return p + 1 + VWORD_SIZE;
 }
 
 vword_t ll_eq(Context* context, vword_t p)
 {
-    vword_t* v = (vword_t*) context->base(p);
-    vword_t v1 = *v++;
-    vword_t v2 = *v++;
+    vword_t v[2];
+    context->read(p, 2*VWORD_SIZE, (vbyte_t*) &v);
 
-    vbyte_t* r = (vbyte_t*) v;
-    *--r = (v1 == v2) ? 1 : 0;
+    p = p + 2 * VWORD_SIZE - 1;
 
-    return (vword_t) p + 2*sizeof(vword_t) - sizeof(vbyte_t);
+    vbyte_t r = (v[0] == v[1]) ? 1 : 0;
+    context->write(p, 1, &r);
+
+    return p;
 }
 
 vword_t ll_map(Context* context, vword_t p)
 {
-    vword_t* v = (vword_t*) context->base(p);
-    vword_t fn_addr = *v++;
-    vword_t list_len = *v++;
-    vword_t entry_size = *v++;
-    vword_t list_addr = *v++;
+    vword_t v[4];
+    context->read(p, 4 * VWORD_SIZE, (vbyte_t*) &v);
 
-    p += 4 * sizeof(vword_t);
+    vword_t fn_addr = v[0];
+    vword_t list_len = v[1];
+    vword_t entry_size = v[2];
+    vword_t list_addr = v[3];
 
-    vbyte_t* list = (vbyte_t*) context->base(list_addr);
-    vbyte_t* dest = (vbyte_t*) v;
+    p += 4 * VWORD_SIZE;
+
+    size_t l = list_len * entry_size;
+
+    vbyte_t* list = (vbyte_t*) malloc(l * sizeof(vbyte_t));
+    context->read(list_addr, l, list);
+
+    vbyte_t* dest = (vbyte_t*) malloc(entry_size * sizeof(vbyte_t));
 
     int i,j;
     for(i = 0; i < list_len; i++)
     {
-        for(j = entry_size-1; j >= 0; j--)
+        vword_t* h = (vword_t*) dest;
+        *h++ = entry_size + VWORD_SIZE;
+        *h++ = fn_addr;
+
+        vbyte_t* d = dest + 2*VWORD_SIZE;
+        for(j = 0; j < entry_size; j++)
         {
-            *--dest = list[i*entry_size + j];
+            *d++ = list[i*entry_size + j];
         }
-        v = (vword_t*) dest;
-        *--v = fn_addr;
-        *--v = entry_size + sizeof(vword_t);
-        p -= entry_size + 2*sizeof(vword_t);
+
+        p -= entry_size + 2*VWORD_SIZE;
+        context->write(p, entry_size + 2*VWORD_SIZE, dest);
+
         p = ll_eval(context, p);
     }
+
+    free(dest);
+    free(list);
+
     return p;
 }
-*/
+
