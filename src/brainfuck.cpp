@@ -4,22 +4,23 @@
 #include <ll.h>
 #include <context.h>
 #include <parser.h>
-/*/
+
 vword_t ll_bf_case(Context* context, vword_t p)
 {
-    vword_t* v = (vword_t*) context->base(p);
-    vword_t addr = *v;
+    vword_t addr = (vword_t) context->read_word(p);
 
     vword_t mptr;
-    vbyte_t* buf;
+    vbyte_t buf;
 
 begin:
-    mptr = *((vword_t*) context->base(resolve_symbol("bf_memptr")));
-    buf = (vbyte_t*) context->base(mptr);
+    mptr = context->read_word(resolve_symbol("bf_memptr"));
+    context->read(mptr, 1, &buf);
 
-    if((*buf) > (vbyte_t)0)
+    //printf("mptr: 0x%x, buf: %d\n", mptr, buf);
+
+    if(buf > (vbyte_t)0)
     {
-        *((vword_t*) context->base(p)) = addr;
+        context->write_word(p, addr);
         ll_eval(context, p);
         goto begin;
     }
@@ -29,47 +30,57 @@ begin:
 
 vword_t ll_bf_in(Context* context, vword_t p)
 {
-    vword_t mptr = *((vword_t*) context->base(resolve_symbol("bf_memptr")));
-    vbyte_t* buf = (vbyte_t*) context->base(mptr);
-    read(0, buf, 1);
+    vword_t mptr = context->read_word(resolve_symbol("bf_memptr"));
+    vbyte_t buf;
+    read(0, &buf, 1);
+    context->write(mptr, 1, &buf);
+
     return p;
 }
 
 vword_t ll_bf_out(Context* context, vword_t p)
 {
-    vword_t mptr = *((vword_t*) context->base(resolve_symbol("bf_memptr")));
-    vbyte_t* buf = (vbyte_t*) context->base(mptr);
-    write(1, buf, 1);
+    vword_t mptr = context->read_word(resolve_symbol("bf_memptr"));
+    vbyte_t buf;
+    context->read(mptr, 1, &buf);
+    write(1, &buf, 1);
+
     return p;
 }
 
 vword_t ll_bf_prev(Context* context, vword_t p)
 {
-    vword_t* mptr = ((vword_t*) context->base(resolve_symbol("bf_memptr")));
-    *mptr = (*mptr) - 1;
+    vword_t mptr = context->read_word(resolve_symbol("bf_memptr"));
+    context->write_word(resolve_symbol("bf_memptr"), mptr - 1);
     return p;
 }
 
 vword_t ll_bf_next(Context* context, vword_t p)
 {
-    vword_t* mptr = ((vword_t*) context->base(resolve_symbol("bf_memptr")));
-    *mptr = (*mptr) + 1;
+    vword_t mptr = context->read_word(resolve_symbol("bf_memptr"));
+    context->write_word(resolve_symbol("bf_memptr"), mptr + 1);
     return p;
 }
 
 vword_t ll_bf_inc(Context* context, vword_t p)
 {
-    vword_t mptr = *((vword_t*) context->base(resolve_symbol("bf_memptr")));
-    vbyte_t* buf = (vbyte_t*) context->base(mptr);
-    *buf = (*buf) + 1;
+    vword_t mptr = context->read_word(resolve_symbol("bf_memptr"));
+    vbyte_t buf;
+    context->read(mptr, 1, &buf);
+    buf++;
+    context->write(mptr, 1, &buf);
+
     return p;
 }
 
 vword_t ll_bf_dec(Context* context, vword_t p)
 {
-    vword_t mptr = *((vword_t*) context->base(resolve_symbol("bf_memptr")));
-    vbyte_t* buf = (vbyte_t*) context->base(mptr);
-    *buf = (*buf) - 1;
+    vword_t mptr = context->read_word(resolve_symbol("bf_memptr"));
+    vbyte_t buf;
+    context->read(mptr, 1, &buf);
+    buf--;
+    context->write(mptr, 1, &buf);
+
     return p;
 }
 
@@ -85,11 +96,12 @@ void init_brainfuck(Context* context)
     add_symbol("bf_inc", context->add_ll_fn(ll_bf_inc));
     add_symbol("bf_dec", context->add_ll_fn(ll_bf_dec));
 
-    add_symbol("bf_memptr", 0x4fc);
+    add_symbol("bf_memptr", 0x20000-VWORD_SIZE);
 
-    *((vword_t*) context->base(resolve_symbol("bf_memptr"))) = 0x500;
-    vbyte_t* bf_mem = (vbyte_t*) context->base(0x500);
-    memset(bf_mem, 0, 0x100);
+    context->write_word(resolve_symbol("bf_memptr"), 0x20000);
+    int i;
+    for(i = 0; i < 8192; i++)
+        context->write_word(0x20000 + i*VWORD_SIZE, 0);
 }
 
 int parse_brainfuck(Context* context, vword_t addr, char* prg)
@@ -101,24 +113,12 @@ int parse_brainfuck(Context* context, vword_t addr, char* prg)
 int parse_brainfuck(Context* context, vword_t addr, char* prg, char* end)
 {
     size_t n = (size_t)end - (size_t)prg;
-    size_t len = 0;
+    size_t len = 6 * VWORD_SIZE;
 
-    vword_t* v = (vword_t*) context->base(addr);
-
-    len += 6*sizeof(vword_t);
-
-    *v++ = 5 * sizeof(vword_t);
-    *v++ = resolve_symbol("map");
-    *v++ = resolve_symbol("eval");
-    vword_t* nn = v++;
-    *v++ = sizeof(vword_t);
-    *v++ = addr + len;
-
-    len += n * sizeof(vword_t);
-
-    vword_t* ve = &v[n];
+    vword_t* pv = (vword_t*) malloc(n * sizeof(vword_t));
 
     int m = 0;
+    int j = 0;
     char* start = NULL;
     while(prg < end)
     {
@@ -126,32 +126,32 @@ int parse_brainfuck(Context* context, vword_t addr, char* prg, char* end)
         {
             case ',':
                 if(m == 0)
-                    *v++ = resolve_symbol("bf_in");
+                    pv[j++] = resolve_symbol("bf_in");
                 break;
 
             case '.':
                 if(m == 0)
-                    *v++ = resolve_symbol("bf_out");
+                    pv[j++] = resolve_symbol("bf_out");
                 break;
 
             case '>':
                 if(m == 0)
-                    *v++ = resolve_symbol("bf_next");
+                    pv[j++] = resolve_symbol("bf_next");
                 break;
 
             case '<':
                 if(m == 0)
-                    *v++ = resolve_symbol("bf_prev");
+                    pv[j++] = resolve_symbol("bf_prev");
                 break;
 
             case '+':
                 if(m == 0)
-                    *v++ = resolve_symbol("bf_inc");
+                    pv[j++] = resolve_symbol("bf_inc");
                 break;
 
             case '-':
                 if(m == 0)
-                    *v++ = resolve_symbol("bf_dec");
+                    pv[j++] = resolve_symbol("bf_dec");
                 break;
 
             case '[':
@@ -163,16 +163,16 @@ int parse_brainfuck(Context* context, vword_t addr, char* prg, char* end)
             case ']':
                 if(m == 1)
                 {
-                    *v++ = addr+len;
+                    vword_t sub_ptr = addr + len;
+                    len += parse_brainfuck(context, sub_ptr, start, prg);
 
-                    vword_t* sv = (vword_t*) context->base(addr+len);
+                    vword_t sv[3];
+                    sv[0] = 2 * sizeof(vword_t);
+                    sv[1] = resolve_symbol("bf_case");
+                    sv[2] = sub_ptr;
 
-                    len += 3 * sizeof(vword_t);
-                    *sv++ = 2 * sizeof(vword_t);
-                    *sv++ = resolve_symbol("bf_case");
-                    *sv++ = addr + len;
-
-                    len += parse_brainfuck(context, addr+len, start, prg);
+                    pv[j++] = addr+len;
+                    len += context->write(addr+len, 3 * VWORD_SIZE, (vbyte_t*) &sv);
 
                     start = NULL;
                 }
@@ -183,23 +183,37 @@ int parse_brainfuck(Context* context, vword_t addr, char* prg, char* end)
         prg++;
     }
 
-    *nn = n - (vword_t)( ((uintptr_t)ve - (uintptr_t)v) / sizeof(vword_t) );
+    vword_t sub_ptr = addr+len;
+    len += context->write(sub_ptr, j * VWORD_SIZE, (vbyte_t*) pv);
+//	context->dump(sub_ptr, j);
+    free(pv);
+
+    vword_t v[6];
+    v[0] = 5 * VWORD_SIZE;
+    v[1] = resolve_symbol("map");
+    v[2] = resolve_symbol("eval");
+    v[3] = j;
+    v[4] = VWORD_SIZE;
+    v[5] = sub_ptr;
+    context->write(addr, 6*VWORD_SIZE, (vbyte_t*) &v);
 
     return len;
 }
 
 vword_t ll_parse_brainfuck(Context* context, vword_t p)
 {
-    vword_t* v = (vword_t*) context->base(p);
-    char* prg = (char*) context->base(*v);
+    vword_t straddr = context->read_word(p);
+    char prg[512];
+    context->read(straddr, 512, (vbyte_t*) &prg);
 
-    *((vword_t*) context->base(resolve_symbol("bf_memptr"))) = 0x500;
-    vbyte_t* bf_mem = (vbyte_t*) context->base(0x500);
-    memset(bf_mem, 0, 0x100);
+    context->write_word(resolve_symbol("bf_memptr"), 0x20000);
+    int i;
+    for(i = 0; i < 8192; i++)
+        context->write_word(0x20000 + i*VWORD_SIZE, 0);
 
-    *v = 0x600; // TODO
-    parse_brainfuck(context, *v, prg);
+    context->write_word(p, 0x800);
+    parse_brainfuck(context, 0x800, prg);
 
     return p;
 }
-*/
+

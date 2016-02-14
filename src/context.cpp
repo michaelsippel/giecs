@@ -28,15 +28,15 @@ void Context::dump(vword_t start, size_t length)
 {
     printf("MEMORY-DUMP\n");
 
-    vword_t* ptr = (vword_t*) calloc(length, sizeof(vbyte_t));
-    this->read(start, length, (vbyte_t*) ptr);
+    vword_t* ptr = (vword_t*) calloc(length, sizeof(vword_t));
+    this->read(start, length*VWORD_SIZE, (vbyte_t*) ptr);
 
     printf("...\n");
 
     int i;
-    for(i = 0; i < length; i += VWORD_SIZE)
+    for(i = 0; i < length; i ++)
     {
-        printf("0x%X: 0x%x\n", start+i, *ptr++);
+        printf("0x%X: 0x%x\n", start+i*VWORD_SIZE, ptr[i]);
     }
 
     printf("...\n");

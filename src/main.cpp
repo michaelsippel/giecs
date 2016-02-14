@@ -29,7 +29,7 @@ int main(int argc, char** argv)
 //    printf("Hello World!\n");
 
     // set up vm
-    Context* context = new Context(0x1000, 64);
+    Context* context = new Context(0x1000, 4096);
 
     add_symbol("eval", context->add_ll_fn(ll_eval));
     add_symbol("deval", context->add_ll_fn(ll_deval));
@@ -45,15 +45,15 @@ int main(int argc, char** argv)
     add_symbol("addi", context->add_ll_fn(ll_addi));
 
     // place stack at end of memory
-    vword_t stack = 64*0x1000 - VWORD_SIZE;
+    vword_t stack = 4096*0x1000 - VWORD_SIZE;
     vword_t entry_point = 0x100;
 
-    /*    init_brainfuck(context);
-        parse_brainfuck(context, entry_point, (char*) "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.");
-    */
+    init_brainfuck(context);
+    parse_brainfuck(context, entry_point, (char*) "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.");
+
     // parse a simple program
-    SNode* ast = new SNode(LIST, (char*) "12 deval 2 (4 printi -1 (12 addi 2 3))");
-    parse_list(context, entry_point, ast);
+//    SNode* ast = new SNode(LIST, (char*) "12 deval 2 (4 printi -1 (12 addi 2 3))");
+//    parse_list(context, entry_point, ast);
 
     // set entry point and run
     context->write_word(stack, entry_point);
