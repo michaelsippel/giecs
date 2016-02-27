@@ -8,12 +8,9 @@
 vword_t ll_bf_case(Context* context, vword_t p)
 {
     vword_t addr = (vword_t) context->read_word(p);
-
-    vword_t mptr;
     vbyte_t buf;
 
-begin:
-    mptr = context->read_word(resolve_symbol("bf_memptr"));
+    vword_t mptr = context->read_word(resolve_symbol("bf_memptr"));
     context->read(mptr, 1, &buf);
 
     //printf("mptr: 0x%x, buf: %d\n", mptr, buf);
@@ -21,8 +18,7 @@ begin:
     if(buf > (vbyte_t)0)
     {
         context->write_word(p, addr);
-        ll_eval(context, p);
-        goto begin;
+        p = ll_eval(context, p);
     }
 
     return p;
@@ -110,6 +106,31 @@ int parse_brainfuck(Context* context, vword_t addr, char* prg)
     return parse_brainfuck(context, addr, prg, prg + len);
 }
 
+int parse_brainfuck_loop(Context* context, vword_t addr, char* ptr, char* end)
+{
+    vword_t v[3];
+
+    size_t len = 3 * VWORD_SIZE;
+    vword_t sub_ptr = addr+len;
+
+    v[0] = 2 * VWORD_SIZE;
+    v[1] = resolve_symbol("bf_case");
+    v[2] = sub_ptr;
+
+    len += parse_brainfuck(context, sub_ptr, ptr, end);
+
+    vword_t naddr = sub_ptr + 3 * VWORD_SIZE;
+    int n = context->read_word(naddr);
+    context->write_word(naddr, n+1);
+
+    context->write_word(addr+len, addr);
+    len += VWORD_SIZE;
+
+    context->write(addr, 3 * VWORD_SIZE, (vbyte_t*) &v);
+
+    return len;
+}
+
 int parse_brainfuck(Context* context, vword_t addr, char* prg, char* end)
 {
     size_t n = (size_t)end - (size_t)prg;
@@ -120,6 +141,7 @@ int parse_brainfuck(Context* context, vword_t addr, char* prg, char* end)
     int m = 0;
     int j = 0;
     char* start = NULL;
+
     while(prg < end)
     {
         switch(*prg)
@@ -164,15 +186,9 @@ int parse_brainfuck(Context* context, vword_t addr, char* prg, char* end)
                 if(m == 1)
                 {
                     vword_t sub_ptr = addr + len;
-                    len += parse_brainfuck(context, sub_ptr, start, prg);
+                    len += parse_brainfuck_loop(context, sub_ptr, start, prg);
 
-                    vword_t sv[3];
-                    sv[0] = 2 * sizeof(vword_t);
-                    sv[1] = resolve_symbol("bf_case");
-                    sv[2] = sub_ptr;
-
-                    pv[j++] = addr+len;
-                    len += context->write(addr+len, 3 * VWORD_SIZE, (vbyte_t*) &sv);
+                    pv[j++] = sub_ptr;
 
                     start = NULL;
                 }
@@ -185,7 +201,6 @@ int parse_brainfuck(Context* context, vword_t addr, char* prg, char* end)
 
     vword_t sub_ptr = addr+len;
     len += context->write(sub_ptr, j * VWORD_SIZE, (vbyte_t*) pv);
-//	context->dump(sub_ptr, j);
     free(pv);
 
     vword_t v[6];

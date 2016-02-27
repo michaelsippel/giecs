@@ -49,7 +49,7 @@ int main(int argc, char** argv)
     vword_t entry_point = 0x100;
 
     init_brainfuck(context);
-    parse_brainfuck(context, entry_point, (char*) "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.");
+    parse_brainfuck(context, entry_point, (char*)  "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.");
 
     // parse a simple program
 //    SNode* ast = new SNode(LIST, (char*) "12 deval 2 (4 printi -1 (12 addi 2 3))");
