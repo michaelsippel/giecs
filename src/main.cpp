@@ -49,11 +49,10 @@ int main(int argc, char** argv)
     vword_t entry_point = 0x100;
 
     init_brainfuck(context);
-    parse_brainfuck(context, entry_point, (char*)  "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.");
 
     // parse a simple program
-//    SNode* ast = new SNode(LIST, (char*) "12 deval 2 (4 printi -1 (12 addi 2 3))");
-//    parse_list(context, entry_point, ast);
+    SNode* ast = new SNode(LIST, (char*) "12 deval 1 (-1 (12 brainfuck \"++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.\"))");
+    parse_list(context, entry_point, ast);
 
     // set entry point and run
     context->write_word(stack, entry_point);
@@ -61,6 +60,7 @@ int main(int argc, char** argv)
 
     // interpreter loop (read-eval-print)
     printf("\n\033[0;49;32mType S-expressions\033[0m\n");
+
     while(1)
     {
         write(1, "\033[0;49;32m>>> \033[0;49;33m", 24);

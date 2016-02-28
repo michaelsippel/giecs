@@ -8,5 +8,5 @@
 makefile~
 Makefile~
 .gitignore~
-vm
+vm_*
 

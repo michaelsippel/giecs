@@ -47,23 +47,19 @@ vword_t ll_map(Context* context, vword_t p)
     vbyte_t* list = (vbyte_t*) malloc(l * sizeof(vbyte_t));
     context->read(list_addr, l, list);
 
-    vbyte_t* dest = (vbyte_t*) malloc(entry_size * sizeof(vbyte_t));
+    size_t sl = entry_size + VWORD_SIZE;
+    vbyte_t* dest = (vbyte_t*) malloc(sl * sizeof(vbyte_t));
+    *((vword_t*) dest) = fn_addr;
 
     int i,j;
     for(i = 0; i < list_len; i++)
     {
-        vword_t* h = (vword_t*) dest;
-        *h++ = entry_size + VWORD_SIZE;
-        *h++ = fn_addr;
-
-        vbyte_t* d = dest + 2*VWORD_SIZE;
+        vbyte_t* d = dest + VWORD_SIZE;
         for(j = 0; j < entry_size; j++)
-        {
             *d++ = list[i*entry_size + j];
-        }
 
-        p -= entry_size + 2*VWORD_SIZE;
-        context->write(p, entry_size + 2*VWORD_SIZE, dest);
+        p -= sl;
+        context->write(p, sl, dest);
 
         p = ll_eval(context, p);
     }

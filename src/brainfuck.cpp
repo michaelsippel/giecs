@@ -108,11 +108,10 @@ int parse_brainfuck(Context* context, vword_t addr, char* prg)
 
 int parse_brainfuck_loop(Context* context, vword_t addr, char* ptr, char* end)
 {
-    vword_t v[3];
-
     size_t len = 3 * VWORD_SIZE;
     vword_t sub_ptr = addr+len;
 
+    vword_t v[3];
     v[0] = 2 * VWORD_SIZE;
     v[1] = resolve_symbol("bf_case");
     v[2] = sub_ptr;
