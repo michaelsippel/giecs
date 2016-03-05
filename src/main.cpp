@@ -72,7 +72,7 @@ int main(int argc, char** argv)
         if(! ast->subnodes->isEmpty())
         {
             //ast->dump();
-            parse_list(context, entry_point, ast);
+            parse_list_se(context, entry_point, ast);
 
             context->write_word(stack, entry_point);
             vword_t s = ll_eval(context, stack);

@@ -111,7 +111,6 @@ void Logger::log(const char* typestr, const char *text, ...)
     time_str[strlen(time_str)-1] = '\0';
 
     printf("[%s %s] %s: %s \033[0m\n", time_str, typestr, this->prefix_str, data->text);
-    sleep(1);
 }
 
 LogData::LogData(const char* typestr_, char *text_)

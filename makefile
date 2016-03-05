@@ -1,7 +1,7 @@
 INCLUDE = -I./include
 
 ifeq (,$(TARGET))
-TARGET = linux32
+TARGET = linux64
 endif
 
 ifeq ($(TARGET),linux32)
