@@ -2,6 +2,7 @@
 #define _reader_h_
 
 #include <list.h>
+#include <context.h>
 
 enum snode_type
 {
@@ -35,6 +36,8 @@ class SNode
 
         void dump(void);
         void dump(int indent);
+
+        size_t write_vmem(Context* context, vword_t addr);
 };
 
 #endif

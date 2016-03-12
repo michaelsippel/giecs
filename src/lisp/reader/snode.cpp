@@ -88,3 +88,54 @@ void SNode::dump(int indent)
     }
 }
 
+size_t SNode::write_vmem(Context* context, vword_t addr)
+{
+    size_t len = 0;
+
+    // write type
+    context->write_word(addr, (vword_t)this->type);
+    len += VWORD_SIZE;
+
+    vword_t n;
+    vword_t naddr, maddr;
+    ListIterator<SNode*>* it;
+
+    switch(this->type)
+    {
+        case LIST:
+            n = this->subnodes->numOfElements();
+            // write number of elements
+            context->write_word(addr+len, (vword_t) n);
+            len += VWORD_SIZE;
+            maddr = addr+len;
+            len += n * VWORD_SIZE;
+
+            // pointers to subnodes
+            it = new ListIterator<SNode*>(this->subnodes);
+            while(! it->isLast())
+            {
+                naddr = addr+len;
+                context->write_word(maddr, naddr);
+                maddr += VWORD_SIZE;
+
+                len += it->getCurrent()->write_vmem(context, naddr);
+                it->next();
+            }
+            delete it;
+            break;
+
+        case STRING:
+            n = strlen(this->string) + 1;
+            len += context->write(addr+len, n, (vbyte_t*) this->string);
+            break;
+
+        case INTEGER:
+        case SYMBOL:
+            context->write_word(addr+len, (vword_t) this->integer);
+            len += VWORD_SIZE;
+            break;
+    }
+
+    return len;
+}
+
