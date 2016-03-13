@@ -15,6 +15,11 @@ SNode::SNode(enum snode_type type_, char* src)
     this->read(src);
 }
 
+SNode::SNode(Context* context, vword_t addr)
+{
+    this->read_vmem(context, addr);
+}
+
 SNode::~SNode()
 {
     // TODO
@@ -124,18 +129,58 @@ size_t SNode::write_vmem(Context* context, vword_t addr)
             delete it;
             break;
 
+        case SYMBOL:
         case STRING:
             n = strlen(this->string) + 1;
             len += context->write(addr+len, n, (vbyte_t*) this->string);
             break;
 
         case INTEGER:
-        case SYMBOL:
             context->write_word(addr+len, (vword_t) this->integer);
             len += VWORD_SIZE;
             break;
     }
 
     return len;
+}
+
+void SNode::read_vmem(Context* context, vword_t addr)
+{
+    this->type = (enum snode_type) context->read_word(addr);
+    addr += VWORD_SIZE;
+
+    vword_t n;
+    int i = 0;
+
+    vbyte_t buf[512];
+
+    switch(this->type)
+    {
+        case LIST:
+            n = context->read_word(addr);
+            addr += VWORD_SIZE;
+
+            this->subnodes = new List<SNode*>();
+            for(i = 0; i < n; i++)
+            {
+                vword_t naddr = context->read_word(addr);
+                addr += VWORD_SIZE;
+
+                this->subnodes->pushBack(new SNode(context, naddr));
+            }
+            break;
+
+        case SYMBOL:
+        case STRING:
+            // TODO: arbitrary length
+            context->read(addr, 512, (vbyte_t*) &buf);
+            this->string = (char*) malloc(strlen((char*)buf)+1);
+            strcpy(this->string, (char*) buf);
+            break;
+
+        case INTEGER:
+            this->integer = context->read_word(addr);
+            break;
+    }
 }
 

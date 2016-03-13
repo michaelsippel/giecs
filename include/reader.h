@@ -17,6 +17,7 @@ class SNode
     public:
         SNode(enum snode_type type_);
         SNode(enum snode_type type_, char* src);
+        SNode(Context* context, vword_t addr);
         ~SNode();
 
         enum snode_type type;
@@ -38,6 +39,7 @@ class SNode
         void dump(int indent);
 
         size_t write_vmem(Context* context, vword_t addr);
+        void read_vmem(Context* context, vword_t addr);
 };
 
 #endif
