@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include <context.h>
+#include <reader.h>
 #include <ll.h>
 
 vword_t ll_exit(Context* context, vword_t p)
@@ -43,6 +44,19 @@ vword_t ll_printb(Context* context, vword_t p)
 
 vword_t ll_nop(Context* context, vword_t p)
 {
+    return p;
+}
+
+vword_t ll_ptest(Context* context, vword_t p)
+{
+    printf("Hello World from ptest!\n");
+
+    vword_t w = context->read_word(p);
+    p += VWORD_SIZE;
+
+    SNode* ast = new SNode(context, w);
+    ast->dump();
+
     return p;
 }
 

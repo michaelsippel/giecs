@@ -44,6 +44,8 @@ int main(int argc, char** argv)
     add_symbol("printb", context->add_ll_fn(ll_printb));
     add_symbol("addi", context->add_ll_fn(ll_addi));
 
+    add_symbol("ptest", context->add_ll_fn(ll_ptest));
+
     // place stack at end of memory
     vword_t stack = 4096*0x1000 - VWORD_SIZE;
     vword_t entry_point = 0x100;
@@ -72,12 +74,13 @@ int main(int argc, char** argv)
         if(! ast->subnodes->isEmpty())
         {
             //ast->dump();
-            parse_list_se(context, entry_point, ast);
+            size_t l = parse_list_se(context, entry_point, ast);
+            context->dump(entry_point, l/4);
 
             context->write_word(stack, entry_point);
             vword_t s = ll_eval(context, stack);
-            if(s <= stack)
-                ll_printi(context, s);
+//            if(s <= stack)
+//                ll_printi(context, s);
         }
         delete ast;
     }

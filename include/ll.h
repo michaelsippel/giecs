@@ -18,6 +18,8 @@ vword_t ll_printi(Context* context, vword_t p);
 vword_t ll_printb(Context* context, vword_t p);
 vword_t ll_addi(Context* context, vword_t p);
 
+vword_t ll_ptest(Context* context, vword_t p);
+
 // brainfuck
 vword_t ll_bf_case(Context* context, vword_t p);
 vword_t ll_bf_in(Context* context, vword_t p);
