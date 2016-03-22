@@ -3,7 +3,7 @@
 #include <list.h>
 
 #include <context.h>
-#include <parser.h>
+#include <lisp/parser.h>
 
 static List<struct symbol>* symbols = new List<struct symbol>();
 

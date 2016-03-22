@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <reader.h>
+#include <lisp/reader.h>
 
 void SNode::read_symbol(char* start, char* end)
 {

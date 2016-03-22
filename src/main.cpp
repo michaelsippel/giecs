@@ -4,8 +4,9 @@
 
 #include <ll.h>
 #include <context.h>
-#include <reader.h>
-#include <parser.h>
+#include <lisp/reader.h>
+#include <lisp/parser.h>
+#include <brainfuck/parser.h>
 
 void readline(int fd, char* str)
 {
@@ -75,12 +76,12 @@ int main(int argc, char** argv)
         {
             //ast->dump();
             size_t l = parse_list_se(context, entry_point, ast);
-            context->dump(entry_point, l/4);
+//            context->dump(entry_point, l/4);
 
             context->write_word(stack, entry_point);
             vword_t s = ll_eval(context, stack);
-//            if(s <= stack)
-//                ll_printi(context, s);
+            if(s <= stack)
+                ll_printi(context, s);
         }
         delete ast;
     }

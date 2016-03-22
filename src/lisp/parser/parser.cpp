@@ -1,6 +1,6 @@
 #include <context.h>
-#include <reader.h>
-#include <parser.h>
+#include <lisp/reader.h>
+#include <lisp/parser.h>
 
 int parse(Context* context, vword_t addr, SNode* ast)
 {

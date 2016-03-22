@@ -2,8 +2,8 @@
 
 #include <logger.h>
 #include <context.h>
-#include <reader.h>
-#include <parser.h>
+#include <lisp/reader.h>
+#include <lisp/parser.h>
 
 static Logger* parser_logger = new Logger("parser");
 static Logger* atom_logger = new Logger(parser_logger, "atom");

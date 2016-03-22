@@ -3,7 +3,8 @@
 
 #include <ll.h>
 #include <context.h>
-#include <parser.h>
+#include <lisp/parser.h>
+#include <brainfuck/parser.h>
 
 vword_t ll_bf_case(Context* context, vword_t p)
 {

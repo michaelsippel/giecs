@@ -1,8 +1,11 @@
 #include <stdio.h>
 
 #include <context.h>
-#include <parser.h>
+#include <lisp/parser.h>
 
+/*
+ * low-level lisp parse (no self evaluation, no macros)
+ */
 int parse_list(Context* context, vword_t addr, SNode* ast)
 {
     // needed space
@@ -39,6 +42,9 @@ int parse_list(Context* context, vword_t addr, SNode* ast)
     return len;
 }
 
+/*
+ * lisp parse with self-evaluation and macros
+ */
 int parse_list_se(Context* context, vword_t addr, SNode* ast)
 {
     // needed space
@@ -70,7 +76,7 @@ int parse_list_se(Context* context, vword_t addr, SNode* ast)
     {
         case INTEGER:
         case SYMBOL:
-            parse(context, addr+VWORD_SIZE, sn);
+            parse_se(context, addr+VWORD_SIZE, sn);
             break;
 
         case LIST:

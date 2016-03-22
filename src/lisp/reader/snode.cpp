@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include <list.h>
-#include <reader.h>
+#include <lisp/reader.h>
 
 SNode::SNode(enum snode_type type_)
     : type(type_)
