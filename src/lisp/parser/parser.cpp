@@ -2,34 +2,34 @@
 #include <lisp/reader.h>
 #include <lisp/parser.h>
 
-int parse(Context* context, vword_t addr, SNode* ast)
+int asm_parse(Context* context, vword_t addr, SNode* ast)
 {
     switch(ast->type)
     {
         case LIST:
-            return parse_list(context, addr, ast);
+            return asm_parse_list(context, addr, ast);
         case SYMBOL:
-            return parse_symbol(context, addr, ast);
+            return lisp_parse_symbol(context, addr, ast);
         case STRING:
-            return parse_string(context, addr, ast);
+            return lisp_parse_string(context, addr, ast);
         case INTEGER:
-            return parse_integer(context, addr, ast);
+            return lisp_parse_integer(context, addr, ast);
     }
     return 0;
 }
 
-int parse_se(Context* context, vword_t addr, SNode* ast)
+int lisp_parse(Context* context, vword_t addr, SNode* ast)
 {
     switch(ast->type)
     {
         case LIST:
-            return parse_list_se(context, addr, ast);
+            return lisp_parse_list(context, addr, ast);
         case SYMBOL:
-            return parse_symbol(context, addr, ast);
+            return lisp_parse_symbol(context, addr, ast);
         case STRING:
-            return parse_string(context, addr, ast);
+            return lisp_parse_string(context, addr, ast);
         case INTEGER:
-            return parse_integer(context, addr, ast);
+            return lisp_parse_integer(context, addr, ast);
     }
     return 0;
 }

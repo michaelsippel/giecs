@@ -6,7 +6,7 @@
 /*
  * low-level lisp parse (no self evaluation, no macros)
  */
-int parse_list(Context* context, vword_t addr, SNode* ast)
+int asm_parse_list(Context* context, vword_t addr, SNode* ast)
 {
     // needed space
     size_t len = ast->subnodes->numOfElements() * sizeof(vword_t);
@@ -22,14 +22,14 @@ int parse_list(Context* context, vword_t addr, SNode* ast)
             case SYMBOL:
             case INTEGER:
                 // direcly insert word
-                parse(context, lptr, sn);
+                asm_parse(context, lptr, sn);
                 break;
 
             case LIST:
             case STRING:
                 // here we need pointers
                 vword_t subaddr = addr + len;
-                len += parse(context, subaddr, sn);
+                len += asm_parse(context, subaddr, sn);
 
                 context->write_word(lptr, subaddr);
                 break;
@@ -45,7 +45,7 @@ int parse_list(Context* context, vword_t addr, SNode* ast)
 /*
  * lisp parse with self-evaluation and macros
  */
-int parse_list_se(Context* context, vword_t addr, SNode* ast)
+int lisp_parse_list(Context* context, vword_t addr, SNode* ast)
 {
     // needed space
     size_t n = ast->subnodes->numOfElements();
@@ -76,12 +76,12 @@ int parse_list_se(Context* context, vword_t addr, SNode* ast)
     {
         case INTEGER:
         case SYMBOL:
-            parse_se(context, addr+VWORD_SIZE, sn);
+            lisp_parse(context, addr+VWORD_SIZE, sn);
             break;
 
         case LIST:
             context->write_word(addr+VWORD_SIZE, addr+len);
-            len += parse_se(context, addr+len, sn);
+            len += lisp_parse(context, addr+len, sn);
             break;
     }
 

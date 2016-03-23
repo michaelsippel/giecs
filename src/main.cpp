@@ -37,15 +37,15 @@ int main(int argc, char** argv)
     Context* context = new Context(0x1000, 4096);
 
     // place stack at end of memory
-    vword_t stack = 4096*0x1000 - VWORD_SIZE;
-    vword_t entry_point = 0x100;
+    vword_t stack = 4096*0x100 - VWORD_SIZE;
+    vword_t entry_point = 0x2000;
 
     init_lisp(context);
     init_brainfuck(context);
 
     // parse a simple program
     SNode* ast = new SNode(LIST, (char*) "12 deval 1 (-1 (12 brainfuck \"++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.\"))");
-    parse_list(context, entry_point, ast);
+    asm_parse_list(context, entry_point, ast);
 
     // set entry point and run
     context->write_word(stack, entry_point);
@@ -65,7 +65,7 @@ int main(int argc, char** argv)
         if(! ast->subnodes->isEmpty())
         {
             //ast->dump();
-            size_t l = parse_list_se(context, entry_point, ast);
+            size_t l = lisp_parse(context, entry_point, ast);
 //            context->dump(entry_point, l/4);
 
             context->write_word(stack, entry_point);

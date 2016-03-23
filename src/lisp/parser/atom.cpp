@@ -5,10 +5,10 @@
 #include <lisp/reader.h>
 #include <lisp/parser.h>
 
-static Logger* parser_logger = new Logger("parser");
-static Logger* atom_logger = new Logger(parser_logger, "atom");
+extern Logger* lisp_parser_logger;
+extern Logger* lisp_atom_logger;
 
-int parse_symbol(Context* context, vword_t addr, SNode* ast)
+int lisp_parse_symbol(Context* context, vword_t addr, SNode* ast)
 {
     vword_t res = resolve_symbol(ast->string);
     if(res != 0)
@@ -17,20 +17,20 @@ int parse_symbol(Context* context, vword_t addr, SNode* ast)
     }
     else
     {
-        atom_logger->log(lerror, "couldn't resolve symbol \"%s\"", ast->string);
+        lisp_atom_logger->log(lerror, "couldn't resolve symbol \"%s\"", ast->string);
     }
 
     return sizeof(vword_t);
 }
 
-int parse_string(Context* context, vword_t addr, SNode* ast)
+int lisp_parse_string(Context* context, vword_t addr, SNode* ast)
 {
     int len = strlen(ast->string)+1;
     context->write(addr, len, (vbyte_t*) ast->string);
     return len;
 }
 
-int parse_integer(Context* context, vword_t addr, SNode* ast)
+int lisp_parse_integer(Context* context, vword_t addr, SNode* ast)
 {
     context->write_word(addr, (vword_t) ast->integer);
     return sizeof(vword_t);

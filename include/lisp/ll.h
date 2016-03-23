@@ -6,7 +6,7 @@
 void init_lisp(Context* context);
 
 vword_t ll_declare(Context* context, vword_t p);
-
+vword_t ll_asm(Context* context, vword_t p);
 
 #endif
 
