@@ -10,6 +10,7 @@ vword_t ll_nop(Context* context, vword_t p);
 vword_t ll_eq(Context* context, vword_t p);
 vword_t ll_gtb(Context* context, vword_t p);
 
+vword_t ll_resw(Context* context, vword_t p);
 vword_t ll_map(Context* context, vword_t p);
 vword_t ll_cond(Context* context, vword_t p);
 

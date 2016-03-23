@@ -42,6 +42,15 @@ vword_t ll_printb(Context* context, vword_t p)
     return p + 1;
 }
 
+vword_t ll_resw(Context* context, vword_t p)
+{
+    vword_t ptr = context->read_word(p);
+    vword_t v = context->read_word(ptr);
+    context->write_word(p, v);
+
+    return p;
+}
+
 vword_t ll_nop(Context* context, vword_t p)
 {
     return p;

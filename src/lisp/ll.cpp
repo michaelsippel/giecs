@@ -24,6 +24,7 @@ void init_lisp(Context* context)
     add_symbol("if", context->add_ll_fn(ll_cond));
     add_symbol("eq", context->add_ll_fn(ll_eq));
 
+    add_symbol("resw", context->add_ll_fn(ll_resw));
     add_symbol("map", context->add_ll_fn(ll_map));
     add_symbol("exit", context->add_ll_fn(ll_exit));
     add_symbol("printi", context->add_ll_fn(ll_printi));
