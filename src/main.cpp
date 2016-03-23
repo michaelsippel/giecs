@@ -4,9 +4,13 @@
 
 #include <ll.h>
 #include <context.h>
+
 #include <lisp/reader.h>
 #include <lisp/parser.h>
+#include <lisp/ll.h>
+
 #include <brainfuck/parser.h>
+#include <brainfuck/ll.h>
 
 void readline(int fd, char* str)
 {
@@ -32,25 +36,11 @@ int main(int argc, char** argv)
     // set up vm
     Context* context = new Context(0x1000, 4096);
 
-    add_symbol("eval", context->add_ll_fn(ll_eval));
-    add_symbol("deval", context->add_ll_fn(ll_deval));
-    add_symbol("nop", context->add_ll_fn(ll_nop));
-
-    add_symbol("if", context->add_ll_fn(ll_cond));
-    add_symbol("eq", context->add_ll_fn(ll_eq));
-
-    add_symbol("map", context->add_ll_fn(ll_map));
-    add_symbol("exit", context->add_ll_fn(ll_exit));
-    add_symbol("printi", context->add_ll_fn(ll_printi));
-    add_symbol("printb", context->add_ll_fn(ll_printb));
-    add_symbol("addi", context->add_ll_fn(ll_addi));
-
-    add_symbol("ptest", context->add_ll_fn(ll_ptest));
-
     // place stack at end of memory
     vword_t stack = 4096*0x1000 - VWORD_SIZE;
     vword_t entry_point = 0x100;
 
+    init_lisp(context);
     init_brainfuck(context);
 
     // parse a simple program
