@@ -100,23 +100,27 @@ vword_t ll_add(Context* context, vword_t p)
     SNode* a1 = new SNode(context, p1);
     SNode* a2 = new SNode(context, p2);
 
-    p -= lisp_parse_size(a2);
-    lisp_parse(context, p, a2);
+    p -= VWORD_SIZE;
     if(a2->type == LIST)
     {
-        context->write_word(p-VWORD_SIZE, p);
-        p -= VWORD_SIZE;
+        vword_t pp = p - 2*VWORD_SIZE - lisp_parse_size(a2);
+        lisp_parse(context, pp, a2);
+        context->write_word(p, pp);
         p = ll_eval(context, p);
     }
+    else
+        lisp_parse(context, p, a2);
 
-    p -= lisp_parse_size(a1);
-    lisp_parse(context, p, a1);
+    p -= VWORD_SIZE;
     if(a1->type == LIST)
     {
-        context->write_word(p-VWORD_SIZE, p);
-        p -= VWORD_SIZE;
+        vword_t pp = p - 2*VWORD_SIZE - lisp_parse_size(a1);
+        lisp_parse(context, pp, a1);
+        context->write_word(p, pp);
         p = ll_eval(context, p);
     }
+    else
+        lisp_parse(context, p, a1);
 
     return ll_addi(context, p);
 }
