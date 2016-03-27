@@ -18,6 +18,8 @@ void add_symbol(char* name, vword_t start);
 int asm_parse(Context* context, vword_t addr, SNode* ast);
 int asm_parse_list(Context* context, vword_t addr, SNode* ast);
 
+size_t lisp_parse_size(SNode* ast);
+
 int lisp_parse(Context* context, vword_t addr, SNode* ast);
 int lisp_parse_list(Context* context, vword_t addr, SNode* ast);
 int lisp_parse_symbol(Context* context, vword_t addr, SNode* ast);

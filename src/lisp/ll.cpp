@@ -32,8 +32,11 @@ void init_lisp(Context* context)
     add_symbol("addi", context->add_ll_fn(ll_addi));
 
     // lisp macro
+    add_symbol("quote", context->add_ll_fn(ll_quote));
     add_symbol("asm", context->add_ll_fn(ll_asm));
     add_symbol("declare", context->add_ll_fn(ll_declare));
+
+    add_symbol("+", context->add_ll_fn(ll_add));
 }
 
 vword_t ll_declare(Context* context, vword_t p)
@@ -54,9 +57,9 @@ vword_t ll_declare(Context* context, vword_t p)
     {
         if(resolve_symbol(name->string) == (vword_t)0)
         {
+            add_symbol(name->string, base);
             size_t len = lisp_parse(context, base, value);
 
-            add_symbol(name->string, base);
             logger->log(linfo, "declared \'%s\': 0x%x", name->string, base);
 
             base += len;
@@ -83,6 +86,43 @@ vword_t ll_asm(Context* context, vword_t p)
     context->write_word(p, 0x2000);
     p = ll_eval(context, p);
 
+    return p;
+}
+
+
+vword_t ll_add(Context* context, vword_t p)
+{
+    vword_t p1 = context->read_word(p);
+    p += VWORD_SIZE;
+    vword_t p2 = context->read_word(p);
+    p += VWORD_SIZE;
+
+    SNode* a1 = new SNode(context, p1);
+    SNode* a2 = new SNode(context, p2);
+
+    p -= lisp_parse_size(a2);
+    lisp_parse(context, p, a2);
+    if(a2->type == LIST)
+    {
+        context->write_word(p-VWORD_SIZE, p);
+        p -= VWORD_SIZE;
+        p = ll_eval(context, p);
+    }
+
+    p -= lisp_parse_size(a1);
+    lisp_parse(context, p, a1);
+    if(a1->type == LIST)
+    {
+        context->write_word(p-VWORD_SIZE, p);
+        p -= VWORD_SIZE;
+        p = ll_eval(context, p);
+    }
+
+    return ll_addi(context, p);
+}
+
+vword_t ll_quote(Context* context, vword_t p)
+{
     return p;
 }
 

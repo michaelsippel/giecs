@@ -93,6 +93,39 @@ void SNode::dump(int indent)
     }
 }
 
+size_t SNode::vmem_size(void)
+{
+    size_t len = VWORD_SIZE;
+
+    ListIterator<SNode*>* it;
+    switch(this->type)
+    {
+        case LIST:
+            len += (this->subnodes->numOfElements()+1) * VWORD_SIZE;
+
+            // pointers to subnodes
+            it = new ListIterator<SNode*>(this->subnodes);
+            while(! it->isLast())
+            {
+                len += it->getCurrent()->vmem_size();
+                it->next();
+            }
+            delete it;
+            break;
+
+        case SYMBOL:
+        case STRING:
+            len += strlen(this->string) + 1;
+            break;
+
+        case INTEGER:
+            len += VWORD_SIZE;
+            break;
+    }
+
+    return len;
+}
+
 size_t SNode::write_vmem(Context* context, vword_t addr)
 {
     size_t len = 0;

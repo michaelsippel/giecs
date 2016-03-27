@@ -88,3 +88,39 @@ int lisp_parse_list(Context* context, vword_t addr, SNode* ast)
     return len;
 }
 
+size_t lisp_parse_size(SNode* ast)
+{
+    size_t len = 0;
+    ListIterator<SNode*>* it;
+
+    switch(ast->type)
+    {
+        case INTEGER:
+        case SYMBOL:
+            len = VWORD_SIZE;
+            break;
+
+        case STRING:
+            len = VWORD_SIZE + ast->vmem_size();
+            break;
+
+        case LIST:
+            len = (ast->subnodes->numOfElements()+1) * VWORD_SIZE;
+            it = new ListIterator<SNode*>(ast->subnodes);
+
+            if(it->getCurrent()->type == LIST)
+                len += lisp_parse_size(it->getCurrent());
+            it->next();
+
+            while(! it->isLast())
+            {
+                len += it->getCurrent()->vmem_size();
+                it->next();
+            }
+            delete it;
+            break;
+    }
+
+    return len;
+}
+
