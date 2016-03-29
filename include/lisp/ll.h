@@ -5,6 +5,8 @@
 
 void init_lisp(Context* context);
 
+vword_t ll_gen_fn(Context* context, vword_t p);
+
 vword_t ll_quote(Context* context, vword_t p);
 
 vword_t ll_declare(Context* context, vword_t p);

@@ -37,6 +37,79 @@ void init_lisp(Context* context)
     add_symbol("declare", context->add_ll_fn(ll_declare));
 
     add_symbol("+", context->add_ll_fn(ll_add));
+
+    add_symbol("genfn", context->add_ll_fn(ll_gen_fn));
+}
+
+vword_t ll_gen_fn(Context* context, vword_t p)
+{
+    // get the two inputs
+    vword_t p1 = context->read_word(p);
+    p += VWORD_SIZE;
+    vword_t p2 = context->read_word(p);
+    p += VWORD_SIZE;
+
+    SNode* a1 = new SNode(context, p1); // function
+    SNode* a2 = new SNode(context, p2); // needed length
+
+    if(a2->type != INTEGER)
+    {
+        printf("fn wrapper needs expected length");
+        return p;
+    }
+
+    // collect applied arguments (ast) until the required length is reached
+    size_t l = a2->integer;
+
+    List<vword_t> list = List<vword_t>();
+
+    vword_t pt = p; // working pointer (temporal pushs)
+    vword_t ps = p;
+    while(pt+l > ps)
+    {
+        // get snode
+        vword_t p3 = context->read_word(p);
+        p += VWORD_SIZE;
+        SNode* sn = new SNode(context, p3);
+
+        // parse it on stack
+        pt -= lisp_parse_size(sn);
+        size_t n = lisp_parse(context, pt, sn);
+
+        // self-eval lists
+        if(sn->type == LIST)
+        {
+            n += pt;
+            pt = ll_eval(context, pt + VWORD_SIZE);
+            n -= pt;
+        }
+
+        list.pushBack(pt); // pointer to start
+        list.pushBack(n);  // length
+    }
+
+    // copy evaled arguments (reverse order)
+    vbyte_t* buf = (vbyte_t*) malloc(l);
+
+    vbyte_t* dest = buf;
+    while(! list.isEmpty())
+    {
+        vword_t start = list.popFront();
+        vword_t n = list.popFront();
+        dest += context->read(start, n, dest);
+    }
+
+    p -= l;
+    context->write(p, l, buf);
+
+    free(buf);
+
+    p -= lisp_parse_size(a1);
+    lisp_parse(context, p, a1);
+
+    context->dump(p, 8);
+
+    return ll_eval(context, p);
 }
 
 vword_t ll_declare(Context* context, vword_t p)
@@ -59,6 +132,18 @@ vword_t ll_declare(Context* context, vword_t p)
         {
             add_symbol(name->string, base);
             size_t len = lisp_parse(context, base, value);
+            // execute lists
+            if(value->type == LIST)
+            {
+                vword_t p1 = p - VWORD_SIZE;
+                context->write_word(p1, base);
+                p1 = ll_eval(context, p1);
+
+                len = p - p1;
+                vbyte_t* buf = (vbyte_t*) malloc(len * sizeof(vbyte_t));
+                context->read(p1, len, buf);
+                context->write(base, len, buf);
+            }
 
             logger->log(linfo, "declared \'%s\': 0x%x", name->string, base);
 
@@ -89,7 +174,6 @@ vword_t ll_asm(Context* context, vword_t p)
     return p;
 }
 
-
 vword_t ll_add(Context* context, vword_t p)
 {
     vword_t p1 = context->read_word(p);
@@ -101,26 +185,10 @@ vword_t ll_add(Context* context, vword_t p)
     SNode* a2 = new SNode(context, p2);
 
     p -= VWORD_SIZE;
-    if(a2->type == LIST)
-    {
-        vword_t pp = p - 2*VWORD_SIZE - lisp_parse_size(a2);
-        lisp_parse(context, pp, a2);
-        context->write_word(p, pp);
-        p = ll_eval(context, p);
-    }
-    else
-        lisp_parse(context, p, a2);
+    lisp_parse(context, p, a2);
 
     p -= VWORD_SIZE;
-    if(a1->type == LIST)
-    {
-        vword_t pp = p - 2*VWORD_SIZE - lisp_parse_size(a1);
-        lisp_parse(context, pp, a1);
-        context->write_word(p, pp);
-        p = ll_eval(context, p);
-    }
-    else
-        lisp_parse(context, p, a1);
+    lisp_parse(context, p, a1);
 
     return ll_addi(context, p);
 }
