@@ -10,6 +10,19 @@ Logger* lisp_logger;
 Logger* lisp_parser_logger;
 Logger* lisp_atom_logger;
 
+vword_t lisp_exec(Context* context, const char* str)
+{
+    vword_t stack = 4096*0x100 - VWORD_SIZE;
+    vword_t entry_point = 0x2000;
+
+    SNode* ast = new SNode(LIST, (char*)str);
+    lisp_parse(context, entry_point, ast);
+
+    // set entry point and run
+    context->write_word(stack, entry_point);
+    return ll_eval(context, stack);
+}
+
 void init_lisp(Context* context)
 {
     lisp_logger = new Logger("lisp");
@@ -17,25 +30,37 @@ void init_lisp(Context* context)
     lisp_atom_logger = new Logger(lisp_parser_logger, "atom");
 
     // system functions
-    add_symbol("eval", context->add_ll_fn(ll_eval));
-    add_symbol("deval", context->add_ll_fn(ll_deval));
-    add_symbol("nop", context->add_ll_fn(ll_nop));
+    add_symbol("EVAL", context->add_ll_fn(ll_eval));
+    add_symbol("DEVAL", context->add_ll_fn(ll_deval));
+    add_symbol("NOP", context->add_ll_fn(ll_nop));
 
-    add_symbol("if", context->add_ll_fn(ll_cond));
-    add_symbol("eq", context->add_ll_fn(ll_eq));
+    add_symbol("IF", context->add_ll_fn(ll_cond));
+    add_symbol("EQ", context->add_ll_fn(ll_eq));
 
-    add_symbol("resw", context->add_ll_fn(ll_resw));
-    add_symbol("map", context->add_ll_fn(ll_map));
-    add_symbol("exit", context->add_ll_fn(ll_exit));
-    add_symbol("printi", context->add_ll_fn(ll_printi));
-    add_symbol("printb", context->add_ll_fn(ll_printb));
-    add_symbol("addi", context->add_ll_fn(ll_addi));
+    add_symbol("RESW", context->add_ll_fn(ll_resw));
+    add_symbol("MAP", context->add_ll_fn(ll_map));
+    add_symbol("EXIT", context->add_ll_fn(ll_exit));
+    add_symbol("PRINTI", context->add_ll_fn(ll_printi));
+    add_symbol("PRINTB", context->add_ll_fn(ll_printb));
+    add_symbol("ADDI", context->add_ll_fn(ll_addi));
 
     // lisp macro
     add_symbol("quote", context->add_ll_fn(ll_quote));
     add_symbol("asm", context->add_ll_fn(ll_asm));
     add_symbol("declare", context->add_ll_fn(ll_declare));
     add_symbol("genfn", context->add_ll_fn(ll_gen_fn));
+
+    // lisp functions
+	lisp_exec(context, "declare eval (quote (genfn EVAL 4))");
+
+    lisp_exec(context, "declare resw (quote (genfn RESW 4))");
+    lisp_exec(context, "declare map (quote (genfn MAP 16))");
+    lisp_exec(context, "declare exit (quote (genfn EXIT 4))");
+    lisp_exec(context, "declare printi (quote (genfn PRINTI 4))");
+    lisp_exec(context, "declare printb (quote (genfn PRINTB 1))");
+    lisp_exec(context, "declare + (quote (genfn ADDI 8))");
+
+	lisp_exec(context, "declare brainfuck (quote (genfn BRAINFUCK 4))");
 }
 
 vword_t ll_gen_fn(Context* context, vword_t p)

@@ -83,7 +83,7 @@ vword_t ll_bf_dec(Context* context, vword_t p)
 
 void init_brainfuck(Context* context)
 {
-    add_symbol("brainfuck", context->add_ll_fn(ll_parse_brainfuck));
+    add_symbol("BRAINFUCK", context->add_ll_fn(ll_parse_brainfuck));
 
     add_symbol("bf_case", context->add_ll_fn(ll_bf_case));
     add_symbol("bf_in", context->add_ll_fn(ll_bf_in));
@@ -205,8 +205,8 @@ int parse_brainfuck(Context* context, vword_t addr, char* prg, char* end)
 
     vword_t v[6];
     v[0] = 5 * VWORD_SIZE;
-    v[1] = resolve_symbol("map");
-    v[2] = resolve_symbol("eval");
+    v[1] = resolve_symbol("MAP");
+    v[2] = resolve_symbol("EVAL");
     v[3] = j;
     v[4] = VWORD_SIZE;
     v[5] = sub_ptr;

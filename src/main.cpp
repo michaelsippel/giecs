@@ -44,7 +44,7 @@ int main(int argc, char** argv)
     init_brainfuck(context);
 
     // parse a simple program
-    SNode* ast = new SNode(LIST, (char*) "12 deval 1 (-1 (12 brainfuck \"++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.\"))");
+    SNode* ast = new SNode(LIST, (char*) "12 DEVAL 1 (-1 (12 BRAINFUCK \"++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.\"))");
     asm_parse_list(context, entry_point, ast);
 
     // set entry point and run
