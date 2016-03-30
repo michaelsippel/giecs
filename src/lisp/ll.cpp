@@ -51,7 +51,7 @@ void init_lisp(Context* context)
     add_symbol("genfn", context->add_ll_fn(ll_gen_fn));
 
     // lisp functions
-	lisp_exec(context, "declare eval (quote (genfn EVAL 4))");
+    lisp_exec(context, "declare eval (quote (genfn EVAL 4))");
 
     lisp_exec(context, "declare resw (quote (genfn RESW 4))");
     lisp_exec(context, "declare map (quote (genfn MAP 16))");
@@ -60,7 +60,7 @@ void init_lisp(Context* context)
     lisp_exec(context, "declare printb (quote (genfn PRINTB 1))");
     lisp_exec(context, "declare + (quote (genfn ADDI 8))");
 
-	lisp_exec(context, "declare brainfuck (quote (genfn BRAINFUCK 4))");
+    lisp_exec(context, "declare brainfuck (quote (genfn BRAINFUCK 4))");
 }
 
 vword_t ll_gen_fn(Context* context, vword_t p)
@@ -190,7 +190,6 @@ vword_t ll_asm(Context* context, vword_t p)
     size_t l = asm_parse(context, 0x2000, ast);
 
     context->write_word(p, 0x2000);
-    p = ll_eval(context, p);
 
     return p;
 }
