@@ -66,7 +66,6 @@ int main(int argc, char** argv)
         {
             //ast->dump();
             size_t l = lisp_parse(context, entry_point, ast);
-//            context->dump(entry_point, l/4);
 
             context->write_word(stack, entry_point);
             vword_t s = ll_eval(context, stack);
