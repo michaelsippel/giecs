@@ -61,8 +61,8 @@ vword_t ll_gen_fn(Context* context, vword_t p)
     List<vword_t> list = List<vword_t>();
 
     vword_t pt = p; // working pointer (temporal pushs)
-    vword_t ps = p;
-    while(pt+l > ps)
+    size_t i = 0;
+    while(i < l)
     {
         // get snode
         vword_t p3 = context->read_word(p);
@@ -76,14 +76,17 @@ vword_t ll_gen_fn(Context* context, vword_t p)
         // self-eval lists
         if(sn->type == LIST)
         {
-            n += pt;
             pt = ll_eval(context, pt + VWORD_SIZE);
-            n -= pt;
+            n = VWORD_SIZE; // FIXME
         }
 
         list.pushBack(pt); // pointer to start
         list.pushBack(n);  // length
+
+        i += n;
     }
+
+//	context->dump(pt, l/VWORD_SIZE);
 
     // copy evaled arguments (reverse order)
     vbyte_t* buf = (vbyte_t*) malloc(l);
@@ -93,6 +96,8 @@ vword_t ll_gen_fn(Context* context, vword_t p)
     {
         vword_t start = list.popFront();
         vword_t n = list.popFront();
+
+//		printf("genfn: 0x%x, %d\n", start, n);
         dest += context->read(start, n, dest);
     }
 
