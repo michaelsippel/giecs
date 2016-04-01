@@ -1,6 +1,10 @@
 #include <stdio.h>
-#include <string.h>
 #include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdint.h>
 
 #include <ll.h>
 #include <context.h>
@@ -55,7 +59,14 @@ int main(int argc, char** argv)
     int i;
     for(i = 1; i < argc; i++)
     {
-        SNode* ast = new SNode(LIST, argv[i]);
+        int fd = open(argv[i], O_RDONLY);
+        size_t length = lseek(fd, 0, SEEK_END);
+        lseek(fd, 0, SEEK_SET);
+        char* buf = (char*) malloc(length+1);
+        read(fd, buf, length);
+        buf[length] = '\0';
+
+        SNode* ast = new SNode(LIST, buf);
         if(! ast->subnodes->isEmpty())
         {
             lisp_parse(context, entry_point, ast);

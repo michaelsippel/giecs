@@ -48,6 +48,10 @@ $(BIN): $(OBJS)
 style: $(C_SRCS) $(C_HDRS)
 	astyle --style=allman --indent-classes --indent-switches $^
 
+test: $(BIN)
+	cd examples
+	./test.lisp
+
 clean:
 	rm $(OBJS)
 	rm $(BIN)
