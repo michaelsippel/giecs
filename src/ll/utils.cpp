@@ -11,6 +11,8 @@ vword_t ll_cond(Context* context, vword_t p)
     context->read(p, 1, &c);
     vword_t v0 = context->read_word(p + 1);
 
+    printf("LL IF: %d, %d", c, v0);
+
     if(c)
         context->write_word(p + 1 + VWORD_SIZE, v0);
 

@@ -51,6 +51,18 @@ vword_t ll_resw(Context* context, vword_t p)
     return p;
 }
 
+vword_t ll_setw(Context* context, vword_t p)
+{
+    vword_t ptr = context->read_word(p);
+    p += VWORD_SIZE;
+    vword_t v = context->read_word(p);
+    p += VWORD_SIZE;
+
+    context->write_word(ptr, v);
+
+    return p;
+}
+
 vword_t ll_nop(Context* context, vword_t p)
 {
     return p;

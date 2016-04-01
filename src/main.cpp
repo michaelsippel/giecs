@@ -51,9 +51,21 @@ int main(int argc, char** argv)
     context->write_word(stack, entry_point);
     ll_eval(context, stack);
 
+    // loading scripts
+    int i;
+    for(i = 1; i < argc; i++)
+    {
+        SNode* ast = new SNode(LIST, argv[i]);
+        if(! ast->subnodes->isEmpty())
+        {
+            lisp_parse(context, entry_point, ast);
+            context->write_word(stack, entry_point);
+            ll_eval(context, stack);
+        }
+    }
+
     // interpreter loop (read-eval-print)
     printf("\n\033[0;49;32mType S-expressions\033[0m\n");
-
     while(1)
     {
         write(1, "\033[0;49;32m>>> \033[0;49;33m", 24);

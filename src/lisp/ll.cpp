@@ -38,6 +38,7 @@ void init_lisp(Context* context)
     add_symbol("EQ", context->add_ll_fn(ll_eq));
 
     add_symbol("RESW", context->add_ll_fn(ll_resw));
+    add_symbol("SETW", context->add_ll_fn(ll_setw));
     add_symbol("MAP", context->add_ll_fn(ll_map));
     add_symbol("EXIT", context->add_ll_fn(ll_exit));
     add_symbol("PRINTI", context->add_ll_fn(ll_printi));
@@ -53,7 +54,11 @@ void init_lisp(Context* context)
     // lisp functions
     lisp_exec(context, "declare eval (quote (genfn EVAL 4))");
 
+    lisp_exec(context, "declare if (quote (genfn IF 9))");
+    lisp_exec(context, "declare eq (quote (genfn EQ 8))");
+
     lisp_exec(context, "declare resw (quote (genfn RESW 4))");
+    lisp_exec(context, "declare setw (quote (genfn SETW 8))");
     lisp_exec(context, "declare map (quote (genfn MAP 16))");
     lisp_exec(context, "declare exit (quote (genfn EXIT 4))");
     lisp_exec(context, "declare printi (quote (genfn PRINTI 4))");
@@ -94,6 +99,8 @@ vword_t ll_gen_fn(Context* context, vword_t p)
         p += VWORD_SIZE;
         SNode* sn = new SNode(context, p3);
 
+        //	sn->dump();
+
         // parse it on stack
         pt -= lisp_parse_size(sn);
         size_t n = lisp_parse(context, pt, sn);
@@ -111,7 +118,7 @@ vword_t ll_gen_fn(Context* context, vword_t p)
         i += n;
     }
 
-//	context->dump(pt, l/VWORD_SIZE);
+//	context->dump(pt, 8);
 
     // copy evaled arguments (reverse order)
     vbyte_t* buf = (vbyte_t*) malloc(l);
@@ -157,12 +164,15 @@ vword_t ll_declare(Context* context, vword_t p)
     {
         if(resolve_symbol(name->string) == (vword_t)0)
         {
+            size_t len = def_top;
             def_top -= lisp_parse_size(value);
-            size_t len = lisp_parse(context, def_top, value);
+            lisp_parse(context, def_top, value);
 
             // execute lists
             if(value->type == LIST)
                 def_top = ll_eval(context, def_top);
+
+            len -= def_top;
 
             logger->log(linfo, "declared \'%s\': 0x%x, %d bytes", name->string, def_top, len);
 
@@ -203,7 +213,13 @@ vword_t ll_quote(Context* context, vword_t p)
 
     p -= lisp_parse_size(ast);
     lisp_parse(context, p, ast);
-
+    /*
+    	if(ast->type == LIST)
+    	{
+    		p -= VWORD_SIZE;
+            context->write_word(p, p + VWORD_SIZE);
+    	}
+    */
     return p;
 }
 
