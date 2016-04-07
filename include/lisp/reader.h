@@ -40,7 +40,7 @@ class SNode
 
         size_t vmem_size(void);
         size_t write_vmem(Context* context, vword_t addr);
-        void read_vmem(Context* context, vword_t addr);
+        size_t read_vmem(Context* context, vword_t addr);
 };
 
 #endif

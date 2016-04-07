@@ -28,7 +28,7 @@ endif
 
 CFLAGS = $(INCLUDE)
 ASMFLAGS =
-LDFLAGS = -static
+LDFLAGS =
 
 C_SRCS = $(shell find -name '*.cpp')
 A_SRCS = $(shell find -name '*.S')
@@ -49,8 +49,7 @@ style: $(C_SRCS) $(C_HDRS)
 	astyle --style=allman --indent-classes --indent-switches $^
 
 test: $(BIN)
-	cd examples
-	./test.lisp
+	cd examples && ./test.lisp
 
 clean:
 	rm $(OBJS)

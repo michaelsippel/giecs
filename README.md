@@ -4,7 +4,7 @@
 ### About
 My low-level-lisp-vm for compiling and scripting.
  
-If you are interested and want to collaborate or find bugs, open a pull request or write an email to <micha@infinitycoding.de>.
+If you are interested and want to collaborate or find bugs, open an issue/pull request or write an email to <micha@infinitycoding.de>.
 
 * [Bug List](/doku/bugs.md)
 * [Todo](/doku/todo.md)
