@@ -48,28 +48,13 @@ int asm_parse_list(Context* context, vword_t addr, SNode* ast)
 int lisp_parse_list(Context* context, vword_t addr, SNode* ast)
 {
     // needed space
-    size_t n = ast->subnodes->numOfElements();
-    size_t len = (n+1) * VWORD_SIZE;
+//    size_t n = ast->subnodes->numOfElements();
+    size_t len;
 
     ListIterator<SNode*> it = ListIterator<SNode*>(ast->subnodes);
 
     SNode* sn = it.getCurrent();
     it.next();
-
-    vword_t subaddr = addr + 2*VWORD_SIZE;
-
-    // pointers to ast subnodes
-    while(! it.isLast())
-    {
-        context->write_word(subaddr, addr+len);
-        len += it.getCurrent()->write_vmem(context, addr+len);
-
-        subaddr += VWORD_SIZE;
-        it.next();
-    }
-
-    // write command length
-    context->write_word(addr, n*VWORD_SIZE);
 
     // first word
     switch(sn->type)
@@ -77,13 +62,23 @@ int lisp_parse_list(Context* context, vword_t addr, SNode* ast)
         case INTEGER:
         case SYMBOL:
             lisp_parse(context, addr+VWORD_SIZE, sn);
+            len = 2*VWORD_SIZE;
             break;
 
         case LIST:
-            context->write_word(addr+VWORD_SIZE, addr+len);
-            len += lisp_parse(context, addr+len, sn);
+            len = lisp_parse(context, addr, sn);
             break;
     }
+
+    // insert ast subnodes
+    while(! it.isLast())
+    {
+        len += it.getCurrent()->write_vmem(context, addr+len);
+        it.next();
+    }
+
+    // write command length
+    context->write_word(addr, len - VWORD_SIZE);
 
     return len;
 }
@@ -105,11 +100,12 @@ size_t lisp_parse_size(SNode* ast)
             break;
 
         case LIST:
-            len = (ast->subnodes->numOfElements()+1) * VWORD_SIZE;
+            len = VWORD_SIZE;
             it = new ListIterator<SNode*>(ast->subnodes);
 
+            len += lisp_parse_size(it->getCurrent());
             if(it->getCurrent()->type == LIST)
-                len += lisp_parse_size(it->getCurrent());
+                len -= VWORD_SIZE;
             it->next();
 
             while(! it->isLast())

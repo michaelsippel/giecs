@@ -9,14 +9,15 @@ vword_t ll_cond(Context* context, vword_t p)
 {
     vbyte_t c;
     context->read(p, 1, &c);
-    vword_t v0 = context->read_word(p + 1);
+    p += 1;
 
-    printf("LL IF: %d, %d", c, v0);
+    vword_t v0 = context->read_word(p);
+    p += VWORD_SIZE;
 
     if(c)
-        context->write_word(p + 1 + VWORD_SIZE, v0);
+        context->write_word(p, v0);
 
-    return p + 1 + VWORD_SIZE;
+    return p;
 }
 
 vword_t ll_eq(Context* context, vword_t p)
