@@ -7,12 +7,12 @@
 
 static List<struct symbol>* symbols = new List<struct symbol>();
 
-vword_t resolve_symbol(const char* name)
+struct symbol resolve_symbol(const char* name)
 {
     return resolve_symbol((char*) name);
 }
 
-vword_t resolve_symbol(char* name)
+struct symbol resolve_symbol(char* name)
 {
     ListIterator<struct symbol> it = ListIterator<struct symbol>(symbols);
 
@@ -21,22 +21,30 @@ vword_t resolve_symbol(char* name)
         struct symbol c = it.getCurrent();
         if(strcmp(name, c.name) == 0)
         {
-            return c.start;
+            return c;
         }
 
         it.next();
     }
 
-    return 0;
+    return (struct symbol)
+    {
+        NULL, 0, 0
+    };
 }
 
 void add_symbol(const char* name, vword_t start)
 {
-    add_symbol((char*) name, start);
+    add_symbol(name, start, 0);
 }
 
-void add_symbol(char* name, vword_t start)
+void add_symbol(const char* name, vword_t start, size_t reqb)
 {
-    symbols->pushBack({name, start});
+    add_symbol((char*) name, start, reqb);
+}
+
+void add_symbol(char* name, vword_t start, size_t reqb)
+{
+    symbols->pushBack({name, start, reqb});
 }
 

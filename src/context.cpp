@@ -27,7 +27,7 @@ Context::~Context()
 
 void Context::dump(vword_t start, size_t length)
 {
-    printf("MEMORY-DUMP\n");
+    printf("MEMORY-DUMP (%d words)\n", length);
 
     vword_t* ptr = (vword_t*) calloc(length, sizeof(vword_t));
     this->read(start, length*VWORD_SIZE, (vbyte_t*) ptr);

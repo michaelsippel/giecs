@@ -30,61 +30,35 @@ void init_lisp(Context* context)
     lisp_atom_logger = new Logger(lisp_parser_logger, "atom");
 
     // system functions
-    add_symbol("EVAL", context->add_ll_fn(ll_eval));
-    add_symbol("DEVAL", context->add_ll_fn(ll_deval));
-    add_symbol("NOP", context->add_ll_fn(ll_nop));
+    add_symbol("eval", context->add_ll_fn(ll_eval), VWORD_SIZE);
+    add_symbol("deval", context->add_ll_fn(ll_deval));
+    add_symbol("nop", context->add_ll_fn(ll_nop));
 
-    add_symbol("IF", context->add_ll_fn(ll_cond));
-    add_symbol("EQ", context->add_ll_fn(ll_eq));
+    add_symbol("genfn", context->add_ll_fn(ll_gen_fn), 2*VWORD_SIZE);
 
-    add_symbol("RESW", context->add_ll_fn(ll_resw));
-    add_symbol("SETW", context->add_ll_fn(ll_setw));
-    add_symbol("MAP", context->add_ll_fn(ll_map));
-    add_symbol("EXIT", context->add_ll_fn(ll_exit));
-    add_symbol("PRINTI", context->add_ll_fn(ll_printi));
-    add_symbol("PRINTB", context->add_ll_fn(ll_printb));
-    add_symbol("ADDI", context->add_ll_fn(ll_addi));
+    add_symbol("if", context->add_ll_fn(ll_cond), 2*VWORD_SIZE+1);
+    add_symbol("eq", context->add_ll_fn(ll_eq), 2*VWORD_SIZE);
+
+    add_symbol("resw", context->add_ll_fn(ll_resw), VWORD_SIZE);
+    add_symbol("setw", context->add_ll_fn(ll_setw), 2*VWORD_SIZE);
+    add_symbol("map", context->add_ll_fn(ll_map), 4*VWORD_SIZE);
+    add_symbol("exit", context->add_ll_fn(ll_exit), VWORD_SIZE);
+    add_symbol("printi", context->add_ll_fn(ll_printi), VWORD_SIZE);
+    add_symbol("printb", context->add_ll_fn(ll_printb), 1);
+    add_symbol("+", context->add_ll_fn(ll_addi), 2*VWORD_SIZE);
 
     // lisp macro
     add_symbol("quote", context->add_ll_fn(ll_quote));
     add_symbol("asm", context->add_ll_fn(ll_asm));
     add_symbol("declare", context->add_ll_fn(ll_declare));
-    add_symbol("genfn", context->add_ll_fn(ll_gen_fn));
-
-    // lisp functions
-    lisp_exec(context, "declare eval (quote (genfn EVAL 4))");
-
-    lisp_exec(context, "declare if (quote (genfn IF 9))");
-    lisp_exec(context, "declare eq (quote (genfn EQ 8))");
-
-    lisp_exec(context, "declare resw (quote (genfn RESW 4))");
-    lisp_exec(context, "declare setw (quote (genfn SETW 8))");
-    lisp_exec(context, "declare map (quote (genfn MAP 16))");
-    lisp_exec(context, "declare exit (quote (genfn EXIT 4))");
-    lisp_exec(context, "declare printi (quote (genfn PRINTI 4))");
-    lisp_exec(context, "declare printb (quote (genfn PRINTB 1))");
-    lisp_exec(context, "declare + (quote (genfn ADDI 8))");
-
-    lisp_exec(context, "declare brainfuck (quote (genfn BRAINFUCK 4))");
-
 }
 
 vword_t ll_gen_fn(Context* context, vword_t p)
 {
-    // get the two inputs
-    SNode* a1 = new SNode(context, p); // function
-    p += a1->vmem_size();
-    SNode* a2 = new SNode(context, p); // needed length
-    p += a2->vmem_size();
-
-    if(a2->type != INTEGER)
-    {
-        printf("fn wrapper needs expected length\n");
-        return p;
-    }
-
-    // collect applied arguments (ast) until the required length is reached
-    size_t l = a2->integer;
+    vword_t fn = context->read_word(p);
+    p += VWORD_SIZE;
+    vword_t l = context->read_word(p);
+    p += VWORD_SIZE;
 
     vword_t pt = p; // working pointer (temporal pushs)
     vbyte_t* buf = (vbyte_t*) malloc(l);
@@ -121,9 +95,12 @@ vword_t ll_gen_fn(Context* context, vword_t p)
     context->write(p, l, buf);
 
     free(buf);
-
-    p -= lisp_parse_size(a1);
-    lisp_parse(context, p, a1);
+    /*
+        p -= lisp_parse_size(a1);
+        lisp_parse(context, p, a1);
+    */
+    p -= VWORD_SIZE;
+    context->write_word(p, fn);
 
     return ll_eval(context, p);
 }
@@ -141,7 +118,7 @@ vword_t ll_declare(Context* context, vword_t p)
 
     if(name->type == SYMBOL)
     {
-        if(resolve_symbol(name->string) == (vword_t)0)
+        if(resolve_symbol(name->string).start == (vword_t)0)
         {
             size_t len = def_top;
             def_top -= lisp_parse_size(value);

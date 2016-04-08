@@ -41,18 +41,18 @@ int main(int argc, char** argv)
     Context* context = new Context(0x1000, 4096);
 
     // place stack at end of memory
-    vword_t stack = 4096*0x100 - VWORD_SIZE;
+    vword_t stack = 4096*0x100;
 
     init_lisp(context);
     init_brainfuck(context);
 
     // parse a simple program
-    SNode* ast = new SNode(LIST, (char*) "12 DEVAL 1 (-1 (12 BRAINFUCK \"++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.\"))");
+    SNode* ast = new SNode(LIST, (char*) "12 deval 1 (-1 (12 brainfuck \"++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.\"))");
     asm_parse_list(context, 0x2000, ast);
 
     // set entry point and run
-    context->write_word(stack, 0x2000);
-    ll_eval(context, stack);
+    context->write_word(stack-VWORD_SIZE, 0x2000);
+    ll_eval(context, stack-VWORD_SIZE);
 
     // loading scripts
     int i;
@@ -70,7 +70,7 @@ int main(int argc, char** argv)
         {
             stack -= lisp_parse_size(ast);
             lisp_parse(context, stack, ast);
-            stack = ll_eval(context, stack+VWORD_SIZE);
+            ll_eval(context, stack+VWORD_SIZE);
         }
     }
 
@@ -87,11 +87,28 @@ int main(int argc, char** argv)
         if(! ast->subnodes->isEmpty())
         {
             //ast->dump();
+            vword_t s = stack;
             stack -= lisp_parse_size(ast);
             lisp_parse(context, stack, ast);
             stack = ll_eval(context, stack+VWORD_SIZE);
-//            if(stack <= )
-//                ll_printi(context, s);
+
+            if(stack <= s)
+            {
+                printf("return: ");
+                switch(s-stack)
+                {
+                    case 1:
+                        ll_printb(context, stack);
+                        break;
+
+                    case VWORD_SIZE:
+                        ll_printi(context, stack);
+                        break;
+
+                    default:
+                        context->dump(stack, (s-stack)/VWORD_SIZE);
+                }
+            }
         }
         delete ast;
     }

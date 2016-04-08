@@ -9,7 +9,7 @@ int asm_parse(Context* context, vword_t addr, SNode* ast)
         case LIST:
             return asm_parse_list(context, addr, ast);
         case SYMBOL:
-            return lisp_parse_symbol(context, addr, ast);
+            return asm_parse_symbol(context, addr, ast);
         case STRING:
             return lisp_parse_string(context, addr, ast);
         case INTEGER:

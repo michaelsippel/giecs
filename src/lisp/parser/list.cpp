@@ -61,8 +61,7 @@ int lisp_parse_list(Context* context, vword_t addr, SNode* ast)
     {
         case INTEGER:
         case SYMBOL:
-            lisp_parse(context, addr+VWORD_SIZE, sn);
-            len = 2*VWORD_SIZE;
+            len = VWORD_SIZE + lisp_parse(context, addr+VWORD_SIZE, sn);
             break;
 
         case LIST:
@@ -91,8 +90,14 @@ size_t lisp_parse_size(SNode* ast)
     switch(ast->type)
     {
         case INTEGER:
-        case SYMBOL:
             len = VWORD_SIZE;
+            break;
+
+        case SYMBOL:
+            if(resolve_symbol(ast->string).reqb == 0)
+                len = VWORD_SIZE;
+            else
+                len = 3*VWORD_SIZE;
             break;
 
         case STRING:
