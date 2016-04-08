@@ -86,9 +86,10 @@ vword_t ll_gen_fn(Context* context, vword_t p)
     // collect applied arguments (ast) until the required length is reached
     size_t l = a2->integer;
 
-    List<vword_t> list = List<vword_t>();
-
     vword_t pt = p; // working pointer (temporal pushs)
+    vbyte_t* buf = (vbyte_t*) malloc(l);
+    vbyte_t* dest = buf;
+
     size_t i = 0;
     while(i < l)
     {
@@ -111,24 +112,10 @@ vword_t ll_gen_fn(Context* context, vword_t p)
             n -= pt;
         }
 
-        list.pushBack(pt); // pointer to start
-        list.pushBack(n);  // length
-
+        dest += context->read(pt, n, dest);
+        pt += n;
         i += n;
     }
-
-    // copy evaled arguments (reverse order)
-    vbyte_t* buf = (vbyte_t*) malloc(l);
-
-    vbyte_t* dest = buf;
-    while(! list.isEmpty())
-    {
-        vword_t start = list.popFront();
-        vword_t n = list.popFront();
-
-        dest += context->read(start, n, dest);
-    }
-
 
     p -= l;
     context->write(p, l, buf);

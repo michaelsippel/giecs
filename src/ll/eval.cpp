@@ -9,6 +9,9 @@ vword_t ll_eval(Context* context, vword_t p)
     vword_t addr = context->read_word(p);
     p += VWORD_SIZE;
 
+    if(addr == p)
+        return ll_eval(context, p);
+
     vword_t len = context->read_word(addr);
     addr += VWORD_SIZE;
 

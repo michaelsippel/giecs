@@ -42,17 +42,16 @@ int main(int argc, char** argv)
 
     // place stack at end of memory
     vword_t stack = 4096*0x100 - VWORD_SIZE;
-    vword_t entry_point = 0x2000;
 
     init_lisp(context);
     init_brainfuck(context);
 
     // parse a simple program
     SNode* ast = new SNode(LIST, (char*) "12 DEVAL 1 (-1 (12 BRAINFUCK \"++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.\"))");
-    asm_parse_list(context, entry_point, ast);
+    asm_parse_list(context, 0x2000, ast);
 
     // set entry point and run
-    context->write_word(stack, entry_point);
+    context->write_word(stack, 0x2000);
     ll_eval(context, stack);
 
     // loading scripts
@@ -69,9 +68,9 @@ int main(int argc, char** argv)
         SNode* ast = new SNode(LIST, buf);
         if(! ast->subnodes->isEmpty())
         {
-            lisp_parse(context, entry_point, ast);
-            context->write_word(stack, entry_point);
-            ll_eval(context, stack);
+            stack -= lisp_parse_size(ast);
+            lisp_parse(context, stack, ast);
+            stack = ll_eval(context, stack+VWORD_SIZE);
         }
     }
 
@@ -88,12 +87,11 @@ int main(int argc, char** argv)
         if(! ast->subnodes->isEmpty())
         {
             //ast->dump();
-            size_t l = lisp_parse(context, entry_point, ast);
-
-            context->write_word(stack, entry_point);
-            vword_t s = ll_eval(context, stack);
-            if(s <= stack)
-                ll_printi(context, s);
+            stack -= lisp_parse_size(ast);
+            lisp_parse(context, stack, ast);
+            stack = ll_eval(context, stack+VWORD_SIZE);
+//            if(stack <= )
+//                ll_printi(context, s);
         }
         delete ast;
     }

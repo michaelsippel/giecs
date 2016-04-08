@@ -15,6 +15,7 @@ void SNode::read_list(char* start, char* end)
     char* e;
     bool string = false;
     bool comment = false;
+    bool quote = false;
     int depth = 0;
 
     char* str = start;
@@ -38,6 +39,10 @@ void SNode::read_list(char* start, char* end)
                     st = STRING;
                     string = true;
                     str++;
+                    break;
+
+                case '\'':
+                    quote = true;
                     break;
 
                 case '#':
@@ -100,10 +105,26 @@ void SNode::read_list(char* start, char* end)
 add:
                     if(depth == 0)
                     {
-                        SNode* sn = new SNode(st);
-                        sn->read(s, str);
+                        SNode* sn;
+                        if(!quote)
+                        {
+                            sn = new SNode(st);
+                            sn->read(s, str);
+                        }
+                        else
+                        {
+                            sn = new SNode(LIST);
+                            SNode* sq = new SNode(st);
+                            sq->read(s, str);
+
+                            sn->subnodes = new List<SNode*>();
+                            sn->subnodes->pushBack(new SNode(SYMBOL, (char*)"quote"));
+                            sn->subnodes->pushBack(sq);
+                        }
+
                         this->subnodes->pushBack(sn);
                         string = false;
+                        quote = false;
                         st = (enum snode_type)-1;
                     }
             }
