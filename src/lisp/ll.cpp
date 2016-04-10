@@ -85,6 +85,10 @@ vword_t ll_gen_fn(Context* context, vword_t p)
             vword_t pushs = context->read_word(pt);
             pt += VWORD_SIZE;
 
+            vword_t fn = context->read_word(pt);
+            if(fn != resolve_symbol("quote").start)
+                quote_stack = 0;
+
             n = pt + pushs;
             pt = ll_eval(context, pt);
             n -= pt;

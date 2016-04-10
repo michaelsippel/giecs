@@ -4,22 +4,15 @@
 # thats a funky map replacement :D
 nop
 	(declare a 20)
+	(declare test '(eval (if (eq (resw a) 20) '(printi 100) '(printi 200))))
+	(declare printa '(printi (resw a)))
 
-	(declare end '(exit 0))
+	(printa)
+	(test)
 
-	(declare test 
-		'(eval (if (eq (resw a) 0) 
-					end
-					nop)))
+	(setw a 23)
+	(printa)
+	(test)
 
-	(declare dec '(setw a (+ (resw a) -1)))
-
-	(declare loop
-		'(nop
-			(printi (resw a))
-			(test)
-			(dec)
-			(loop)))
-
-	(loop)
+	(exit 0)
 
