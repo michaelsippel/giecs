@@ -92,7 +92,7 @@ int main(int argc, char** argv)
             lisp_parse(context, stack, ast);
             stack = ll_eval(context, stack+VWORD_SIZE);
 
-            if(stack <= s)
+            if(stack < s)
             {
                 printf("return: ");
                 switch(s-stack)

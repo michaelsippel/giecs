@@ -2,7 +2,7 @@
 
 
 # thats a funky map replacement :D
-genfn nop -1
+nop
 	(declare a 20)
 
 	(declare end '(exit 0))
@@ -15,7 +15,7 @@ genfn nop -1
 	(declare dec '(setw a (+ (resw a) -1)))
 
 	(declare loop
-		'(genfn nop -1
+		'(nop
 			(printi (resw a))
 			(test)
 			(dec)

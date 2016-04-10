@@ -31,8 +31,8 @@ void init_lisp(Context* context)
 
     // system functions
     add_symbol("eval", context->add_ll_fn(ll_eval), VWORD_SIZE);
-    add_symbol("deval", context->add_ll_fn(ll_deval));
-    add_symbol("nop", context->add_ll_fn(ll_nop));
+    add_symbol("deval", context->add_ll_fn(ll_deval), 2*VWORD_SIZE);
+    add_symbol("nop", context->add_ll_fn(ll_nop), -1);
 
     add_symbol("genfn", context->add_ll_fn(ll_gen_fn), 2*VWORD_SIZE);
 
@@ -53,6 +53,8 @@ void init_lisp(Context* context)
     add_symbol("declare", context->add_ll_fn(ll_declare));
 }
 
+static vword_t quote_stack = 0x0;
+
 vword_t ll_gen_fn(Context* context, vword_t p)
 {
     vword_t fn = context->read_word(p);
@@ -61,12 +63,14 @@ vword_t ll_gen_fn(Context* context, vword_t p)
     p += VWORD_SIZE;
 
     vword_t pt = p; // working pointer (temporal pushs)
-    vbyte_t* buf = (vbyte_t*) malloc(l);
+    vbyte_t* buf = (vbyte_t*) malloc(l * sizeof(vbyte_t));
     vbyte_t* dest = buf;
 
     size_t i = 0;
-    while(i < l)
+    while(i < l && p < 0x100000)
     {
+        quote_stack = p;
+
         // get snode
         SNode* sn = new SNode(LIST);
         p += sn->read_vmem(context, p);
@@ -86,23 +90,38 @@ vword_t ll_gen_fn(Context* context, vword_t p)
             n -= pt;
         }
 
+        if((i+n) > l)
+        {
+            printf("getting more than needed (%d). cutting down to %d bytes\n", n, l-i);
+            n = l-i;
+        }
+
         dest += context->read(pt, n, dest);
         pt += n;
         i += n;
     }
 
-    p -= l;
-    context->write(p, l, buf);
+    quote_stack = 0;
+
+    pt -= i;
+    context->write(pt, i, buf);
 
     free(buf);
-    /*
-        p -= lisp_parse_size(a1);
-        lisp_parse(context, p, a1);
-    */
-    p -= VWORD_SIZE;
-    context->write_word(p, fn);
 
-    return ll_eval(context, p);
+    pt -= VWORD_SIZE;
+    context->write_word(pt, fn);
+
+    // copy back
+    size_t n = pt + i + VWORD_SIZE;
+    pt = ll_eval(context, pt);
+    n -= pt;
+
+    buf = (vbyte_t*) malloc(n * sizeof(vbyte_t));
+    context->read(pt, n, buf);
+
+    p -= n;
+    context->write(p, n, buf);
+    return p;
 }
 
 vword_t ll_declare(Context* context, vword_t p)
@@ -164,8 +183,19 @@ vword_t ll_quote(Context* context, vword_t p)
     SNode* ast = new SNode(LIST);
     p += ast->read_vmem(context, p);
 
-    p -= lisp_parse_size(ast);
-    lisp_parse(context, p, ast);
+    if(ast->type == LIST && quote_stack != (vword_t)0)
+    {
+//		printf("quote with pointer!\n");
+        p -= VWORD_SIZE;
+        context->write_word(p, quote_stack);
+
+        quote_stack += lisp_parse(context, quote_stack, ast);
+    }
+    else
+    {
+        p -= lisp_parse_size(ast);
+        lisp_parse(context, p, ast);
+    }
 
     return p;
 }
