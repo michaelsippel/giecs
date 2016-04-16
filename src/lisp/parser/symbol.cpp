@@ -96,3 +96,8 @@ void add_symbol(char* name, vword_t start, size_t reqb, vword_t parent)
     symbols->pushBack(sym);
 }
 
+void remove_symbol(char* name)
+{
+    symbols->remove(resolve_symbol(name));
+}
+

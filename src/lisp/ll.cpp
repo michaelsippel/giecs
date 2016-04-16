@@ -57,48 +57,21 @@ void init_lisp(Context* context)
 }
 
 static vword_t quote_stack = 0;
-static size_t declare_reqb = 0;
 
-vword_t ll_function(Context* context, vword_t p)
+vword_t eval_params(Context* context, vword_t* p, size_t l)
 {
-    SNode* plist = new SNode(LIST);
-    p += plist->read_vmem(context, p);
-
-    SNode* val = new SNode(LIST);
-    p += val->read_vmem(context, p);
-
-    plist->dump();
-    val->dump();
-
-    int nparam = plist->subnodes->numOfElements();
-
-    declare_reqb = nparam * VWORD_SIZE; // only integers
-
-    p -= lisp_parse_size(val);
-    lisp_parse(context, p, val);
-
-    return p;
-}
-
-vword_t ll_gen_fn(Context* context, vword_t p)
-{
-    vword_t fn = context->read_word(p);
-    p += VWORD_SIZE;
-    vword_t l = context->read_word(p);
-    p += VWORD_SIZE;
-
-    vword_t pt = p; // working pointer (temporal pushs)
+    vword_t pt = *p; // working pointer (temporal pushs)
     vbyte_t* buf = (vbyte_t*) malloc(l * sizeof(vbyte_t));
     vbyte_t* dest = buf;
 
     size_t i = 0;
-    while(i < l && p < 0x100000)
+    while(i < l && *p < 0x100000)
     {
-        quote_stack = p;
+        quote_stack = *p;
 
         // get snode
         SNode* sn = new SNode(LIST);
-        p += sn->read_vmem(context, p);
+        *p += sn->read_vmem(context, *p);
 
         // parse it on stack
         pt -= lisp_parse_size(sn);
@@ -137,19 +110,90 @@ vword_t ll_gen_fn(Context* context, vword_t p)
 
     free(buf);
 
-    pt -= VWORD_SIZE;
-    context->write_word(pt, fn);
+    return pt;
+}
 
-    // copy back
-    size_t n = pt + i + VWORD_SIZE;
-    pt = ll_eval(context, pt);
+vword_t ll_function(Context* context, vword_t p)
+{
+    SNode* plist = new SNode(LIST);
+    p += plist->read_vmem(context, p);
+
+    SNode* val = new SNode(LIST);
+    p += val->read_vmem(context, p);
+
+//    plist->dump();
+//    val->dump();
+
+    int nparam = plist->subnodes->numOfElements();
+    size_t reqb = nparam * VWORD_SIZE;
+
+    vword_t pt = eval_params(context, &p, reqb);
+
+    // bind parameters
+    ListIterator<SNode*> it = ListIterator<SNode*>(plist->subnodes);
+    int i = 0;
+    while(! it.isLast())
+    {
+        SNode* sn = it.getCurrent();
+        vword_t start = pt + (i++)*VWORD_SIZE;
+        add_symbol(sn->string, start);
+
+        it.next();
+    }
+
+    size_t n = pt;
+    pt -= lisp_parse_size(val);
+    lisp_parse(context, pt, val);
+
+    pt = ll_eval(context, pt+VWORD_SIZE);
+
     n -= pt;
 
-    buf = (vbyte_t*) malloc(n * sizeof(vbyte_t));
+    // unbind parameters
+    it.setFirst();
+    while(! it.isLast())
+    {
+        SNode* sn = it.getCurrent();
+        remove_symbol(sn->string);
+        it.next();
+    }
+
+    // copy back
+    vbyte_t* buf = (vbyte_t*) malloc(n * sizeof(vbyte_t));
     context->read(pt, n, buf);
 
     p -= n;
     context->write(p, n, buf);
+    free(buf);
+
+    return p;
+}
+
+vword_t ll_gen_fn(Context* context, vword_t p)
+{
+    vword_t fn = context->read_word(p);
+    p += VWORD_SIZE;
+    vword_t l = context->read_word(p);
+    p += VWORD_SIZE;
+
+    vword_t pt = eval_params(context, &p, l);
+
+    pt -= VWORD_SIZE;
+    context->write_word(pt, fn);
+
+    // eval
+    size_t n = pt + l + VWORD_SIZE;
+    pt = ll_eval(context, pt);
+    n -= pt;
+
+    // copy back
+    vbyte_t* buf = (vbyte_t*) malloc(n * sizeof(vbyte_t));
+    context->read(pt, n, buf);
+
+    p -= n;
+    context->write(p, n, buf);
+    free(buf);
+
     return p;
 }
 
@@ -172,8 +216,6 @@ vword_t ll_declare(Context* context, vword_t p)
             def_top -= lisp_parse_size(value);
             lisp_parse(context, def_top, value);
 
-            declare_reqb = 0;
-
             // execute lists
             if(value->type == LIST)
                 def_top = ll_eval(context, def_top+VWORD_SIZE);
@@ -182,7 +224,7 @@ vword_t ll_declare(Context* context, vword_t p)
 
             logger->log(linfo, "declared \'%s\': 0x%x, %d bytes", name->string, def_top, len);
 
-            add_symbol(name->string, def_top, declare_reqb);
+            add_symbol(name->string, def_top);
         }
         else
             logger->log(lerror, "symbol \'%s\' already in use", name->string);

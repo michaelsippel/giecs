@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include <context.h>
+#include <lisp/parser.h>
 
 vword_t ll_eval(Context* context, vword_t p)
 {

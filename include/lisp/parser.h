@@ -23,6 +23,7 @@ void add_symbol(const char* name, vword_t start, size_t reqb);
 void add_symbol(const char* name, vword_t start, size_t reqb, vword_t parent);
 void add_symbol(char* name, vword_t start, size_t reqb);
 void add_symbol(char* name, vword_t start, size_t reqb, vword_t parent);
+void remove_symbol(char* name);
 
 int asm_parse(Context* context, vword_t addr, SNode* ast);
 int asm_parse_list(Context* context, vword_t addr, SNode* ast);
