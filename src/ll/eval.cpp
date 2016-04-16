@@ -17,16 +17,18 @@ vword_t ll_eval(Context* context, vword_t p)
 
     if(len != (vword_t)-1)
     {
+        p -= len;
+
         // apply parameters
         vbyte_t* buf = (vbyte_t*) malloc(len * sizeof(vbyte_t));
 
         context->read(addr, len, buf);
-        context->write(p-len, len, buf);
+        context->write(p, len, buf);
 
         free(buf);
 
         // eval again
-        return ll_eval(context, p-len);
+        return ll_eval(context, p);
     }
     else
     {

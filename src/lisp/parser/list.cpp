@@ -94,7 +94,7 @@ size_t lisp_parse_size(SNode* ast)
             break;
 
         case SYMBOL:
-            if(resolve_symbol(ast->string).reqb == 0)
+            if(resolve_symbol(ast->string)->reqb == 0)
                 len = VWORD_SIZE;
             else
                 len = 3*VWORD_SIZE;

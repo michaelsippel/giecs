@@ -13,11 +13,11 @@ struct symbol
     vword_t parent;
 };
 
-struct symbol resolve_symbol(vword_t addr);
-struct symbol resolve_symbol(const char* name);
-struct symbol resolve_symbol(const char* name, vword_t parent);
-struct symbol resolve_symbol(char* name);
-struct symbol resolve_symbol(char* name, vword_t parent);
+struct symbol* resolve_symbol(vword_t addr);
+struct symbol* resolve_symbol(const char* name);
+struct symbol* resolve_symbol(const char* name, vword_t parent);
+struct symbol* resolve_symbol(char* name);
+struct symbol* resolve_symbol(char* name, vword_t parent);
 void add_symbol(const char* name, vword_t start);
 void add_symbol(const char* name, vword_t start, size_t reqb);
 void add_symbol(const char* name, vword_t start, size_t reqb, vword_t parent);

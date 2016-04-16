@@ -30,6 +30,8 @@ void init_lisp(Context* context)
     lisp_atom_logger = new Logger(lisp_parser_logger, "atom");
 
     // system functions
+    add_symbol("sp", 0);
+
     add_symbol("eval", context->add_ll_fn(ll_eval), VWORD_SIZE);
     add_symbol("deval", context->add_ll_fn(ll_deval), 2*VWORD_SIZE);
     add_symbol("nop", context->add_ll_fn(ll_nop), -1);
@@ -51,9 +53,32 @@ void init_lisp(Context* context)
     add_symbol("quote", context->add_ll_fn(ll_quote));
     add_symbol("asm", context->add_ll_fn(ll_asm));
     add_symbol("declare", context->add_ll_fn(ll_declare));
+    add_symbol("function", context->add_ll_fn(ll_function));
 }
 
-static vword_t quote_stack = 0x0;
+static vword_t quote_stack = 0;
+static size_t declare_reqb = 0;
+
+vword_t ll_function(Context* context, vword_t p)
+{
+    SNode* plist = new SNode(LIST);
+    p += plist->read_vmem(context, p);
+
+    SNode* val = new SNode(LIST);
+    p += val->read_vmem(context, p);
+
+    plist->dump();
+    val->dump();
+
+    int nparam = plist->subnodes->numOfElements();
+
+    declare_reqb = nparam * VWORD_SIZE; // only integers
+
+    p -= lisp_parse_size(val);
+    lisp_parse(context, p, val);
+
+    return p;
+}
 
 vword_t ll_gen_fn(Context* context, vword_t p)
 {
@@ -86,7 +111,7 @@ vword_t ll_gen_fn(Context* context, vword_t p)
             pt += VWORD_SIZE;
 
             vword_t fn = context->read_word(pt);
-            if(fn != resolve_symbol("quote").start)
+            if(fn != resolve_symbol("quote")->start)
                 quote_stack = 0;
 
             n = pt + pushs;
@@ -141,11 +166,13 @@ vword_t ll_declare(Context* context, vword_t p)
 
     if(name->type == SYMBOL)
     {
-        if(resolve_symbol(name->string).start == (vword_t)0)
+        if(resolve_symbol(name->string) == NULL)
         {
             size_t len = def_top;
             def_top -= lisp_parse_size(value);
             lisp_parse(context, def_top, value);
+
+            declare_reqb = 0;
 
             // execute lists
             if(value->type == LIST)
@@ -155,7 +182,7 @@ vword_t ll_declare(Context* context, vword_t p)
 
             logger->log(linfo, "declared \'%s\': 0x%x, %d bytes", name->string, def_top, len);
 
-            add_symbol(name->string, def_top);
+            add_symbol(name->string, def_top, declare_reqb);
         }
         else
             logger->log(lerror, "symbol \'%s\' already in use", name->string);
