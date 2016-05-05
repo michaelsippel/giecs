@@ -10,6 +10,8 @@ Logger* lisp_logger;
 Logger* lisp_parser_logger;
 Logger* lisp_atom_logger;
 
+extern vword_t default_parent;
+
 vword_t lisp_exec(Context* context, const char* str)
 {
     vword_t stack = 4096*0x100 - VWORD_SIZE;
@@ -129,6 +131,11 @@ vword_t ll_function(Context* context, vword_t p)
 
     vword_t pt = eval_params(context, &p, reqb);
 
+    // use stack pointer as group id for symbols
+    add_symbol((char*)NULL, p, 0, default_parent);
+    vword_t odp = default_parent;
+    default_parent = p;
+
     // bind parameters
     ListIterator<SNode*> it = ListIterator<SNode*>(plist->subnodes);
     int i = 0;
@@ -136,7 +143,7 @@ vword_t ll_function(Context* context, vword_t p)
     {
         SNode* sn = it.getCurrent();
         vword_t start = pt + (i++)*VWORD_SIZE;
-        add_symbol(sn->string, start);
+        add_symbol(sn->string, start, 0, p);
 
         it.next();
     }
@@ -154,9 +161,11 @@ vword_t ll_function(Context* context, vword_t p)
     while(! it.isLast())
     {
         SNode* sn = it.getCurrent();
-        remove_symbol(sn->string);
+        remove_symbol(sn->string, p);
         it.next();
     }
+    remove_symbol(p);
+    default_parent = odp;
 
     // copy back
     vbyte_t* buf = (vbyte_t*) malloc(n * sizeof(vbyte_t));
@@ -224,7 +233,7 @@ vword_t ll_declare(Context* context, vword_t p)
 
             logger->log(linfo, "declared \'%s\': 0x%x, %d bytes", name->string, def_top, len);
 
-            add_symbol(name->string, def_top);
+            add_symbol(name->string, def_top, 0, default_parent);
         }
         else
             logger->log(lerror, "symbol \'%s\' already in use", name->string);

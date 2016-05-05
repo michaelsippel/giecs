@@ -3,16 +3,11 @@
 
 # thats a funky map replacement :D
 nop
-	(declare a 20)
-	(declare test '(eval (if (eq (resw a) 20) '(printi 100) '(printi 200))))
-	(declare printa '(printi (resw a)))
+	(declare test '(function (x)
+		(eval (if (eq (resw x) 0)
+			'(printi 1234)
+			'(test (+ (resw x) -1))))))
 
-	(printa)
-	(test)
-
-	(setw a 23)
-	(printa)
-	(test)
-
+	(test 30)
 	(exit 0)
 
