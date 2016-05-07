@@ -32,8 +32,6 @@ void init_lisp(Context* context)
     lisp_atom_logger = new Logger(lisp_parser_logger, "atom");
 
     // system functions
-    add_symbol("sp", 0);
-
     add_symbol("eval", context->add_ll_fn(ll_eval), VWORD_SIZE);
     add_symbol("deval", context->add_ll_fn(ll_deval), 2*VWORD_SIZE);
     add_symbol("nop", context->add_ll_fn(ll_nop), -1);
@@ -49,13 +47,18 @@ void init_lisp(Context* context)
     add_symbol("exit", context->add_ll_fn(ll_exit), VWORD_SIZE);
     add_symbol("printi", context->add_ll_fn(ll_printi), VWORD_SIZE);
     add_symbol("printb", context->add_ll_fn(ll_printb), 1);
+	add_symbol("prints", context->add_ll_fn(ll_prints), VWORD_SIZE);
     add_symbol("+", context->add_ll_fn(ll_addi), 2*VWORD_SIZE);
+    add_symbol("-", context->add_ll_fn(ll_subi), 2*VWORD_SIZE);
+    add_symbol("*", context->add_ll_fn(ll_muli), 2*VWORD_SIZE);
+    add_symbol("/", context->add_ll_fn(ll_divi), 2*VWORD_SIZE);
 
     // lisp macro
     add_symbol("quote", context->add_ll_fn(ll_quote));
     add_symbol("asm", context->add_ll_fn(ll_asm));
     add_symbol("declare", context->add_ll_fn(ll_declare));
     add_symbol("function", context->add_ll_fn(ll_function));
+	add_symbol("lmap", context->add_ll_fn(ll_lmap));
 }
 
 static vword_t quote_stack = 0;
@@ -280,5 +283,33 @@ vword_t ll_quote(Context* context, vword_t p)
     }
 
     return p;
+}
+
+vword_t ll_lmap(Context* context, vword_t p)
+{
+	SNode* fn = new SNode(LIST);
+	p += fn->read_vmem(context, p);
+
+	SNode* list = new SNode(LIST);
+	p += list->read_vmem(context, p);
+
+	ListIterator<SNode*> it = ListIterator<SNode*>(list->subnodes);
+	while(! it.isLast())
+	{
+		SNode* param = it.getCurrent();
+
+		p -= param->vmem_size();
+		param->write_vmem(context, p);
+
+		p -= lisp_parse_size(fn);
+		lisp_parse(context, p, fn);
+		if(fn->type == LIST)
+			p += VWORD_SIZE;
+		p = ll_eval(context, p);
+
+		it.next();
+	}
+
+	return p;
 }
 

@@ -12,5 +12,7 @@ vword_t ll_asm(Context* context, vword_t p);
 vword_t ll_declare(Context* context, vword_t p);
 vword_t ll_function(Context* context, vword_t p);
 
+vword_t ll_lmap(Context* context, vword_t p);
+
 #endif
 

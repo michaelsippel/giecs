@@ -26,6 +26,40 @@ vword_t ll_addi(Context* context, vword_t p)
     return p + VWORD_SIZE;
 }
 
+vword_t ll_muli(Context* context, vword_t p)
+{
+    vword_t val[2];
+    context->read(p, 2*VWORD_SIZE, (vbyte_t*) &val);
+
+    vword_t ret = val[0] * val[1];
+    context->write_word(p+VWORD_SIZE, ret);
+
+    return p + VWORD_SIZE;
+}
+
+vword_t ll_subi(Context* context, vword_t p)
+{
+    vword_t val[2];
+    context->read(p, 2*VWORD_SIZE, (vbyte_t*) &val);
+
+    vword_t ret = val[0] - val[1];
+    context->write_word(p+VWORD_SIZE, ret);
+
+    return p + VWORD_SIZE;
+}
+
+vword_t ll_divi(Context* context, vword_t p)
+{
+    vword_t val[2];
+    context->read(p, 2*VWORD_SIZE, (vbyte_t*) &val);
+
+    vword_t ret = val[0] / val[1];
+    context->write_word(p+VWORD_SIZE, ret);
+
+    return p + VWORD_SIZE;
+}
+
+
 vword_t ll_printi(Context* context, vword_t p)
 {
     vword_t val = context->read_word(p);
@@ -40,6 +74,21 @@ vword_t ll_printb(Context* context, vword_t p)
     context->read(p, 1, &val);
     printf("%s\n", val ? "true" : "false");
     return p + 1;
+}
+
+vword_t ll_prints(Context* context, vword_t p)
+{
+	vword_t ptr = context->read_word(p);
+	p += VWORD_SIZE;
+
+	vbyte_t c = 0;
+	do
+	{
+		context->read(ptr++, 1, (vbyte_t*) &c);
+		printf("%c", c);
+	} while(c != '\0');
+
+	return p;
 }
 
 vword_t ll_resw(Context* context, vword_t p)

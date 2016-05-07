@@ -1,13 +1,17 @@
 #! ../vm_linux64
 
+lmap nop
+(
+	(declare factorial '(function (n)
+		(eval (if (eq (resw n) 1)
+			'(quote 1)
+			'(*
+				(resw n)
+				(factorial (+ (resw n) -1)))))))
 
-# thats a funky map replacement :D
-nop
-	(declare test '(function (x)
-		(eval (if (eq (resw x) 0)
-			'(printi 1234)
-			'(test (+ (resw x) -1))))))
 
-	(test 30)
+	(printi (factorial 8))
+	(printi 123)
 	(exit 0)
+)
 
