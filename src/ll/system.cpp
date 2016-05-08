@@ -78,17 +78,18 @@ vword_t ll_printb(Context* context, vword_t p)
 
 vword_t ll_prints(Context* context, vword_t p)
 {
-	vword_t ptr = context->read_word(p);
-	p += VWORD_SIZE;
+    vword_t ptr = context->read_word(p);
+    p += VWORD_SIZE;
 
-	vbyte_t c = 0;
-	do
-	{
-		context->read(ptr++, 1, (vbyte_t*) &c);
-		printf("%c", c);
-	} while(c != '\0');
+    vbyte_t c = 0;
+    do
+    {
+        context->read(ptr++, 1, (vbyte_t*) &c);
+        printf("%c", c);
+    }
+    while(c != '\0');
 
-	return p;
+    return p;
 }
 
 vword_t ll_resw(Context* context, vword_t p)

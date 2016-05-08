@@ -47,7 +47,7 @@ void init_lisp(Context* context)
     add_symbol("exit", context->add_ll_fn(ll_exit), VWORD_SIZE);
     add_symbol("printi", context->add_ll_fn(ll_printi), VWORD_SIZE);
     add_symbol("printb", context->add_ll_fn(ll_printb), 1);
-	add_symbol("prints", context->add_ll_fn(ll_prints), VWORD_SIZE);
+    add_symbol("prints", context->add_ll_fn(ll_prints), VWORD_SIZE);
     add_symbol("+", context->add_ll_fn(ll_addi), 2*VWORD_SIZE);
     add_symbol("-", context->add_ll_fn(ll_subi), 2*VWORD_SIZE);
     add_symbol("*", context->add_ll_fn(ll_muli), 2*VWORD_SIZE);
@@ -58,7 +58,7 @@ void init_lisp(Context* context)
     add_symbol("asm", context->add_ll_fn(ll_asm));
     add_symbol("declare", context->add_ll_fn(ll_declare));
     add_symbol("function", context->add_ll_fn(ll_function));
-	add_symbol("lmap", context->add_ll_fn(ll_lmap));
+    add_symbol("lmap", context->add_ll_fn(ll_lmap));
 }
 
 static vword_t quote_stack = 0;
@@ -95,6 +95,10 @@ vword_t eval_params(Context* context, vword_t* p, size_t l)
             n = pt + pushs;
             pt = ll_eval(context, pt);
             n -= pt;
+        }
+        else if(sn->type == SYMBOL)
+        {
+            pt = ll_resw(context, pt);
         }
 
         if((i+n) > l)
@@ -287,29 +291,29 @@ vword_t ll_quote(Context* context, vword_t p)
 
 vword_t ll_lmap(Context* context, vword_t p)
 {
-	SNode* fn = new SNode(LIST);
-	p += fn->read_vmem(context, p);
+    SNode* fn = new SNode(LIST);
+    p += fn->read_vmem(context, p);
 
-	SNode* list = new SNode(LIST);
-	p += list->read_vmem(context, p);
+    SNode* list = new SNode(LIST);
+    p += list->read_vmem(context, p);
 
-	ListIterator<SNode*> it = ListIterator<SNode*>(list->subnodes);
-	while(! it.isLast())
-	{
-		SNode* param = it.getCurrent();
+    ListIterator<SNode*> it = ListIterator<SNode*>(list->subnodes);
+    while(! it.isLast())
+    {
+        SNode* param = it.getCurrent();
 
-		p -= param->vmem_size();
-		param->write_vmem(context, p);
+        p -= param->vmem_size();
+        param->write_vmem(context, p);
 
-		p -= lisp_parse_size(fn);
-		lisp_parse(context, p, fn);
-		if(fn->type == LIST)
-			p += VWORD_SIZE;
-		p = ll_eval(context, p);
+        p -= lisp_parse_size(fn);
+        lisp_parse(context, p, fn);
+        if(fn->type == LIST)
+            p += VWORD_SIZE;
+        p = ll_eval(context, p);
 
-		it.next();
-	}
+        it.next();
+    }
 
-	return p;
+    return p;
 }
 
