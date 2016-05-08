@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <context.h>
 #include <lisp/reader.h>
@@ -85,7 +86,7 @@ vword_t ll_prints(Context* context, vword_t p)
     do
     {
         context->read(ptr++, 1, (vbyte_t*) &c);
-        printf("%c", c);
+        write(1, &c, 1);
     }
     while(c != '\0');
 

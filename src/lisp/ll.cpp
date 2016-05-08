@@ -79,26 +79,48 @@ vword_t eval_params(Context* context, vword_t* p, size_t l)
         *p += sn->read_vmem(context, *p);
 
         // parse it on stack
-        pt -= lisp_parse_size(sn);
-        size_t n = lisp_parse(context, pt, sn);
+        size_t n = 0;
+        vword_t pushs, fn;
 
         // self-eval lists
-        if(sn->type == LIST)
+        switch(sn->type)
         {
-            vword_t pushs = context->read_word(pt);
-            pt += VWORD_SIZE;
+            case INTEGER:
+                pt -= lisp_parse_size(sn);
+                n = lisp_parse(context, pt, sn);
+                break;
 
-            vword_t fn = context->read_word(pt);
-            if(fn != resolve_symbol("quote")->start)
-                quote_stack = 0;
+            case LIST:
+                pt -= lisp_parse_size(sn);
+                n = lisp_parse(context, pt, sn);
 
-            n = pt + pushs;
-            pt = ll_eval(context, pt);
-            n -= pt;
-        }
-        else if(sn->type == SYMBOL)
-        {
-            pt = ll_resw(context, pt);
+                pushs = context->read_word(pt);
+                pt += VWORD_SIZE;
+
+                fn = context->read_word(pt);
+                if(fn != resolve_symbol("quote")->start)
+                    quote_stack = 0;
+
+                n = pt + pushs;
+                pt = ll_eval(context, pt);
+                n -= pt;
+                break;
+
+            case STRING:
+                quote_stack -= lisp_parse_size(sn);
+                lisp_parse(context, quote_stack, sn);
+
+                pt -= VWORD_SIZE;
+                context->write_word(pt, quote_stack);
+                n = VWORD_SIZE;
+                break;
+
+            case SYMBOL:
+                pt -= lisp_parse_size(sn);
+                n = lisp_parse(context, pt, sn);
+
+                pt = ll_resw(context, pt);
+                break;
         }
 
         if((i+n) > l)

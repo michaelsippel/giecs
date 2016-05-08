@@ -9,8 +9,16 @@ lmap nop
 		))
 	))
 
+
+	(declare a 8)
+	(prints "\ndeclared a: ")
+	(printi a)
+
+	(prints "factorial of a: ")
 	(printi (factorial 8))
-	(printi 123)
+
+	(prints "\n")
+
 	(exit 0)
 )
 
