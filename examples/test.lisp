@@ -9,13 +9,15 @@ lmap nop
 		))
 	))
 
-
 	(declare a 8)
 	(prints "\ndeclared a: ")
 	(printi a)
 
 	(prints "factorial of a: ")
 	(printi (factorial 8))
+
+	(prints "\ncurrent pid: ")
+	(printi (syscall 20 0 0 0 0 0))
 
 	(prints "\n")
 

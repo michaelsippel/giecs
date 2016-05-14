@@ -16,6 +16,21 @@ vword_t ll_exit(Context* context, vword_t p)
     return p + VWORD_SIZE;
 }
 
+vword_t ll_syscall(Context* context, vword_t p)
+{
+    vword_t regs[6];
+    p += context->read(p, 6*VWORD_SIZE, (vbyte_t*) &regs);
+
+    uint32_t retv = 0;
+    asm("int $0x80;"
+        : "=a" (retv) : "a" (regs[0]),  "b" (regs[1]), "c"(regs[2]), "d"(regs[3]), "S"(regs[4]), "D"(regs[5]));
+
+    p -= VWORD_SIZE;
+    context->write_word(p, retv);
+
+    return p;
+}
+
 vword_t ll_addi(Context* context, vword_t p)
 {
     vword_t val[2];
@@ -59,7 +74,6 @@ vword_t ll_divi(Context* context, vword_t p)
 
     return p + VWORD_SIZE;
 }
-
 
 vword_t ll_printi(Context* context, vword_t p)
 {
