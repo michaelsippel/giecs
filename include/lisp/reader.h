@@ -38,6 +38,8 @@ class SNode
         void dump(void);
         void dump(int indent);
 
+        void replace(char** names, SNode** nodes, int num);
+
         size_t vmem_size(void);
         size_t write_vmem(Context* context, vword_t addr);
         size_t read_vmem(Context* context, vword_t addr);

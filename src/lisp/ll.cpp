@@ -1,3 +1,7 @@
+#include <string.h>
+#include <stdlib.h>
+
+
 #include <logger.h>
 #include <context.h>
 
@@ -60,6 +64,7 @@ void init_lisp(Context* context)
     add_symbol("asm", context->add_ll_fn(ll_asm));
     add_symbol("declare", context->add_ll_fn(ll_declare));
     add_symbol("function", context->add_ll_fn(ll_function));
+    add_symbol("macro", context->add_ll_fn(ll_macro));
     add_symbol("lmap", context->add_ll_fn(ll_lmap));
 }
 
@@ -205,6 +210,57 @@ vword_t ll_function(Context* context, vword_t p)
     p -= n;
     context->write(p, n, buf);
     free(buf);
+
+    return p;
+}
+
+vword_t ll_macro(Context* context, vword_t p)
+{
+    SNode* plist = new SNode(LIST);
+    p += plist->read_vmem(context, p);
+
+    SNode* val = new SNode(LIST);
+    p += val->read_vmem(context, p);
+
+    //plist->dump();
+    //val->dump();
+
+    if(plist->type != LIST)
+    {
+        printf("error: no parameterlist\n");
+        return p;
+    }
+
+    int pnum = plist->subnodes->numOfElements();
+    SNode** params = (SNode**) malloc(pnum * sizeof(SNode*));
+    char** names = (char**) malloc(pnum * sizeof(char*));
+
+    int i = 0;
+    ListIterator<SNode*> it = ListIterator<SNode*>(plist->subnodes);
+    while(! it.isLast())
+    {
+        SNode* c = it.getCurrent();
+        if(c->type == SYMBOL)
+        {
+            names[i] = c->string;
+            params[i] = new SNode(LIST);
+            p += params[i]->read_vmem(context, p);
+
+            i++;
+        }
+        else
+        {
+            printf("error: only symbols in paramlist allowed\n");
+        }
+
+        it.next();
+    }
+
+    val->replace(names, params, pnum);
+
+    p -= lisp_parse_size(val);
+    lisp_parse(context, p, val);
+    p = ll_eval(context, p+VWORD_SIZE);
 
     return p;
 }

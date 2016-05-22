@@ -220,3 +220,31 @@ size_t SNode::read_vmem(Context* context, vword_t addr)
     return l;
 }
 
+
+void SNode::replace(char** names, SNode** nodes, int num)
+{
+    if(this->type == SYMBOL)
+    {
+        int i;
+        for(i = 0; i < num; i++)
+        {
+            if(strcmp(this->string, names[i]) == 0)
+            {
+                this->type = nodes[i]->type;
+                this->integer = nodes[i]->integer;
+
+                return;
+            }
+        }
+    }
+    else if(this->type == LIST)
+    {
+        ListIterator<SNode*> it = ListIterator<SNode*>(this->subnodes);
+        while(! it.isLast())
+        {
+            it.getCurrent()->replace(names, nodes, num);
+            it.next();
+        }
+    }
+}
+
