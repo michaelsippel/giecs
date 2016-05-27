@@ -2,12 +2,18 @@
 
 lmap nop
 (
-	(declare factorial '(function (n)
+	(declare defmacro '(macro (name plist def)
+		(declare name '(macro plist def))))
+
+	(declare defun '(macro (name plist def)
+		(declare name '(function plist def))))
+
+	(defun factorial (n)
 		(eval (if (eq n 1)
 			'(quote 1)
 			'(* (factorial (- n 1)) n)
 		))
-	))
+	)
 
 	(declare a 8)
 	(prints "\ndeclared a: ")
