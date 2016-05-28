@@ -15,6 +15,14 @@ lmap nop
 		))
 	)
 
+	(defun read (fd buf len)
+		(syscall 3 fd buf len 0 0))
+
+	(defun write (fd buf len)
+		(syscall 4 fd buf len 0 0))
+
+	(write 1 "Hallo\n" 7)
+
 	(declare a 8)
 	(prints "\ndeclared a: ")
 	(printi a)

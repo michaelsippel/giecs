@@ -22,54 +22,61 @@ vword_t ll_syscall(Context* context, vword_t p)
     vword_t regs_in[6];
     p += context->read(p, 6*VWORD_SIZE, (vbyte_t*) &regs_in);
 
-    void* regs_out[6] = {(void*)regs_in[0],0,0,0,0,0};
+    long sys_id = regs_in[0];
+    void* regs_out[6] = {(void*)sys_id,0,0,0,0,0};
 
-    char* buf[5] = {NULL, NULL, NULL, NULL, NULL};
+    vbyte_t* buf[5] = {NULL, NULL, NULL, NULL, NULL};
     size_t sizes[5] = {0, 0, 0, 0, 0};
 
     int i;
     for(i = 0; i < 5; i++)
     {
-        vword_t ptr;
         vbyte_t c;
-
         int j;
-        size_t size;
 
-        switch(syscall_params[regs_in[0]][i])
+        switch(syscall_params[sys_id][i])
         {
             case NONE:
             case INT:
                 regs_out[i+1] = (void*)regs_in[i+1];
-                break;
+                continue;
 
             case STRING:
-                ptr = regs_in[i+1];
-
-                size = 256;
-                buf[i] = (char*) malloc(size);
                 j = 0;
                 do
                 {
-                    if(j > size)
-                    {
-                        size += 256;
-                        buf[i] = (char*) realloc(buf[i], size);
-                    }
-                    context->read(ptr++, 1, &c);
-                    buf[i][j] = c;
+                    context->read(regs_in[i+1]+j, 1, &c);
                     j++;
                 }
                 while(c != '\0');
 
                 sizes[i] = (size_t)j;
-                regs_out[i+1] = (void*) buf[i];
+                break;
 
+            case PTR_L_BX:
+                sizes[i] = regs_in[1];
+                break;
+            case PTR_L_CX:
+                sizes[i] = regs_in[2];
+                break;
+            case PTR_L_DX:
+                sizes[i] = regs_in[3];
+                break;
+            case PTR_L_SI:
+                sizes[i] = regs_in[4];
+                break;
+            case PTR_L_DI:
+                sizes[i] = regs_in[5];
                 break;
 
             default: // pointer
+                sizes[i] = syscall_params[sys_id][i] - PTR;
                 break;
         }
+
+        buf[i] = (vbyte_t*) malloc(sizes[i] * sizeof(vbyte_t));
+        context->read(regs_in[i+1], sizes[i], buf[i]);
+        regs_out[i+1] = (void*) buf[i];
     }
 
     uint32_t retv = 0;
@@ -81,7 +88,7 @@ vword_t ll_syscall(Context* context, vword_t p)
 
     for(i = 0; i < 5; i++)
     {
-        context->write(regs_in[i+1], sizes[i], (vbyte_t*)buf[i]);
+        context->write(regs_in[i+1], sizes[i], buf[i]);
         free(buf[i]);
     }
 
