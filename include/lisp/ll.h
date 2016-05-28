@@ -14,6 +14,7 @@ vword_t ll_function(Context* context, vword_t p);
 vword_t ll_macro(Context* context, vword_t p);
 
 vword_t ll_lmap(Context* context, vword_t p);
+vword_t ll_progn(Context* context, vword_t p);
 
 #endif
 

@@ -24,7 +24,7 @@ int syscall_params[][5] =
     {PTR+sizeof(struct pt_regs), NONE, NONE, NONE, NONE}, // 0x02 - fork
     {INT, PTR_L_DX, INT, NONE, NONE}, // 0x03 - read
     {INT, PTR_L_DX, INT, NONE, NONE}, // 0x04 - write
-    {STR, INT, NONE, NONE, NONE}, // 0x05 - open
+    {STR, INT, INT, NONE, NONE}, // 0x05 - open
     {INT, NONE, NONE, NONE, NONE} // 0x06 - close
 
 };

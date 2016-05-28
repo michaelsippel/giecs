@@ -1,7 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-
 #include <logger.h>
 #include <context.h>
 
@@ -66,6 +65,7 @@ void init_lisp(Context* context)
     add_symbol("function", context->add_ll_fn(ll_function));
     add_symbol("macro", context->add_ll_fn(ll_macro));
     add_symbol("lmap", context->add_ll_fn(ll_lmap));
+    add_symbol("progn", context->add_ll_fn(ll_progn));
 }
 
 static vword_t quote_stack = 0;
@@ -114,12 +114,11 @@ vword_t eval_params(Context* context, vword_t* p, size_t l)
                 break;
 
             case STRING:
-                quote_stack -= lisp_parse_size(sn);
-                lisp_parse(context, quote_stack, sn);
-
                 pt -= VWORD_SIZE;
                 context->write_word(pt, quote_stack);
                 n = VWORD_SIZE;
+
+                quote_stack += lisp_parse(context, quote_stack, sn);
                 break;
 
             case SYMBOL:
@@ -318,7 +317,7 @@ vword_t ll_declare(Context* context, vword_t p)
 
             len -= def_top;
 
-            logger->log(linfo, "declared \'%s\': 0x%x, %d bytes", name->string, def_top, len);
+            //logger->log(linfo, "declared \'%s\': 0x%x, %d bytes", name->string, def_top, len);
 
             add_symbol(name->string, def_top, 0, default_parent);
         }
@@ -384,6 +383,28 @@ vword_t ll_lmap(Context* context, vword_t p)
 
         p -= param->vmem_size();
         param->write_vmem(context, p);
+
+        p -= lisp_parse_size(fn);
+        lisp_parse(context, p, fn);
+        if(fn->type == LIST)
+            p += VWORD_SIZE;
+        p = ll_eval(context, p);
+
+        it.next();
+    }
+
+    return p;
+}
+
+vword_t ll_progn(Context* context, vword_t p)
+{
+    SNode* list = new SNode(LIST);
+    p += list->read_vmem(context, p);
+
+    ListIterator<SNode*> it = ListIterator<SNode*>(list->subnodes);
+    while(! it.isLast())
+    {
+        SNode* fn = it.getCurrent();
 
         p -= lisp_parse_size(fn);
         lisp_parse(context, p, fn);
