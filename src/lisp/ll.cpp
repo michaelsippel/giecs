@@ -34,13 +34,14 @@ void init_lisp(Context* context)
     lisp_parser_logger = new Logger(lisp_logger, "parser");
     lisp_atom_logger = new Logger(lisp_parser_logger, "atom");
 
+    default_parent = 0;
+
     // system functions
     add_symbol("eval", context->add_ll_fn(ll_eval), VWORD_SIZE);
     add_symbol("deval", context->add_ll_fn(ll_deval), 2*VWORD_SIZE);
     add_symbol("nop", context->add_ll_fn(ll_nop), -1);
 
     add_symbol("genfn", context->add_ll_fn(ll_gen_fn), 2*VWORD_SIZE);
-
     add_symbol("syscall", context->add_ll_fn(ll_syscall), 6*VWORD_SIZE);
 
     add_symbol("if", context->add_ll_fn(ll_cond), 2*VWORD_SIZE+1);
@@ -298,6 +299,8 @@ vword_t ll_declare(Context* context, vword_t p)
 
     static vword_t def_top = 0xA0000;
 
+    SNode* parent = new SNode(context, p);
+    p += parent->vmem_size();
     SNode* name = new SNode(context, p);
     p += name->vmem_size();
     SNode* value = new SNode(context, p);
@@ -312,20 +315,26 @@ vword_t ll_declare(Context* context, vword_t p)
             lisp_parse(context, def_top, value);
 
             // execute lists
+            if(parent->type == LIST)
+                def_top = ll_eval(context, def_top+VWORD_SIZE);
+
             if(value->type == LIST)
                 def_top = ll_eval(context, def_top+VWORD_SIZE);
 
             len -= def_top;
 
             //logger->log(linfo, "declared \'%s\': 0x%x, %d bytes", name->string, def_top, len);
+            vword_t parent_id = parent->integer;
+            if(parent_id == -1)
+                parent_id = default_parent;
 
-            add_symbol(name->string, def_top, 0, default_parent);
+            add_symbol(name->string, def_top, 0, parent_id);
         }
         else
             logger->log(lerror, "symbol \'%s\' already in use", name->string);
     }
     else
-        logger->log(lerror, "first argument must be a symbol!");
+        logger->log(lerror, "name argument must be a symbol!");
 
     delete name;
     delete value;
@@ -348,8 +357,8 @@ vword_t ll_asm(Context* context, vword_t p)
 
 vword_t ll_quote(Context* context, vword_t p)
 {
-    SNode* ast = new SNode(LIST);
-    p += ast->read_vmem(context, p);
+    SNode* ast = new SNode(context, p);
+    p += ast->vmem_size();
 
     if(ast->type == LIST && quote_stack != (vword_t)0)
     {
@@ -370,11 +379,11 @@ vword_t ll_quote(Context* context, vword_t p)
 
 vword_t ll_lmap(Context* context, vword_t p)
 {
-    SNode* fn = new SNode(LIST);
-    p += fn->read_vmem(context, p);
+    SNode* fn = new SNode(context, p);
+    p += fn->vmem_size();
 
-    SNode* list = new SNode(LIST);
-    p += list->read_vmem(context, p);
+    SNode* list = new SNode(context, p);
+    p += list->vmem_size();
 
     ListIterator<SNode*> it = ListIterator<SNode*>(list->subnodes);
     while(! it.isLast())
@@ -398,8 +407,8 @@ vword_t ll_lmap(Context* context, vword_t p)
 
 vword_t ll_progn(Context* context, vword_t p)
 {
-    SNode* list = new SNode(LIST);
-    p += list->read_vmem(context, p);
+    SNode* list = new SNode(context, p);
+    p += list->vmem_size();
 
     ListIterator<SNode*> it = ListIterator<SNode*>(list->subnodes);
     while(! it.isLast())
@@ -408,6 +417,7 @@ vword_t ll_progn(Context* context, vword_t p)
 
         p -= lisp_parse_size(fn);
         lisp_parse(context, p, fn);
+
         if(fn->type == LIST)
             p += VWORD_SIZE;
         p = ll_eval(context, p);

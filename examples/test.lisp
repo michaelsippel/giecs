@@ -2,11 +2,14 @@
 
 progn
 (
-	(declare defmacro '(macro (name plist def)
-		(declare name '(macro plist def))))
+	(declare 0 defvar '(macro (name val)
+		(declare 0 name val)))
 
-	(declare defun '(macro (name plist def)
-		(declare name '(function plist def))))
+	(declare 0 defmacro '(macro (name plist def)
+		(defvar name '(macro plist def))))
+
+	(declare 0 defun '(macro (name plist def)
+		(defvar name '(function plist def))))
 
 	(defun read (fd buf len)
 		(syscall 3 fd buf len 0 0))
@@ -20,24 +23,25 @@ progn
 	(defun close (fd)
 		(syscall 6 fd 0 0 0 0))
 
-	(declare stdin 0)
-	(declare stdout 1)
-	(declare stderr 2)
+	(defvar stdin 0)
+	(defvar stdout 1)
+	(defvar stderr 2)
 
-	(declare mptr 30000)
+	(defvar mptr 30000)
 	(defun malloc (size)
-		(lmap nop
-			(setw 'mptr (+ mptr size))
-			(return mptr)))
+		(resw 'mptr))
+#		(progn
+#			((setw 'mptr (+ mptr size))
+#			(return mptr)))
+
+	(printi (malloc 10))
 
 	(defun factorial (n)
 		(eval (if (eq n 1)
 			'(quote 1)
-			'(* (factorial (- n 1)) n)
-		))
-	)
+			'(* (factorial (- n 1)) n))))
 
-	(declare a 8)
+	(defvar a 8)
 	(write stdout "\ndeclared a: " 14)
 	(printi a)
 
@@ -49,15 +53,18 @@ progn
 
 	(write stdout "\n" 2)
 
-	(declare buf mptr)
+	(defvar buf (malloc 12))
+	(printi (resw 'buf))
 	(setw (+ buf 0) 0)
 	(setw (+ buf 4) 0)
 	(setw (+ buf 8) 0)
 
-#	(write stdout "Enter your name: " 18)
-#	(read stdin buf 12)
-#	(write stdout "Your name is " 14)
-#	(write stdout buf 12)
+	(exit 0)
+
+	(write stdout "Enter your name: " 18)
+	(read stdin buf 12)
+	(write stdout "Your name is " 14)
+	(write stdout buf 12)
 
 	(exit 0)
 )

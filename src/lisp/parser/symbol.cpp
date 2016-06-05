@@ -82,7 +82,7 @@ void add_symbol(const char* name, vword_t start, size_t reqb, vword_t parent)
 
 void add_symbol(char* name, vword_t start, size_t reqb)
 {
-    add_symbol(name, start, reqb, 0);
+    add_symbol(name, start, reqb, default_parent);
 }
 
 void add_symbol(char* name, vword_t start, size_t reqb, vword_t parent)
