@@ -50,10 +50,9 @@ void init_lisp(Context* context)
     add_symbol("resw", context->add_ll_fn(ll_resw), VWORD_SIZE);
     add_symbol("setw", context->add_ll_fn(ll_setw), 2*VWORD_SIZE);
     add_symbol("map", context->add_ll_fn(ll_map), 4*VWORD_SIZE);
-    add_symbol("exit", context->add_ll_fn(ll_exit), VWORD_SIZE);
+
     add_symbol("printi", context->add_ll_fn(ll_printi), VWORD_SIZE);
     add_symbol("printb", context->add_ll_fn(ll_printb), 1);
-    add_symbol("prints", context->add_ll_fn(ll_prints), VWORD_SIZE);
     add_symbol("+", context->add_ll_fn(ll_addi), 2*VWORD_SIZE);
     add_symbol("-", context->add_ll_fn(ll_subi), 2*VWORD_SIZE);
     add_symbol("*", context->add_ll_fn(ll_muli), 2*VWORD_SIZE);

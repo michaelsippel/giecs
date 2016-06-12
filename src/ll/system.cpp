@@ -7,16 +7,6 @@
 #include <ll.h>
 #include <syscalls.h>
 
-vword_t ll_exit(Context* context, vword_t p)
-{
-    vword_t val = context->read_word(p);
-
-    printf("Exit with value %d\n", val);
-    exit(val);
-
-    return p + VWORD_SIZE;
-}
-
 vword_t ll_syscall(Context* context, vword_t p)
 {
     vword_t regs_in[6];
@@ -153,22 +143,6 @@ vword_t ll_printb(Context* context, vword_t p)
     context->read(p, 1, &val);
     printf("%s\n", val ? "true" : "false");
     return p + 1;
-}
-
-vword_t ll_prints(Context* context, vword_t p)
-{
-    vword_t ptr = context->read_word(p);
-    p += VWORD_SIZE;
-
-    vbyte_t c = 0;
-    do
-    {
-        context->read(ptr++, 1, (vbyte_t*) &c);
-        write(1, &c, 1);
-    }
-    while(c != '\0');
-
-    return p;
 }
 
 vword_t ll_resw(Context* context, vword_t p)

@@ -11,6 +11,9 @@ progn
 	(declare 0 defun '(macro (name plist def)
 		(defvar name '(function plist def))))
 
+	(defun exit (err)
+		(syscall 1 err 0 0 0 0))
+
 	(defun read (fd buf len)
 		(syscall 3 fd buf len 0 0))
 
@@ -23,18 +26,20 @@ progn
 	(defun close (fd)
 		(syscall 6 fd 0 0 0 0))
 
+	(defun getpid ()
+		(syscall 20 0 0 0 0 0))
+
 	(defvar stdin 0)
 	(defvar stdout 1)
 	(defvar stderr 2)
 
+	# a very simple malloc :D
 	(defvar mptr 30000)
 	(defun malloc (size)
-		(resw 'mptr))
-#		(progn
-#			((setw 'mptr (+ mptr size))
-#			(return mptr)))
-
-	(printi (malloc 10))
+		(progn 
+			((resw 'mptr)
+			(setw 'mptr (+ mptr size))
+		)))
 
 	(defun factorial (n)
 		(eval (if (eq n 1)
@@ -49,22 +54,34 @@ progn
 	(printi (factorial 8))
 
 	(write stdout "\ncurrent pid: " 15)
-	(printi (syscall 20 0 0 0 0 0))
-
+	(printi (getpid))
 	(write stdout "\n" 2)
 
-	(defvar buf (malloc 12))
-	(printi (resw 'buf))
-	(setw (+ buf 0) 0)
-	(setw (+ buf 4) 0)
-	(setw (+ buf 8) 0)
+	(defvar buf1 (malloc 16))
+	(defvar buf2 (malloc 16))
+#	(printi buf1)
+#	(printi buf2)
 
-	(exit 0)
+#	(setw (+ buf1 0) 0)
+#	(setw (+ buf1 4) 0)
+#	(setw (+ buf1 8) 0)
+#	(setw (+ buf1 12) 0)
+#
+#	(setw (+ buf2 0) 0)
+#	(setw (+ buf2 4) 0)
+#	(setw (+ buf2 8) 0)
+#	(setw (+ buf2 12) 0)
 
-	(write stdout "Enter your name: " 18)
-	(read stdin buf 12)
-	(write stdout "Your name is " 14)
-	(write stdout buf 12)
+#	(write stdout "Enter your name: " 18)
+#	(read stdin buf1 16)
+
+#	(write stdout "favorite color: " 17)
+#	(read stdin buf2 16)
+
+#	(write stdout "\n\nyour name is " 16)
+#	(write stdout buf1 16)
+#	(write stdout "your favorite color is " 23)
+#	(write stdout buf2 16)
 
 	(exit 0)
 )

@@ -17,10 +17,8 @@ vword_t ll_setw(Context* context, vword_t p);
 vword_t ll_map(Context* context, vword_t p);
 vword_t ll_cond(Context* context, vword_t p);
 
-vword_t ll_exit(Context* context, vword_t p);
 vword_t ll_printi(Context* context, vword_t p);
 vword_t ll_printb(Context* context, vword_t p);
-vword_t ll_prints(Context* context, vword_t p);
 
 vword_t ll_addi(Context* context, vword_t p);
 vword_t ll_subi(Context* context, vword_t p);
