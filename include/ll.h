@@ -7,6 +7,7 @@ vword_t ll_eval(Context* context, vword_t p);
 vword_t ll_deval(Context* context, vword_t p);
 vword_t ll_nop(Context* context, vword_t p);
 
+vword_t ll_load(Context* context, vword_t p);
 vword_t ll_syscall(Context* context, vword_t p);
 
 vword_t ll_eq(Context* context, vword_t p);

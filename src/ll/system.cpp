@@ -1,11 +1,57 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <string.h>
+#include <linux/limits.h>
+#include <libgen.h>
 
 #include <context.h>
 #include <lisp/reader.h>
+#include <lisp/parser.h>
 #include <ll.h>
 #include <syscalls.h>
+
+vword_t ll_load(Context* context, vword_t p)
+{
+    vword_t ptr = context->read_word(p);
+    p += VWORD_SIZE;
+
+    int cwd = open(".", O_RDONLY);
+
+    char path[PATH_MAX+1];
+    context->read(ptr, PATH_MAX, (vbyte_t*) &path);
+
+    int fd = open(path, O_RDONLY);
+    if(fd < 0)
+    {
+        printf("can't open \"%s\"\n", path);
+        return p;
+    }
+
+    chdir(dirname(path));
+
+    size_t length = lseek(fd, 0, SEEK_END);
+    lseek(fd, 0, SEEK_SET);
+    char* buf = (char*) malloc(length+1);
+    read(fd, buf, length);
+    buf[length] = '\0';
+
+    close(fd);
+
+    SNode* ast = new SNode(LIST, buf);
+    if(! ast->subnodes->isEmpty())
+    {
+        p -= lisp_parse_size(ast);
+        lisp_parse(context, p, ast);
+        ll_eval(context, p+VWORD_SIZE);
+    }
+
+    fchdir(cwd);
+    close(cwd);
+
+    return p;
+}
 
 vword_t ll_syscall(Context* context, vword_t p)
 {

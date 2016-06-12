@@ -44,6 +44,8 @@ void init_lisp(Context* context)
     add_symbol("genfn", context->add_ll_fn(ll_gen_fn), 2*VWORD_SIZE);
     add_symbol("syscall", context->add_ll_fn(ll_syscall), 6*VWORD_SIZE);
 
+    add_symbol("load", context->add_ll_fn(ll_load), VWORD_SIZE);
+
     add_symbol("if", context->add_ll_fn(ll_cond), 2*VWORD_SIZE+1);
     add_symbol("eq", context->add_ll_fn(ll_eq), 2*VWORD_SIZE);
 
