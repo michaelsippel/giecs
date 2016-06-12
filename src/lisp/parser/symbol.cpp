@@ -5,7 +5,7 @@
 #include <context.h>
 #include <lisp/parser.h>
 
-static List<struct symbol*>* symbols = new List<struct symbol*>();
+List<struct symbol*>* symbols;
 vword_t default_parent = 0;
 
 struct symbol* resolve_symbol(const char* name, vword_t parent)
@@ -42,13 +42,16 @@ struct symbol* resolve_symbol(vword_t addr)
 struct symbol* resolve_symbol(char* name, vword_t parent)
 {
     ListIterator<struct symbol*> it = ListIterator<struct symbol*>(symbols);
-
     while(! it.isLast())
     {
         struct symbol* c = it.getCurrent();
-        if(c->name != NULL && strcmp(name, c->name) == 0 && c->parent == parent)
+        if(c->name != NULL)
         {
-            return c;
+            //printf("%s, %s, %d, %d\n", name, c->name, parent, c->parent);
+            if(strcmp(name, c->name) == 0 && c->parent == parent)
+            {
+                return c;
+            }
         }
 
         it.next();
@@ -94,7 +97,7 @@ void add_symbol(char* name, vword_t start, size_t reqb, vword_t parent)
     sym->reqb = reqb;
     sym->parent = parent;
 
-    symbols->pushBack(sym);
+    symbols->pushFront(sym);
 }
 
 void remove_symbol(vword_t addr)

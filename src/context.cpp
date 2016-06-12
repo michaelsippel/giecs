@@ -81,7 +81,7 @@ int Context::read(vword_t addr, size_t length, vbyte_t* buf)
     if(end_page_id >= this->num_pages && end_page_offset > 0)
     {
         this->logger->log(lerror, "try to read out of memory (0x%x + 0x%x bytes, limit=0x%x)", addr, length, this->num_pages * this->page_size);
-        assert(end_page_id < this->num_pages);
+        exit(-1);
         return 0;
     }
 
@@ -113,7 +113,7 @@ int Context::write(vword_t addr, size_t length, vbyte_t* buf)
     if(end_page_id >= this->num_pages && end_page_offset > 0)
     {
         this->logger->log(lerror, "try to write out of memory (limit=0x%x)", this->num_pages * this->page_size);
-        assert(end_page_id < this->num_pages);
+        exit(-1);
         return 0;
     }
 

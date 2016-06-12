@@ -89,24 +89,26 @@ int main(int argc, char** argv)
             //ast->dump();
             vword_t s = stack;
             stack -= lisp_parse_size(ast);
-            lisp_parse(context, stack, ast);
-            stack = ll_eval(context, stack+VWORD_SIZE);
-
-            if(stack < s)
+            if(lisp_parse(context, stack, ast) > 0)
             {
-                printf("return: ");
-                switch(s-stack)
+                stack = ll_eval(context, stack+VWORD_SIZE);
+
+                if(stack < s)
                 {
-                    case 1:
-                        ll_printb(context, stack);
-                        break;
+                    printf("return: ");
+                    switch(s-stack)
+                    {
+                        case 1:
+                            ll_printb(context, stack);
+                            break;
 
-                    case VWORD_SIZE:
-                        ll_printi(context, stack);
-                        break;
+                        case VWORD_SIZE:
+                            ll_printi(context, stack);
+                            break;
 
-                    default:
-                        context->dump(stack, (s-stack)/VWORD_SIZE);
+                        default:
+                            context->dump(stack, (s-stack)/VWORD_SIZE);
+                    }
                 }
             }
         }

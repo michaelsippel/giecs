@@ -56,16 +56,24 @@ int lisp_parse_list(Context* context, vword_t addr, SNode* ast)
     SNode* sn = it.getCurrent();
     it.next();
 
+    int n;
+
     // first word
     switch(sn->type)
     {
         case INTEGER:
         case SYMBOL:
-            len = VWORD_SIZE + lisp_parse(context, addr+VWORD_SIZE, sn);
+            n = lisp_parse(context, addr+VWORD_SIZE, sn);
+            if(n < 0)
+                return n;
+
+            len = VWORD_SIZE + n;
             break;
 
         case LIST:
             len = lisp_parse(context, addr, sn);
+            if(n < 0)
+                return n;
             break;
     }
 
@@ -86,6 +94,7 @@ size_t lisp_parse_size(SNode* ast)
 {
     size_t len = 0;
     ListIterator<SNode*>* it;
+    struct symbol* s;
 
     switch(ast->type)
     {
@@ -94,7 +103,11 @@ size_t lisp_parse_size(SNode* ast)
             break;
 
         case SYMBOL:
-            if(resolve_symbol(ast->string)->reqb == 0)
+            s = resolve_symbol(ast->string);
+            if(s == NULL)
+                return 0;
+
+            if(s->reqb == 0)
                 len = VWORD_SIZE;
             else
                 len = 3*VWORD_SIZE;

@@ -14,6 +14,7 @@ Logger* lisp_parser_logger;
 Logger* lisp_atom_logger;
 
 extern vword_t default_parent;
+extern List<struct symbol*>* symbols;
 
 vword_t lisp_exec(Context* context, const char* str)
 {
@@ -33,6 +34,8 @@ void init_lisp(Context* context)
     lisp_logger = new Logger("lisp");
     lisp_parser_logger = new Logger(lisp_logger, "parser");
     lisp_atom_logger = new Logger(lisp_parser_logger, "atom");
+
+    symbols = new List<struct symbol*>();
 
     default_parent = 0;
 
@@ -201,7 +204,7 @@ vword_t ll_function(Context* context, vword_t p)
         remove_symbol(sn->string, p);
         it.next();
     }
-    remove_symbol(p);
+    remove_symbol(default_parent);
     default_parent = odp;
 
     // copy back

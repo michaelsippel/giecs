@@ -26,7 +26,7 @@ int asm_parse_symbol(Context* context, vword_t addr, SNode* ast)
 int lisp_parse_symbol(Context* context, vword_t addr, SNode* ast)
 {
     struct symbol* sym = resolve_symbol(ast->string);
-    if(sym != 0)
+    if(sym != NULL)
     {
         if(sym->reqb > 0)
         {
@@ -47,6 +47,7 @@ int lisp_parse_symbol(Context* context, vword_t addr, SNode* ast)
     else
     {
         lisp_atom_logger->log(lerror, "couldn't resolve symbol \"%s\"", ast->string);
+        return -1;
     }
 
     return 0;
