@@ -47,7 +47,6 @@ struct symbol* resolve_symbol(char* name, vword_t parent)
         struct symbol* c = it.getCurrent();
         if(c->name != NULL)
         {
-            //printf("%s, %s, %d, %d\n", name, c->name, parent, c->parent);
             if(strcmp(name, c->name) == 0 && c->parent == parent)
             {
                 return c;

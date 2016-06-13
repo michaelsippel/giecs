@@ -29,6 +29,6 @@ progn
 	(write stdout "your favorite color is " 23)
 	(write stdout buf2 16)
 
-	(exit 0)
+#	(exit 0)
 )
 

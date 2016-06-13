@@ -43,8 +43,10 @@ vword_t ll_load(Context* context, vword_t p)
     if(! ast->subnodes->isEmpty())
     {
         p -= lisp_parse_size(ast);
-        lisp_parse(context, p, ast);
-        ll_eval(context, p+VWORD_SIZE);
+        if(lisp_parse(context, p, ast) > 0)
+        {
+            p = ll_eval(context, p+VWORD_SIZE);
+        }
     }
 
     fchdir(cwd);
