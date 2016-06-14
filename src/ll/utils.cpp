@@ -20,7 +20,7 @@ vword_t ll_cond(Context* context, vword_t p)
     return p;
 }
 
-vword_t ll_eq(Context* context, vword_t p)
+vword_t ll_eqw(Context* context, vword_t p)
 {
     vword_t v[2];
     context->read(p, 2*VWORD_SIZE, (vbyte_t*) &v);
@@ -32,6 +32,20 @@ vword_t ll_eq(Context* context, vword_t p)
 
     return p;
 }
+
+vword_t ll_eqb(Context* context, vword_t p)
+{
+    vbyte_t v[2];
+    context->read(p, 2, (vbyte_t*) &v);
+
+    p += 1;
+
+    vbyte_t r = (v[0] == v[1]) ? 1 : 0;
+    context->write(p, 1, &r);
+
+    return p;
+}
+
 
 vword_t ll_map(Context* context, vword_t p)
 {

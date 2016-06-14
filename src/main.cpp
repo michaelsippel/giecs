@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdint.h>
+#include <linux/limits.h>
+#include <libgen.h>
 
 #include <ll.h>
 #include <context.h>
@@ -68,9 +70,15 @@ int main(int argc, char** argv)
         SNode* ast = new SNode(LIST, buf);
         if(! ast->subnodes->isEmpty())
         {
+            int cwd = open(".", O_RDONLY);
+            chdir(dirname(argv[i]));
             stack -= lisp_parse_size(ast);
             lisp_parse(context, stack, ast);
             ll_eval(context, stack+VWORD_SIZE);
+            fchdir(cwd);
+
+            close(cwd);
+            close(fd);
         }
     }
 

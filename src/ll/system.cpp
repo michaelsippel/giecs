@@ -214,6 +214,34 @@ vword_t ll_setw(Context* context, vword_t p)
     return p;
 }
 
+vword_t ll_resb(Context* context, vword_t p)
+{
+    vword_t ptr = context->read_word(p);
+    p += VWORD_SIZE;
+
+    vbyte_t v;
+    context->read(ptr, 1, &v);
+
+    p -= 1;
+    context->write(p, 1, &v);
+
+    return p;
+}
+
+vword_t ll_setb(Context* context, vword_t p)
+{
+    vword_t ptr = context->read_word(p);
+    p += VWORD_SIZE;
+    vbyte_t v;
+    context->read(p, 1, &v);
+    p += 1;
+
+    context->write(ptr, 1, &v);
+
+    return p;
+}
+
+
 vword_t ll_nop(Context* context, vword_t p)
 {
     return p;

@@ -3,6 +3,9 @@ progn
 	(defun exit (err)
 		(syscall 1 err 0 0 0 0))
 
+	(defun fork ()
+		(syscall 2 0 0 0 0 0))
+
 	(defun read (fd buf len)
 		(syscall 3 fd buf len 0 0))
 
@@ -21,13 +24,5 @@ progn
 	(defvar stdin 0)
 	(defvar stdout 1)
 	(defvar stderr 2)
-
-	# a very simple malloc :D
-	(defvar mptr 30000)
-	(defun malloc (size)
-		(progn 
-			((resw 'mptr)
-			(setw 'mptr (+ mptr size))
-		)))
 )
 

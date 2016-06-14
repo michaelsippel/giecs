@@ -10,11 +10,14 @@ vword_t ll_nop(Context* context, vword_t p);
 vword_t ll_load(Context* context, vword_t p);
 vword_t ll_syscall(Context* context, vword_t p);
 
-vword_t ll_eq(Context* context, vword_t p);
+vword_t ll_eqw(Context* context, vword_t p);
+vword_t ll_eqb(Context* context, vword_t p);
 vword_t ll_gtb(Context* context, vword_t p);
 
 vword_t ll_resw(Context* context, vword_t p);
 vword_t ll_setw(Context* context, vword_t p);
+vword_t ll_resb(Context* context, vword_t p);
+vword_t ll_setb(Context* context, vword_t p);
 vword_t ll_map(Context* context, vword_t p);
 vword_t ll_cond(Context* context, vword_t p);
 
