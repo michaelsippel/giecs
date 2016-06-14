@@ -45,6 +45,7 @@ void SNode::read_list(char* start, char* end)
                     quote = true;
                     break;
 
+                case ';':
                 case '#':
                     comment = true;
 
@@ -64,7 +65,7 @@ void SNode::read_list(char* start, char* end)
             s = str;
         }
 
-        if(st != (enum snode_type) -1)
+        if(st != (enum snode_type) -1 && !comment)
         {
             switch(*str)
             {
@@ -76,6 +77,7 @@ void SNode::read_list(char* start, char* end)
                     depth--;
                     if(!string)
                         goto add;
+
                     break;
 
                 case '"':
@@ -86,8 +88,10 @@ void SNode::read_list(char* start, char* end)
                         logger->log(lerror, "unexpexted \"");
                         return;
                     }
+
                     break;
 
+                case ';':
                 case '#':
                     if(!string)
                         comment = true;
