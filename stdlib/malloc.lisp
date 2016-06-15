@@ -1,6 +1,7 @@
-
 progn
 (
+;	(load "system.lisp")
+
 	# a very simple malloc :D
 	(defvar mptr 30000)
 	(defun malloc (size)

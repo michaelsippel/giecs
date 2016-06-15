@@ -126,8 +126,11 @@ vword_t ll_syscall(Context* context, vword_t p)
 
     for(i = 0; i < 5; i++)
     {
-        context->write(regs_in[i+1], sizes[i], buf[i]);
-        free(buf[i]);
+        if(buf[i] != NULL)
+        {
+            context->write(regs_in[i+1], sizes[i], buf[i]);
+            free(buf[i]);
+        }
     }
 
     return p;

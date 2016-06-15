@@ -49,7 +49,7 @@ void init_lisp(Context* context)
 
     add_symbol("load", context->add_ll_fn(ll_load), VWORD_SIZE);
 
-    add_symbol("if", context->add_ll_fn(ll_cond), 2*VWORD_SIZE+1);
+    add_symbol("oif", context->add_ll_fn(ll_cond), 2*VWORD_SIZE+1);
     add_symbol("eqw", context->add_ll_fn(ll_eqw), 2*VWORD_SIZE);
     add_symbol("eqb", context->add_ll_fn(ll_eqb), 2);
 
@@ -70,6 +70,7 @@ void init_lisp(Context* context)
     add_symbol("quote", context->add_ll_fn(ll_quote));
     add_symbol("asm", context->add_ll_fn(ll_asm));
     add_symbol("declare", context->add_ll_fn(ll_declare));
+    add_symbol("isdecl", context->add_ll_fn(ll_isdef));
     add_symbol("function", context->add_ll_fn(ll_function));
     add_symbol("macro", context->add_ll_fn(ll_macro));
     add_symbol("lmap", context->add_ll_fn(ll_lmap));
@@ -296,6 +297,23 @@ vword_t ll_gen_fn(Context* context, vword_t p)
     p -= n;
     context->write(p, n, buf);
     free(buf);
+
+    return p;
+}
+
+vword_t ll_isdef(Context* context, vword_t p)
+{
+    SNode* sym = new SNode(context, p);
+    p += sym->vmem_size();
+
+    vbyte_t t = (vbyte_t)1;
+    vbyte_t f = (vbyte_t)0;
+
+    p -= 1;
+    if(resolve_symbol(sym->string) == NULL)
+        context->write(p, 1, &f);
+    else
+        context->write(p, 1, &t);
 
     return p;
 }

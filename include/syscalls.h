@@ -3,6 +3,8 @@
 
 #include <asm/ptrace.h>
 
+#include <context.h>
+
 enum syscall_param_type
 {
     NONE,
@@ -13,7 +15,7 @@ enum syscall_param_type
     PTR_L_DX,
     PTR_L_SI,
     PTR_L_DI,
-    PTR, // 3 + len
+    PTR, // 8 + len
 };
 
 int syscall_params[][5] =
@@ -25,8 +27,8 @@ int syscall_params[][5] =
     {INT, PTR_L_DX, INT, NONE, NONE}, // 0x03 - read
     {INT, PTR_L_DX, INT, NONE, NONE}, // 0x04 - write
     {STR, INT, INT, NONE, NONE}, // 0x05 - open
-    {INT, NONE, NONE, NONE, NONE} // 0x06 - close
-
+    {INT, NONE, NONE, NONE, NONE}, // 0x06 - close
+    {INT, PTR+VWORD_SIZE, INT, NONE, NONE} // 0x07 - waitpid
 };
 
 #endif

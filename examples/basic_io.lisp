@@ -2,7 +2,6 @@
 
 progn
 (
-	(load "../stdlib/define.lisp")
 	(load "../stdlib/system.lisp")
 	(load "../stdlib/string.lisp")
 	(load "../stdlib/malloc.lisp")
