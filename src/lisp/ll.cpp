@@ -44,7 +44,7 @@ void init_lisp(Context* context)
     add_symbol("deval", context->add_ll_fn(ll_deval), 2*VWORD_SIZE);
     add_symbol("nop", context->add_ll_fn(ll_nop), -1);
 
-    add_symbol("genfn", context->add_ll_fn(ll_gen_fn), 2*VWORD_SIZE);
+    add_symbol("evalparam", context->add_ll_fn(ll_eval_param), 2*VWORD_SIZE);
     add_symbol("syscall", context->add_ll_fn(ll_syscall), 6*VWORD_SIZE);
 
     add_symbol("load", context->add_ll_fn(ll_load), VWORD_SIZE);
@@ -67,6 +67,7 @@ void init_lisp(Context* context)
     add_symbol("/", context->add_ll_fn(ll_divi), 2*VWORD_SIZE);
 
     // lisp macro
+    add_symbol("expand", context->add_ll_fn(ll_expand));
     add_symbol("quote", context->add_ll_fn(ll_quote));
     add_symbol("asm", context->add_ll_fn(ll_asm));
     add_symbol("declare", context->add_ll_fn(ll_declare));
@@ -273,7 +274,7 @@ vword_t ll_macro(Context* context, vword_t p)
     return p;
 }
 
-vword_t ll_gen_fn(Context* context, vword_t p)
+vword_t ll_eval_param(Context* context, vword_t p)
 {
     vword_t fn = context->read_word(p);
     p += VWORD_SIZE;

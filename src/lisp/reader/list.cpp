@@ -110,12 +110,7 @@ add:
                     if(depth == 0)
                     {
                         SNode* sn;
-                        if(!quote)
-                        {
-                            sn = new SNode(st);
-                            sn->read(s, str);
-                        }
-                        else
+                        if(quote)
                         {
                             sn = new SNode(LIST);
                             SNode* sq = new SNode(st);
@@ -124,6 +119,11 @@ add:
                             sn->subnodes = new List<SNode*>();
                             sn->subnodes->pushBack(new SNode(SYMBOL, (char*)"quote"));
                             sn->subnodes->pushBack(sq);
+                        }
+                        else
+                        {
+                            sn = new SNode(st);
+                            sn->read(s, str);
                         }
 
                         this->subnodes->pushBack(sn);

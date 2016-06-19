@@ -4,6 +4,7 @@ progn
 (
 	(load "../stdlib/system.lisp")
 	(load "../stdlib/string.lisp")
+	(load "../stdlib/malloc.lisp")
 
 	(defun factorial (n)
 		(if (eqw n 1)

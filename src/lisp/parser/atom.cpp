@@ -31,7 +31,7 @@ int lisp_parse_symbol(Context* context, vword_t addr, SNode* ast)
         if(sym->reqb > 0)
         {
             vword_t v[3];
-            v[0] = resolve_symbol("genfn")->start;
+            v[0] = resolve_symbol("evalparam")->start;
             v[1] = sym->start;
             v[2] = sym->reqb;
 
