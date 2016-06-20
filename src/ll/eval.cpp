@@ -21,12 +21,7 @@ vword_t ll_eval(Context* context, vword_t p)
         p -= len;
 
         // apply parameters
-        vbyte_t* buf = (vbyte_t*) malloc(len * sizeof(vbyte_t));
-
-        context->read(addr, len, buf);
-        context->write(p, len, buf);
-
-        free(buf);
+        context->copy(p, addr, len);
 
         // eval again
         return ll_eval(context, p);
@@ -44,13 +39,12 @@ vword_t ll_eval(Context* context, vword_t p)
 vword_t ll_deval(Context* context, vword_t p)
 {
     vword_t in[2];
-    context->read(p, 2*sizeof(vword_t), (vbyte_t*) &in);
+    context->read(p, 2*VWORD_SIZE, (vbyte_t*) &in);
     vword_t num_list = in[0];
     vword_t addr_list = in[1];
 
-    p += 2 * sizeof(vword_t);
+    p += 2 * VWORD_SIZE;
 
-    // TODO: without malloc?
     vword_t* list_index = (vword_t*) malloc(num_list * sizeof(vword_t));
 
     int i;
@@ -82,13 +76,7 @@ vword_t ll_deval(Context* context, vword_t p)
         else
         {
             p -= attr;
-
-            vbyte_t* buf = (vbyte_t*) malloc(attr * sizeof(vbyte_t));
-
-            context->read(list_addr, attr, buf);
-            context->write(p, attr, buf);
-
-            free(buf);
+            context->copy(p, list_addr, attr);
         }
     }
 

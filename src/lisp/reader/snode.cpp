@@ -193,8 +193,8 @@ size_t SNode::read_vmem(Context* context, vword_t addr)
             this->subnodes = new List<SNode*>();
             for(i = 0; i < n; i++)
             {
-                SNode* sn = new SNode(LIST);
-                addr += sn->read_vmem(context, addr);
+                SNode* sn = new SNode(context, addr);
+                addr += sn->vmem_size();
                 //sn->dump();
                 this->subnodes->pushBack(sn);
             }
@@ -203,8 +203,7 @@ size_t SNode::read_vmem(Context* context, vword_t addr)
         case SYMBOL:
         case STRING:
             // TODO: arbitrary length
-            context->read(addr, 512, (vbyte_t*) &buf);
-            len = strlen((char*)buf) + 1;
+            len = context->read_str(addr, buf) + 1;
             this->string = (char*) malloc(len);
             strcpy(this->string, (char*) buf);
             addr += len;

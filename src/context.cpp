@@ -133,6 +133,32 @@ int Context::write(vword_t addr, size_t length, vbyte_t* buf)
     return length;
 }
 
+void Context::copy(vword_t dest, vword_t src, size_t len)
+{
+    vbyte_t* buf = (vbyte_t*) malloc(len * sizeof(vbyte_t));
+
+    this->read(src, len, buf);
+    this->write(dest, len, buf);
+
+    free(buf);
+}
+
+size_t Context::read_str(vword_t start, vbyte_t* buf)
+{
+    size_t l = 0;
+
+    while(start+l < this->num_pages*this->page_size)
+    {
+        this->read(start+l, 1, (vbyte_t*) &buf[l]);
+        if(buf[l] == '\0')
+            break;
+
+        l++;
+    }
+
+    return l;
+}
+
 vword_t Context::read_word(vword_t addr)
 {
     vword_t val;

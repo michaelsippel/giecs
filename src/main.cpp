@@ -43,7 +43,7 @@ int main(int argc, char** argv)
     Context* context = new Context(0x1000, 4096);
 
     // place stack at end of memory
-    vword_t stack = 4096*0x100;
+    vword_t stack = 4096*0x1000;
 
     init_lisp(context);
     init_brainfuck(context);
@@ -102,10 +102,11 @@ int main(int argc, char** argv)
                 stack = ll_expand(context, stack);
                 stack = ll_eval(context, stack+VWORD_SIZE);
 
-                if(stack < s)
+                size_t l = s-stack;
+                if(l > 0)
                 {
                     printf("return: ");
-                    switch(s-stack)
+                    switch(l)
                     {
                         case 1:
                             ll_printb(context, stack);
@@ -116,7 +117,7 @@ int main(int argc, char** argv)
                             break;
 
                         default:
-                            context->dump(stack, (s-stack)/VWORD_SIZE);
+                            context->dump(stack, l/VWORD_SIZE);
                     }
                 }
             }

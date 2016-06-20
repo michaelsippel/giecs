@@ -18,7 +18,7 @@ extern List<struct symbol*>* symbols;
 
 vword_t lisp_exec(Context* context, const char* str)
 {
-    vword_t stack = 4096*0x100 - VWORD_SIZE;
+    vword_t stack = 4096*0x1000 - VWORD_SIZE;
     vword_t entry_point = 0x2000;
 
     SNode* ast = new SNode(LIST, (char*)str);
@@ -87,7 +87,7 @@ vword_t eval_params(Context* context, vword_t* p, size_t l)
     vbyte_t* dest = buf;
 
     size_t i = 0;
-    while(i < l && *p < 0x100000)
+    while(i < l)
     {
         quote_stack = *p;
 
@@ -213,12 +213,8 @@ vword_t ll_function(Context* context, vword_t p)
     default_parent = odp;
 
     // copy back
-    vbyte_t* buf = (vbyte_t*) malloc(n * sizeof(vbyte_t));
-    context->read(pt, n, buf);
-
     p -= n;
-    context->write(p, n, buf);
-    free(buf);
+    context->copy(p, pt, n);
 
     return p;
 }
@@ -292,12 +288,8 @@ vword_t ll_eval_param(Context* context, vword_t p)
     n -= pt;
 
     // copy back
-    vbyte_t* buf = (vbyte_t*) malloc(n * sizeof(vbyte_t));
-    context->read(pt, n, buf);
-
     p -= n;
-    context->write(p, n, buf);
-    free(buf);
+    context->copy(p, pt, n);
 
     return p;
 }

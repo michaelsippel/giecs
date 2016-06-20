@@ -20,7 +20,7 @@ vword_t ll_load(Context* context, vword_t p)
     int cwd = open(".", O_RDONLY);
 
     char path[PATH_MAX+1];
-    context->read(ptr, PATH_MAX, (vbyte_t*) &path);
+    context->read_str(ptr, (vbyte_t*) &path);
 
     int fd = open(path, O_RDONLY);
     if(fd < 0)

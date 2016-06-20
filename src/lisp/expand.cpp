@@ -2,20 +2,23 @@
 #include <context.h>
 #include <lisp/parser.h>
 
+
 // compile to lower level to avoid reparsing
 vword_t ll_expand(Context* context, vword_t p)
 {
-    vword_t ptr = context->read_word(p+VWORD_SIZE);
+    static vword_t pt = 0x10000; // TODO
+    vword_t op = p;
+
+    p += VWORD_SIZE;
+    vword_t ptr = context->read_word(p);
+    p += VWORD_SIZE;
 
     if(ptr == resolve_symbol("evalparam")->start)
     {
-        p += 2*VWORD_SIZE;
-
         vword_t fn = context->read_word(p);
         p += VWORD_SIZE;
         vword_t l = context->read_word(p);
         p += VWORD_SIZE;
-
 
         List<SNode*>* plist = new List<SNode*>();
         size_t n = 0;
@@ -29,7 +32,7 @@ vword_t ll_expand(Context* context, vword_t p)
             plist->pushBack(sn);
 
             // speculated size after execution
-            n += VWORD_SIZE;
+            n += VWORD_SIZE; // TODO
             j++;
         }
 
@@ -43,11 +46,12 @@ vword_t ll_expand(Context* context, vword_t p)
         while(! it.isLast())
         {
             SNode* sn = it.getCurrent();
-            sn->dump();
+            //sn->dump();
 
             vword_t resbuf[3];
             resbuf[0] = 2*VWORD_SIZE;
             resbuf[1] = resolve_symbol("resw")->start;
+            size_t l;
 
             switch(sn->type)
             {
@@ -57,29 +61,45 @@ vword_t ll_expand(Context* context, vword_t p)
                     break;
 
                 case SYMBOL:
-                    p -= VWORD_SIZE;
-                    asm_parse(context, p, sn);
+                    pt -= VWORD_SIZE;
+                    asm_parse(context, pt, sn);
 
-                    p -= 2*VWORD_SIZE;
-                    context->write(p, 2*VWORD_SIZE, (vbyte_t*) &resbuf);
+                    pt -= 2*VWORD_SIZE;
+                    context->write(pt, 2*VWORD_SIZE, (vbyte_t*) &resbuf);
 
                     *lp++ = -1;
-                    *lp++ = p;
+                    *lp++ = pt;
+                    break;
+
+                case STRING:
+                    pt -= lisp_parse_size(sn);
+                    lisp_parse(context, pt, sn);
+
+                    *lp++ = VWORD_SIZE;
+                    *lp++ = pt;
                     break;
 
                 case LIST:
+                    l = p;
                     p -= lisp_parse_size(sn);
                     lisp_parse(context, p, sn);
+                    p = ll_expand(context, p);
+                    l -= p;
+
+                    pt -= l;
+                    context->copy(pt, p, l);
+                    p += l;
+
                     *lp++ = -1;
-                    *lp++ = p;
+                    *lp++ = pt;
                     break;
             }
 
             it.next();
         }
 
-        p -= 2*VWORD_SIZE*j;
-        context->write(p, 2*VWORD_SIZE*j, listbuf);
+        pt -= 2*VWORD_SIZE*j;
+        context->write(pt, 2*VWORD_SIZE*j, listbuf);
 
         free(listbuf);
         delete plist;
@@ -88,12 +108,16 @@ vword_t ll_expand(Context* context, vword_t p)
         b0[0] = 3*VWORD_SIZE;
         b0[1] = resolve_symbol("deval")->start;
         b0[2] = j;
-        b0[3] = p;
+        b0[3] = pt;
 
         p -= 4*VWORD_SIZE;
         context->write(p, 4*VWORD_SIZE, (vbyte_t*) &b0);
 
-        //	context->dump(p, 8);
+        //context->dump(p, 8);
+    }
+    else
+    {
+        p = op;
     }
 
     return p;
