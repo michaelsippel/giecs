@@ -1,7 +1,8 @@
 
 #include <context.h>
+#include <ll.h>
+#include <lisp/ll.h>
 #include <lisp/parser.h>
-
 
 // compile to lower level to avoid reparsing
 vword_t ll_expand(Context* context, vword_t p)
@@ -115,6 +116,14 @@ vword_t ll_expand(Context* context, vword_t p)
 
         //context->dump(p, 8);
     }
+    else if(ptr == resolve_symbol("macro")->start)
+    {
+        p = ll_expand_macro(context, p);
+        p = ll_expand(context, p);
+    }
+//	else if(ptr == resolve_symbol("function")->start)
+//	{
+//	}
     else
     {
         p = op;

@@ -219,7 +219,7 @@ vword_t ll_function(Context* context, vword_t p)
     return p;
 }
 
-vword_t ll_macro(Context* context, vword_t p)
+vword_t ll_expand_macro(Context* context, vword_t p)
 {
     SNode* plist = new SNode(LIST);
     p += plist->read_vmem(context, p);
@@ -265,6 +265,13 @@ vword_t ll_macro(Context* context, vword_t p)
 
     p -= lisp_parse_size(val);
     lisp_parse(context, p, val);
+
+    return p;
+}
+
+vword_t ll_macro(Context* context, vword_t p)
+{
+    p = ll_expand_macro(context, p);
     p = ll_eval(context, p+VWORD_SIZE);
 
     return p;
