@@ -67,6 +67,7 @@ void init_lisp(Context* context)
     add_symbol("/", context->add_ll_fn(ll_divi), 2*VWORD_SIZE);
 
     // lisp macro
+    add_symbol("setrelative", context->add_ll_fn(ll_setrelative));
     add_symbol("expand", context->add_ll_fn(ll_expand));
     add_symbol("quote", context->add_ll_fn(ll_quote));
     add_symbol("asm", context->add_ll_fn(ll_asm));

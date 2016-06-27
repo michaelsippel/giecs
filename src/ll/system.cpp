@@ -76,7 +76,7 @@ vword_t ll_syscall(Context* context, vword_t p)
         {
             case NONE:
             case INT:
-                regs_out[i+1] = (void*)regs_in[i+1];
+                regs_out[i+1] =(void*)((uintptr_t)regs_in[i+1]);
                 continue;
 
             case STRING:
@@ -196,9 +196,27 @@ vword_t ll_printb(Context* context, vword_t p)
     return p + 1;
 }
 
+static vword_t rel_base = 0x0;
+
+vword_t ll_setrelative(Context* context, vword_t p)
+{
+    vword_t ob = rel_base;
+    rel_base = p;
+
+    p = ll_eval(context, p);
+
+    rel_base = ob;
+    return p;
+}
+
 vword_t ll_resw(Context* context, vword_t p)
 {
     vword_t ptr = context->read_word(p);
+
+    //printf("resw %d, relbase %d\n", ptr, rel_base);
+    if((int)ptr < 1)
+        ptr = rel_base - ptr;
+
     vword_t v = context->read_word(ptr);
     context->write_word(p, v);
 
@@ -209,9 +227,12 @@ vword_t ll_setw(Context* context, vword_t p)
 {
     vword_t ptr = context->read_word(p);
     p += VWORD_SIZE;
+
+    if((int)ptr < 1)
+        ptr = rel_base - ptr;
+
     vword_t v = context->read_word(p);
     p += VWORD_SIZE;
-
     context->write_word(ptr, v);
 
     return p;

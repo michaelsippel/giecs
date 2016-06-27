@@ -8,6 +8,7 @@ void init_lisp(Context* context);
 vword_t ll_quote(Context* context, vword_t p);
 vword_t ll_asm(Context* context, vword_t p);
 
+vword_t ll_setrelative(Context* context, vword_t p);
 vword_t ll_expand(Context* context, vword_t p);
 
 vword_t ll_eval_param(Context* context, vword_t p);
