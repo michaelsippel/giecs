@@ -4,9 +4,7 @@
 #include <lisp/ll.h>
 #include <lisp/parser.h>
 
-
-extern vword_t default_parent;
-extern List<struct symbol*>* symbols;
+extern Namespace* default_namespace;
 
 static vword_t pt = 0x80000; // TODO
 
@@ -146,10 +144,8 @@ vword_t ll_expand(Context* context, vword_t p)
         int nparam = plist->subnodes->numOfElements();
         size_t reqb = nparam * VWORD_SIZE;
 
-        // use stack pointer as group id for symbols
-        add_symbol((char*)NULL, pt, 0, default_parent);
-        vword_t odp = default_parent;
-        default_parent = pt;
+        Namespace* old_ns = default_namespace;
+        default_namespace = new Namespace(default_namespace);
 
         // bind parameters
         ListIterator<SNode*> it = ListIterator<SNode*>(plist->subnodes);
@@ -158,7 +154,7 @@ vword_t ll_expand(Context* context, vword_t p)
         {
             SNode* sn = it.getCurrent();
             vword_t start = - (1+i++)*VWORD_SIZE;
-            add_symbol(sn->string, start, 0, default_parent);
+            add_symbol(sn->string, start, 0);
 
             it.next();
         }
@@ -172,11 +168,12 @@ vword_t ll_expand(Context* context, vword_t p)
         while(! it.isLast())
         {
             SNode* sn = it.getCurrent();
-            remove_symbol(sn->string, default_parent);
+            remove_symbol(sn->string);
             it.next();
         }
-        remove_symbol(default_parent);
-        default_parent = odp;
+
+        delete default_namespace;
+        default_namespace = old_ns;
 
         pt -= 3*VWORD_SIZE;
 

@@ -4,27 +4,51 @@
 #include <context.h>
 #include <lisp/reader.h>
 
+class Namespace;
+
 struct symbol
 {
     char* name;
     vword_t start;
 
     size_t reqb;
-    vword_t parent;
+    Namespace* ns;
 };
+
+class Namespace
+{
+    public:
+        Namespace(Namespace* parent);
+        ~Namespace();
+
+        struct symbol* resolve_symbol(vword_t addr);
+        struct symbol* resolve_symbol(const char* name);
+        struct symbol* resolve_symbol(char* name);
+
+        void add_symbol(const char* name, vword_t start);
+        void add_symbol(const char* name, vword_t start, size_t reqb);
+        void add_symbol(char* name, vword_t start, size_t reqb);
+
+        void remove_symbol(vword_t addr);
+        void remove_symbol(char* name);
+
+    private:
+        Namespace* parent;
+        List<struct symbol*>* symbols;
+};
+
 
 struct symbol* resolve_symbol(vword_t addr);
 struct symbol* resolve_symbol(const char* name);
-struct symbol* resolve_symbol(const char* name, vword_t parent);
 struct symbol* resolve_symbol(char* name);
-struct symbol* resolve_symbol(char* name, vword_t parent);
+
 void add_symbol(const char* name, vword_t start);
 void add_symbol(const char* name, vword_t start, size_t reqb);
-void add_symbol(const char* name, vword_t start, size_t reqb, vword_t parent);
 void add_symbol(char* name, vword_t start, size_t reqb);
-void add_symbol(char* name, vword_t start, size_t reqb, vword_t parent);
+
 void remove_symbol(vword_t addr);
-void remove_symbol(char* name, vword_t parent);
+void remove_symbol(char* name);
+
 
 int asm_parse(Context* context, vword_t addr, SNode* ast);
 int asm_parse_list(Context* context, vword_t addr, SNode* ast);

@@ -13,8 +13,7 @@ Logger* lisp_logger;
 Logger* lisp_parser_logger;
 Logger* lisp_atom_logger;
 
-extern vword_t default_parent;
-extern List<struct symbol*>* symbols;
+extern Namespace* default_namespace;
 
 vword_t lisp_exec(Context* context, const char* str)
 {
@@ -35,9 +34,7 @@ void init_lisp(Context* context)
     lisp_parser_logger = new Logger(lisp_logger, "parser");
     lisp_atom_logger = new Logger(lisp_parser_logger, "atom");
 
-    symbols = new List<struct symbol*>();
-
-    default_parent = 0;
+    default_namespace = new Namespace(NULL);
 
     // system functions
     add_symbol("eval", context->add_ll_fn(ll_eval), VWORD_SIZE);
@@ -178,9 +175,8 @@ vword_t ll_function(Context* context, vword_t p)
     vword_t pt = eval_params(context, &p, reqb);
 
     // use stack pointer as group id for symbols
-    add_symbol((char*)NULL, p, 0, default_parent);
-    vword_t odp = default_parent;
-    default_parent = p;
+    Namespace* old_ns = default_namespace;
+    default_namespace = new Namespace(default_namespace);
 
     // bind parameters
     ListIterator<SNode*> it = ListIterator<SNode*>(plist->subnodes);
@@ -189,7 +185,7 @@ vword_t ll_function(Context* context, vword_t p)
     {
         SNode* sn = it.getCurrent();
         vword_t start = pt + (i++)*VWORD_SIZE;
-        add_symbol(sn->string, start, 0, p);
+        add_symbol(sn->string, start, 0);
 
         it.next();
     }
@@ -207,11 +203,12 @@ vword_t ll_function(Context* context, vword_t p)
     while(! it.isLast())
     {
         SNode* sn = it.getCurrent();
-        remove_symbol(sn->string, p);
+        remove_symbol(sn->string);
         it.next();
     }
-    remove_symbol(default_parent);
-    default_parent = odp;
+
+    delete default_namespace;
+    default_namespace = old_ns;
 
     // copy back
     p -= n;
@@ -350,11 +347,15 @@ vword_t ll_declare(Context* context, vword_t p)
             len -= def_top;
 
             //logger->log(linfo, "declared \'%s\': 0x%x, %d bytes", name->string, def_top, len);
+            Namespace* ns;
+
             vword_t parent_id = parent->integer;
             if(parent_id == -1)
-                parent_id = default_parent;
+                ns = default_namespace;
+            else
+                ns = resolve_symbol(parent_id)->ns;
 
-            add_symbol(name->string, def_top, 0, parent_id);
+            ns->add_symbol(name->string, def_top, 0);
         }
         else
             logger->log(lerror, "symbol \'%s\' already in use", name->string);
