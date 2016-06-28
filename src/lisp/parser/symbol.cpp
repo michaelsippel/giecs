@@ -72,7 +72,7 @@ struct symbol* Namespace::resolve_symbol(char* name)
 
 void Namespace::add_symbol(const char* name, vword_t start)
 {
-    this->add_symbol(name, start, 0);
+    this->add_symbol((char*)name, start);
 }
 
 void Namespace::add_symbol(const char* name, vword_t start, size_t reqb)
@@ -80,13 +80,29 @@ void Namespace::add_symbol(const char* name, vword_t start, size_t reqb)
     this->add_symbol((char*) name, start, reqb);
 }
 
+void Namespace::add_symbol(const char* name, vword_t start, size_t reqb, Namespace* ns)
+{
+    this->add_symbol((char*) name, start, reqb, ns);
+}
+
+void Namespace::add_symbol(char* name, vword_t start)
+{
+    this->add_symbol(name, start, 0);
+}
+
 void Namespace::add_symbol(char* name, vword_t start, size_t reqb)
+{
+    this->add_symbol(name, start, reqb, new Namespace(this));
+}
+
+void Namespace::add_symbol(char* name, vword_t start, size_t reqb, Namespace* ns)
 {
     struct symbol* sym = (struct symbol*) malloc(sizeof(struct symbol));
 
     sym->name = name;
     sym->start = start;
     sym->reqb = reqb;
+    sym->ns = ns;
 
     symbols->pushFront(sym);
 }
@@ -94,6 +110,7 @@ void Namespace::add_symbol(char* name, vword_t start, size_t reqb)
 void Namespace::remove_symbol(vword_t addr)
 {
     struct symbol* s = resolve_symbol(addr);
+    delete s->ns;
     this->symbols->remove(s);
     free(s);
 }
@@ -101,6 +118,7 @@ void Namespace::remove_symbol(vword_t addr)
 void Namespace::remove_symbol(char* name)
 {
     struct symbol* s = resolve_symbol(name);
+    delete s->ns;
     this->symbols->remove(s);
     free(s);
 }
@@ -134,9 +152,24 @@ void add_symbol(const char* name, vword_t start, size_t reqb)
     default_namespace->add_symbol(name, start, reqb);
 }
 
+void add_symbol(const char* name, vword_t start, size_t reqb, Namespace* ns)
+{
+    default_namespace->add_symbol(name, start, reqb, ns);
+}
+
+void add_symbol(char* name, vword_t start)
+{
+    default_namespace->add_symbol(name, start);
+}
+
 void add_symbol(char* name, vword_t start, size_t reqb)
 {
     default_namespace->add_symbol(name, start, reqb);
+}
+
+void add_symbol(char* name, vword_t start, size_t reqb, Namespace* ns)
+{
+    default_namespace->add_symbol(name, start, reqb, ns);
 }
 
 void remove_symbol(vword_t addr)

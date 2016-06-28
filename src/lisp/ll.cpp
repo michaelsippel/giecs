@@ -35,6 +35,7 @@ void init_lisp(Context* context)
     lisp_atom_logger = new Logger(lisp_parser_logger, "atom");
 
     default_namespace = new Namespace(NULL);
+    add_symbol((char*)NULL, 0, 0, default_namespace);
 
     // system functions
     add_symbol("eval", context->add_ll_fn(ll_eval), VWORD_SIZE);

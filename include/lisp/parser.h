@@ -27,7 +27,10 @@ class Namespace
 
         void add_symbol(const char* name, vword_t start);
         void add_symbol(const char* name, vword_t start, size_t reqb);
+        void add_symbol(const char* name, vword_t start, size_t reqb, Namespace* ns);
+        void add_symbol(char* name, vword_t start);
         void add_symbol(char* name, vword_t start, size_t reqb);
+        void add_symbol(char* name, vword_t start, size_t reqb, Namespace* ns);
 
         void remove_symbol(vword_t addr);
         void remove_symbol(char* name);
@@ -44,7 +47,10 @@ struct symbol* resolve_symbol(char* name);
 
 void add_symbol(const char* name, vword_t start);
 void add_symbol(const char* name, vword_t start, size_t reqb);
+void add_symbol(const char* name, vword_t start, size_t reqb, Namespace* ns);
+void add_symbol(char* name, vword_t start);
 void add_symbol(char* name, vword_t start, size_t reqb);
+void add_symbol(char* name, vword_t start, size_t reqb, Namespace* ns);
 
 void remove_symbol(vword_t addr);
 void remove_symbol(char* name);
