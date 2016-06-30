@@ -28,21 +28,8 @@ int lisp_parse_symbol(Context* context, vword_t addr, SNode* ast)
     struct symbol* sym = resolve_symbol(ast->string);
     if(sym != NULL)
     {
-        if(sym->reqb > 0)
-        {
-            vword_t v[3];
-            v[0] = resolve_symbol("evalparam")->start;
-            v[1] = sym->start;
-            v[2] = sym->reqb;
-
-            context->write(addr, 3*VWORD_SIZE, (vbyte_t*) &v);
-            return 3*VWORD_SIZE;
-        }
-        else
-        {
-            context->write_word(addr, sym->start);
-            return VWORD_SIZE;
-        }
+        context->write_word(addr, sym->start);
+        return VWORD_SIZE;
     }
     else
     {

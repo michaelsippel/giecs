@@ -103,6 +103,72 @@ vword_t expand_evalparam(Context* context, vword_t p, vword_t fn, size_t l)
     p -= 4*VWORD_SIZE;
     context->write(p, 4*VWORD_SIZE, (vbyte_t*) &b0);
 
+    size_t reqb = get_reqb(fn);
+    add_parsepoint(p, reqb-l);
+
+    return p;
+}
+
+vword_t ll_expand_function(Context* context, vword_t p)
+{
+    SNode* plist = new SNode(LIST);
+    p += plist->read_vmem(context, p);
+
+    SNode* val = new SNode(LIST);
+    p += val->read_vmem(context, p);
+
+    //plist->dump();
+    //val->dump();
+
+    int nparam = plist->subnodes->numOfElements();
+    size_t reqb = nparam * VWORD_SIZE;
+
+    Namespace* old_ns = default_namespace;
+    default_namespace = new Namespace(default_namespace);
+
+    // bind parameters
+    ListIterator<SNode*> it = ListIterator<SNode*>(plist->subnodes);
+    int i = 0;
+    while(! it.isLast())
+    {
+        SNode* sn = it.getCurrent();
+        vword_t start = - (1+i++)*VWORD_SIZE;
+        add_symbol(sn->string, start, 0);
+
+        it.next();
+    }
+
+    pt -= lisp_parse_size(val);
+    lisp_parse(context, pt, val);
+    vword_t fn = ll_expand(context, pt);
+
+    // unbind parameters
+    it.setFirst();
+    while(! it.isLast())
+    {
+        SNode* sn = it.getCurrent();
+        remove_symbol(sn->string);
+        it.next();
+    }
+
+    delete default_namespace;
+    default_namespace = old_ns;
+
+    pt -= 3*VWORD_SIZE;
+
+    vword_t srb[3];
+    srb[0] = 2*VWORD_SIZE;
+    srb[1] = resolve_symbol("setrelative")->start;
+    srb[2] = fn;
+
+    context->write(pt, 3*VWORD_SIZE, (vbyte_t*) &srb);
+    add_parsepoint(pt, reqb);
+
+    p -= VWORD_SIZE;
+    context->write_word(p, pt);
+    p -= VWORD_SIZE;
+    context->write_word(p, VWORD_SIZE);
+
     return p;
 }
 
@@ -114,6 +180,8 @@ vword_t ll_expand(Context* context, vword_t p)
     p += VWORD_SIZE;
     vword_t ptr = context->read_word(p);
     p += VWORD_SIZE;
+
+    size_t reqb = get_reqb(ptr);
 
     if(ptr == resolve_symbol("evalparam")->start)
     {
@@ -132,60 +200,15 @@ vword_t ll_expand(Context* context, vword_t p)
     }
     else if(ptr == resolve_symbol("function")->start)
     {
-        SNode* plist = new SNode(LIST);
-        p += plist->read_vmem(context, p);
-
-        SNode* val = new SNode(LIST);
-        p += val->read_vmem(context, p);
-
-        //plist->dump();
-        //val->dump();
-
-        int nparam = plist->subnodes->numOfElements();
-        size_t reqb = nparam * VWORD_SIZE;
-
-        Namespace* old_ns = default_namespace;
-        default_namespace = new Namespace(default_namespace);
-
-        // bind parameters
-        ListIterator<SNode*> it = ListIterator<SNode*>(plist->subnodes);
-        int i = 0;
-        while(! it.isLast())
-        {
-            SNode* sn = it.getCurrent();
-            vword_t start = - (1+i++)*VWORD_SIZE;
-            add_symbol(sn->string, start, 0);
-
-            it.next();
-        }
-
-        pt -= lisp_parse_size(val);
-        lisp_parse(context, pt, val);
-        vword_t fn = ll_expand(context, pt);
-
-        // unbind parameters
-        it.setFirst();
-        while(! it.isLast())
-        {
-            SNode* sn = it.getCurrent();
-            remove_symbol(sn->string);
-            it.next();
-        }
-
-        delete default_namespace;
-        default_namespace = old_ns;
-
-        pt -= 3*VWORD_SIZE;
-
-        vword_t srb[3];
-        srb[0] = 2*VWORD_SIZE;
-        srb[1] = resolve_symbol("setrelative")->start;
-        srb[2] = fn;
-
-        context->write(pt, 3*VWORD_SIZE, (vbyte_t*) &srb);
-
-        // eval parameters
-        p = expand_evalparam(context, p, pt, reqb);
+        p = ll_expand_function(context, p);
+    }
+    /* else if(ptr == resolve_symbol("quote")->start)
+     {
+         p = ll_quote(context, p);
+     }*/
+    else if(reqb > 0)
+    {
+        p = expand_evalparam(context, p, ptr, reqb);
     }
     else
     {

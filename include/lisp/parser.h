@@ -10,9 +10,13 @@ struct symbol
 {
     char* name;
     vword_t start;
-
-    size_t reqb;
     Namespace* ns;
+};
+
+struct parsepoint
+{
+    vword_t addr;
+    size_t reqb;
 };
 
 class Namespace
@@ -20,6 +24,10 @@ class Namespace
     public:
         Namespace(Namespace* parent);
         ~Namespace();
+
+        void add_parsepoint(vword_t addr, size_t reqb);
+        void remove_parsepoint(vword_t addr);
+        size_t get_reqb(vword_t addr);
 
         struct symbol* resolve_symbol(vword_t addr);
         struct symbol* resolve_symbol(const char* name);
@@ -38,8 +46,12 @@ class Namespace
     private:
         Namespace* parent;
         List<struct symbol*>* symbols;
+        List<struct parsepoint>* parselist;
 };
 
+void add_parsepoint(vword_t addr, size_t reqb);
+void remove_parsepoint(vword_t addr);
+size_t get_reqb(vword_t addr);
 
 struct symbol* resolve_symbol(vword_t addr);
 struct symbol* resolve_symbol(const char* name);

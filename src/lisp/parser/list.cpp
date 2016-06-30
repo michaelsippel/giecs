@@ -57,6 +57,10 @@ int lisp_parse_list(Context* context, vword_t addr, SNode* ast)
     it.next();
 
     int n;
+    vword_t fn;
+    size_t reqb;
+
+    len = VWORD_SIZE;
 
     // first word
     switch(sn->type)
@@ -67,13 +71,29 @@ int lisp_parse_list(Context* context, vword_t addr, SNode* ast)
             if(n < 0)
                 return n;
 
-            len = VWORD_SIZE + n;
+            fn = context->read_word(addr+VWORD_SIZE);
+            reqb = get_reqb(fn);
+            if(reqb > 0)
+            {
+                vword_t v[3];
+                v[0] = resolve_symbol("evalparam")->start;
+                v[1] = fn;
+                v[2] = reqb;
+                context->write(addr+VWORD_SIZE, 3*VWORD_SIZE, (vbyte_t*) &v);
+
+                len += 3*VWORD_SIZE;
+            }
+            else
+            {
+                len += VWORD_SIZE;
+            }
             break;
 
         case LIST:
-            len = lisp_parse(context, addr, sn);
+            n = lisp_parse(context, addr, sn);
             if(n < 0)
                 return n;
+            len = n;
             break;
     }
 
@@ -107,7 +127,7 @@ size_t lisp_parse_size(SNode* ast)
             if(s == NULL)
                 return 0;
 
-            if(s->reqb == 0)
+            if(get_reqb(s->start) == 0)
                 len = VWORD_SIZE;
             else
                 len = 3*VWORD_SIZE;

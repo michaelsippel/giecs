@@ -9,6 +9,7 @@ Namespace::Namespace(Namespace* parent_)
     : parent(parent_)
 {
     this->symbols = new List<struct symbol*>();
+    this->parselist = new List<struct parsepoint>();
 }
 
 Namespace::~Namespace()
@@ -21,6 +22,7 @@ Namespace::~Namespace()
     }
 
     delete this->symbols;
+    delete this->parselist;
 }
 
 struct symbol* Namespace::resolve_symbol(const char* name)
@@ -70,6 +72,51 @@ struct symbol* Namespace::resolve_symbol(char* name)
     return NULL;
 }
 
+size_t Namespace::get_reqb(vword_t addr)
+{
+    ListIterator<struct parsepoint> it = ListIterator<struct parsepoint>(this->parselist);
+
+    while(! it.isLast())
+    {
+        struct parsepoint pp = it.getCurrent();
+        if(pp.addr == addr)
+            return pp.reqb;
+        it.next();
+    }
+
+    if(this->parent != NULL)
+        return this->parent->get_reqb(addr);
+
+    return 0;
+}
+
+void Namespace::add_parsepoint(vword_t addr, size_t reqb)
+{
+    this->parselist->pushBack((struct parsepoint)
+    {
+        addr, reqb
+    });
+}
+
+void Namespace::remove_parsepoint(vword_t addr)
+{
+    ListIterator<struct parsepoint> it = ListIterator<struct parsepoint>(this->parselist);
+
+    while(! it.isLast())
+    {
+        struct parsepoint pp = it.getCurrent();
+        if(pp.addr == addr)
+        {
+            it.remove();
+            return;
+        }
+        it.next();
+    }
+
+    if(this->parent != NULL)
+        return this->parent->remove_parsepoint(addr);
+}
+
 void Namespace::add_symbol(const char* name, vword_t start)
 {
     this->add_symbol((char*)name, start);
@@ -101,16 +148,19 @@ void Namespace::add_symbol(char* name, vword_t start, size_t reqb, Namespace* ns
 
     sym->name = name;
     sym->start = start;
-    sym->reqb = reqb;
     sym->ns = ns;
 
     symbols->pushFront(sym);
+
+    if(reqb > 0)
+        this->add_parsepoint(start, reqb);
 }
 
 void Namespace::remove_symbol(vword_t addr)
 {
     struct symbol* s = resolve_symbol(addr);
     delete s->ns;
+    this->remove_parsepoint(s->start);
     this->symbols->remove(s);
     free(s);
 }
@@ -119,6 +169,7 @@ void Namespace::remove_symbol(char* name)
 {
     struct symbol* s = resolve_symbol(name);
     delete s->ns;
+    this->remove_parsepoint(s->start);
     this->symbols->remove(s);
     free(s);
 }
@@ -126,6 +177,22 @@ void Namespace::remove_symbol(char* name)
 
 // default namespace
 Namespace* default_namespace;
+
+
+void add_parsepoint(vword_t addr, size_t reqb)
+{
+    default_namespace->add_parsepoint(addr, reqb);
+}
+
+void remove_parsepoint(vword_t addr)
+{
+    default_namespace->remove_parsepoint(addr);
+}
+
+size_t get_reqb(vword_t addr)
+{
+    return default_namespace->get_reqb(addr);
+}
 
 struct symbol* resolve_symbol(const char* name)
 {
