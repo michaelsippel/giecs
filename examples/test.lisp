@@ -6,16 +6,21 @@ progn
 ;	(load "../stdlib/string.lisp")
 ;	(load "../stdlib/malloc.lisp")
 
-;	(defun factorial (n)
+	(defun factorial (n)
 ;		(if (eqw n 1)
 ;			'1
 ;			(* (factorial (- n 1)) n)))
+		(eval (oif (eqw n 1)
+			'(quote 1)
+			'(* (factorial (- n 1)) n)
+		))
+	)
 
 	(defun square (x) (* x x))
 	(printi (square 3))
 
 ;	(prints "factorial of 8 is ")
-;	(printi (factorial 8))
+	(printi (factorial 8))
 
 ;	(defvar pid (fork))
 

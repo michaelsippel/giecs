@@ -69,18 +69,21 @@ vword_t expand_evalparam(Context* context, vword_t p, vword_t fn, size_t l)
                 break;
 
             case LIST:
-                l = p;
-                p -= lisp_parse_size(sn);
-                lisp_parse(context, p, sn);
-                p = ll_expand(context, p);
-                l -= p;
+                /*                l = p;
+                                p -= lisp_parse_size(sn);
+                                lisp_parse(context, p, sn);
+                                p = ll_expand(context, p);
+                                l -= p;
 
-                pt -= l;
-                context->copy(pt, p, l);
-                p += l;
+                                pt -= l;
+                                context->copy(pt, p, l);
+                                p += l;
+                */
+                pt -= lisp_parse_size(sn);
+                lisp_parse(context, pt, sn);
 
                 *lp++ = -1;
-                *lp++ = pt;
+                *lp++ = expand(context, pt, false, true);
                 break;
         }
 
@@ -175,19 +178,12 @@ vword_t ll_expand_function(Context* context, vword_t p)
 }
 
 // compile to lower level to avoid reparsing
-vword_t ll_expand_full(Context* context, vword_t p)
+vword_t ll_expand(Context* context, vword_t p)
 {
-    vword_t op = 0;
-    while(op != p)
-    {
-        op = p;
-        p = ll_expand(context, p);
-    }
-
-    return p;
+    return expand(context, p, false, false);
 }
 
-vword_t ll_expand(Context* context, vword_t p)
+vword_t expand(Context* context, vword_t p, bool quoted, bool quoteptr)
 {
     vword_t op = p;
 
@@ -207,12 +203,11 @@ vword_t ll_expand(Context* context, vword_t p)
         p = expand_evalparam(context, p, fn, l);
         //context->dump(p, 8);
     }
-    /* doesn't work here
-        else if(ptr == resolve_symbol("macro")->start)
-        {
-            p = ll_expand_macro(context, p);
-    //        p = ll_expand(context, p);
-        }*/
+    else if(ptr == resolve_symbol("macro")->start && !quoted)
+    {
+        p = ll_expand_macro(context, p);
+//        p = expand(context, p, false, false);
+    }
     else if(ptr == resolve_symbol("function")->start)
     {
         p = ll_expand_function(context, p);
@@ -222,14 +217,32 @@ vword_t ll_expand(Context* context, vword_t p)
         SNode* ast = new SNode(context, p);
         p += ast->vmem_size();
 
-        p -= lisp_parse_size(ast);
-        lisp_parse(context, p, ast);
+        vword_t len;
 
-        vword_t len = VWORD_SIZE;
-        if(ast->type == LIST)
+        if(ast->type == LIST && quoteptr)
         {
-            p = ll_expand(context, p);
-            len = context->read_word(p);
+            pt -= lisp_parse_size(ast);
+            lisp_parse(context, pt, ast);
+
+            vword_t fn = expand(context, pt, true, false);
+
+            p -= VWORD_SIZE;
+            context->write_word(p, fn);
+
+            len = VWORD_SIZE;
+        }
+        else
+        {
+            p -= lisp_parse_size(ast);
+            lisp_parse(context, p, ast);
+
+            if(ast->type == LIST)
+            {
+                p = expand(context, p, true, false);
+                len = context->read_word(p);
+            }
+            else
+                len = VWORD_SIZE;
         }
 
         p -= VWORD_SIZE;
@@ -247,6 +260,9 @@ vword_t ll_expand(Context* context, vword_t p)
     {
         return op;
     }
+
+    if(!quoted && op != p)
+        return expand(context, p, false, false);
 
     return p;
 }

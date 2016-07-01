@@ -321,7 +321,7 @@ vword_t ll_declare(Context* context, vword_t p)
 {
     static Logger* logger = new Logger(lisp_logger, "declare");
 
-    static vword_t def_top = 0xA0000;
+    static vword_t def_start = 0xA0000;
 
     SNode* parent = new SNode(context, p);
     p += parent->vmem_size();
@@ -334,27 +334,6 @@ vword_t ll_declare(Context* context, vword_t p)
     {
         if(resolve_symbol(name->string) == NULL)
         {
-            size_t len = def_top;
-            def_top -= lisp_parse_size(value);
-            lisp_parse(context, def_top, value);
-
-            // execute lists
-            if(parent->type == LIST)
-                def_top = ll_eval(context, def_top+VWORD_SIZE);
-
-            size_t reqb = 0;
-
-            if(value->type == LIST)
-            {
-                def_top = ll_expand(context, def_top);
-                def_top = ll_eval(context, def_top+VWORD_SIZE);
-
-                vword_t ptr = context->read_word(def_top+VWORD_SIZE);
-                reqb = get_reqb(ptr);
-            }
-            len -= def_top;
-
-            //logger->log(linfo, "declared \'%s\': 0x%x, %d bytes", name->string, def_top, len);
             Namespace* ns;
 
             vword_t parent_id = parent->integer;
@@ -363,7 +342,41 @@ vword_t ll_declare(Context* context, vword_t p)
             else
                 ns = resolve_symbol(parent_id)->ns;
 
-            ns->add_symbol(name->string, def_top, reqb);
+            ns->add_symbol(name->string, def_start);
+
+            size_t len = p;
+            size_t pl = lisp_parse_size(value);
+            p -= pl;
+            lisp_parse(context, p, value);
+
+            size_t reqb = 0;
+            if(value->type == LIST)
+            {
+                // TODO: clean this up
+                vword_t p2 = p - pl;
+                context->copy(p2, p, pl);
+                p2 = ll_expand(context, p2);
+                p2 = ll_eval(context, p2+VWORD_SIZE);
+
+                vword_t ptr = context->read_word(p2+VWORD_SIZE);
+                reqb = get_reqb(ptr);
+            }
+
+            ns->add_parsepoint(def_start, reqb);
+
+            if(value->type == LIST)
+            {
+                p = ll_expand(context, p);
+                p = ll_eval(context, p+VWORD_SIZE);
+            }
+
+            len -= p;
+
+            context->copy(def_start, p, len);
+            def_start += len;
+            p += len;
+
+            //logger->log(linfo, "declared \'%s\': 0x%x, %d bytes", name->string, def_top, len);
         }
         else
             logger->log(lerror, "symbol \'%s\' already in use", name->string);

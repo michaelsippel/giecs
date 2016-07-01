@@ -9,8 +9,9 @@ vword_t ll_quote(Context* context, vword_t p);
 vword_t ll_asm(Context* context, vword_t p);
 
 vword_t ll_setrelative(Context* context, vword_t p);
+
 vword_t ll_expand(Context* context, vword_t p);
-vword_t ll_expand_full(Context* context, vword_t p);
+vword_t expand(Context* context, vword_t p, bool quoted, bool quoteptr);
 
 vword_t ll_eval_param(Context* context, vword_t p);
 vword_t ll_expand_macro(Context* context, vword_t p);
