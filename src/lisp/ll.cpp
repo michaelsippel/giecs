@@ -351,7 +351,6 @@ vword_t ll_declare(Context* context, vword_t p)
 
                 vword_t ptr = context->read_word(def_top+VWORD_SIZE);
                 reqb = get_reqb(ptr);
-                printf("reqb %d\n", reqb);
             }
             len -= def_top;
 

@@ -100,19 +100,19 @@ vword_t expand_evalparam(Context* context, vword_t p, vword_t fn, size_t l)
     b0[2] = j;
     b0[3] = pt;
 
-    p -= 4*VWORD_SIZE;
-    context->write(p, 4*VWORD_SIZE, (vbyte_t*) &b0);
+    pt -= 4*VWORD_SIZE;
+    context->write(pt, 4*VWORD_SIZE, (vbyte_t*) &b0);
 
-    size_t reqb = get_reqb(fn);
-    add_parsepoint(p, reqb-l);
+    p -= VWORD_SIZE;
+    context->write_word(p, pt);
+    p -= VWORD_SIZE;
+    context->write_word(p, VWORD_SIZE);
 
     return p;
 }
 
 vword_t ll_expand_function(Context* context, vword_t p)
 {
-    printf("expand funciton\n");
-
     SNode* plist = new SNode(LIST);
     p += plist->read_vmem(context, p);
 
@@ -134,7 +134,7 @@ vword_t ll_expand_function(Context* context, vword_t p)
     while(! it.isLast())
     {
         SNode* sn = it.getCurrent();
-        vword_t start = - (1+i++)*VWORD_SIZE;
+        vword_t start = - (i++)*VWORD_SIZE;
         add_symbol(sn->string, start, 0);
 
         it.next();
@@ -156,14 +156,15 @@ vword_t ll_expand_function(Context* context, vword_t p)
     delete default_namespace;
     default_namespace = old_ns;
 
-    pt -= 3*VWORD_SIZE;
+    pt -= 5*VWORD_SIZE;
 
-    vword_t srb[3];
-    srb[0] = 2*VWORD_SIZE;
+    vword_t srb[4];
+    srb[0] = 3*VWORD_SIZE;
     srb[1] = resolve_symbol("setrelative")->start;
-    srb[2] = fn;
+    srb[2] = reqb;
+    srb[3] = fn;
 
-    context->write(pt, 3*VWORD_SIZE, (vbyte_t*) &srb);
+    context->write(pt, 4*VWORD_SIZE, (vbyte_t*) &srb);
     add_parsepoint(pt, reqb);
 
     p -= VWORD_SIZE;
@@ -175,6 +176,18 @@ vword_t ll_expand_function(Context* context, vword_t p)
 }
 
 // compile to lower level to avoid reparsing
+vword_t ll_expand_full(Context* context, vword_t p)
+{
+    vword_t op = 0;
+    while(op != p)
+    {
+        op = p;
+        p = ll_expand(context, p);
+    }
+
+    return p;
+}
+
 vword_t ll_expand(Context* context, vword_t p)
 {
     vword_t op = p;
@@ -220,7 +233,7 @@ vword_t ll_expand(Context* context, vword_t p)
     }
     else
     {
-        p = op;
+        return op;
     }
 
     return p;
