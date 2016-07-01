@@ -99,7 +99,7 @@ int main(int argc, char** argv)
             stack -= lisp_parse_size(ast);
             if(lisp_parse(context, stack, ast) > 0)
             {
-//                stack = ll_expand(context, stack);
+                stack = ll_expand(context, stack);
                 stack = ll_eval(context, stack+VWORD_SIZE);
 
                 size_t l = s-stack;

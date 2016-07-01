@@ -35,7 +35,7 @@ int asm_parse_list(Context* context, vword_t addr, SNode* ast)
                 break;
         }
 
-        lptr += sizeof(vword_t);
+        lptr += VWORD_SIZE;
         it.next();
     }
 

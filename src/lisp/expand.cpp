@@ -111,6 +111,8 @@ vword_t expand_evalparam(Context* context, vword_t p, vword_t fn, size_t l)
 
 vword_t ll_expand_function(Context* context, vword_t p)
 {
+    printf("expand funciton\n");
+
     SNode* plist = new SNode(LIST);
     p += plist->read_vmem(context, p);
 
@@ -202,10 +204,16 @@ vword_t ll_expand(Context* context, vword_t p)
     {
         p = ll_expand_function(context, p);
     }
-    /* else if(ptr == resolve_symbol("quote")->start)
-     {
-         p = ll_quote(context, p);
-     }*/
+    else if(ptr == resolve_symbol("quote")->start)
+    {
+        p = ll_quote(context, p);
+
+        vword_t len = context->read_word(p);
+        p -= VWORD_SIZE;
+        context->write_word(p, resolve_symbol("nop")->start);
+        p -= VWORD_SIZE;
+        context->write_word(p, len+VWORD_SIZE);
+    }
     else if(reqb > 0)
     {
         p = expand_evalparam(context, p, ptr, reqb);

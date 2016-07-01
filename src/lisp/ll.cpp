@@ -40,7 +40,7 @@ void init_lisp(Context* context)
     // system functions
     add_symbol("eval", context->add_ll_fn(ll_eval), VWORD_SIZE);
     add_symbol("deval", context->add_ll_fn(ll_deval), 2*VWORD_SIZE);
-    add_symbol("nop", context->add_ll_fn(ll_nop), -1);
+    add_symbol("nop", context->add_ll_fn(ll_nop));
 
     add_symbol("evalparam", context->add_ll_fn(ll_eval_param), 2*VWORD_SIZE);
     add_symbol("syscall", context->add_ll_fn(ll_syscall), 6*VWORD_SIZE);
@@ -342,9 +342,17 @@ vword_t ll_declare(Context* context, vword_t p)
             if(parent->type == LIST)
                 def_top = ll_eval(context, def_top+VWORD_SIZE);
 
+            size_t reqb = 0;
+
             if(value->type == LIST)
+            {
+                def_top = ll_expand(context, def_top);
                 def_top = ll_eval(context, def_top+VWORD_SIZE);
 
+                vword_t ptr = context->read_word(def_top+VWORD_SIZE);
+                reqb = get_reqb(ptr);
+                printf("reqb %d\n", reqb);
+            }
             len -= def_top;
 
             //logger->log(linfo, "declared \'%s\': 0x%x, %d bytes", name->string, def_top, len);
@@ -356,7 +364,7 @@ vword_t ll_declare(Context* context, vword_t p)
             else
                 ns = resolve_symbol(parent_id)->ns;
 
-            ns->add_symbol(name->string, def_top, 0);
+            ns->add_symbol(name->string, def_top, reqb);
         }
         else
             logger->log(lerror, "symbol \'%s\' already in use", name->string);
@@ -392,14 +400,20 @@ vword_t ll_quote(Context* context, vword_t p)
     {
 //		printf("quote with pointer!\n");
         p -= VWORD_SIZE;
+
+        quote_stack += 4*VWORD_SIZE;
         context->write_word(p, quote_stack);
 
-        quote_stack += lisp_parse(context, quote_stack, ast);
+        lisp_parse(context, quote_stack, ast);
+        quote_stack = ll_expand(context, quote_stack);
+        quote_stack += 4*VWORD_SIZE;
     }
     else
     {
         p -= lisp_parse_size(ast);
         lisp_parse(context, p, ast);
+        if(ast->type == LIST)
+            p = ll_expand(context, p);
     }
 
     return p;
