@@ -5,7 +5,6 @@
 #include <lisp/parser.h>
 
 extern Namespace* default_namespace;
-
 static vword_t pt = 0x80000; // TODO
 
 vword_t expand_evalparam(Context* context, vword_t p, vword_t fn, size_t l)
@@ -208,24 +207,37 @@ vword_t ll_expand(Context* context, vword_t p)
         p = expand_evalparam(context, p, fn, l);
         //context->dump(p, 8);
     }
-    else if(ptr == resolve_symbol("macro")->start)
-    {
-        p = ll_expand_macro(context, p);
-        p = ll_expand(context, p);
-    }
+    /* doesn't work here
+        else if(ptr == resolve_symbol("macro")->start)
+        {
+            p = ll_expand_macro(context, p);
+    //        p = ll_expand(context, p);
+        }*/
     else if(ptr == resolve_symbol("function")->start)
     {
         p = ll_expand_function(context, p);
     }
     else if(ptr == resolve_symbol("quote")->start)
     {
-        p = ll_quote(context, p);
+        SNode* ast = new SNode(context, p);
+        p += ast->vmem_size();
 
-        vword_t len = context->read_word(p);
+        p -= lisp_parse_size(ast);
+        lisp_parse(context, p, ast);
+
+        vword_t len = VWORD_SIZE;
+        if(ast->type == LIST)
+        {
+            p = ll_expand(context, p);
+            len = context->read_word(p);
+        }
+
         p -= VWORD_SIZE;
         context->write_word(p, resolve_symbol("nop")->start);
         p -= VWORD_SIZE;
         context->write_word(p, len+VWORD_SIZE);
+
+//		context->dump(p, len/VWORD_SIZE+1);
     }
     else if(reqb > 0)
     {

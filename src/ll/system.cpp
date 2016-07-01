@@ -220,7 +220,6 @@ vword_t ll_resw(Context* context, vword_t p)
 {
     vword_t ptr = context->read_word(p);
 
-    //printf("resw %d, relbase %d\n", ptr, rel_base);
     if((int)ptr < 1)
         ptr = rel_base - ptr;
 
@@ -271,7 +270,6 @@ vword_t ll_setb(Context* context, vword_t p)
 
     return p;
 }
-
 
 vword_t ll_nop(Context* context, vword_t p)
 {

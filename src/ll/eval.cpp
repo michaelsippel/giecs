@@ -82,6 +82,7 @@ vword_t ll_deval(Context* context, vword_t p)
 
     free(list_index);
 
-    return ll_eval(context, p);
+    p = ll_eval(context, p);
+    return p;
 }
 

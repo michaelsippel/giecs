@@ -2,7 +2,7 @@
 
 progn
 (
-;	(load "../stdlib/system.lisp")
+	(load "../stdlib/system.lisp")
 ;	(load "../stdlib/string.lisp")
 ;	(load "../stdlib/malloc.lisp")
 
@@ -10,6 +10,9 @@ progn
 ;		(if (eqw n 1)
 ;			'1
 ;			(* (factorial (- n 1)) n)))
+
+	(defun square (x) (* x x))
+	(printi (square 3))
 
 ;	(prints "factorial of 8 is ")
 ;	(printi (factorial 8))
@@ -25,10 +28,6 @@ progn
 ;			(defvar status 0)
 ;			(waitpid pid 'status 0))))
 
-;	(exit 0)
-	(declare 0 test '(function (x) (+ x x)))
-	(printi (test 4))
-
-	(syscall 1 0 0 0 0 0)
+	(exit 0)
 )
 

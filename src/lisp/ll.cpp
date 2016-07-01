@@ -397,22 +397,17 @@ vword_t ll_quote(Context* context, vword_t p)
 
     if(ast->type == LIST && quote_stack != (vword_t)0)
     {
-//		printf("quote with pointer!\n");
-        p -= VWORD_SIZE;
-
-        quote_stack += 4*VWORD_SIZE;
-        context->write_word(p, quote_stack);
-
+        quote_stack -= lisp_parse_size(ast);
         lisp_parse(context, quote_stack, ast);
         quote_stack = ll_expand(context, quote_stack);
-        quote_stack += 4*VWORD_SIZE;
+
+        p -= VWORD_SIZE;
+        context->write_word(p, quote_stack);
     }
     else
     {
         p -= lisp_parse_size(ast);
         lisp_parse(context, p, ast);
-        if(ast->type == LIST)
-            p = ll_expand(context, p);
     }
 
     return p;
