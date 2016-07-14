@@ -42,6 +42,9 @@ void init_lisp(Context* context)
     add_symbol("deval", context->add_ll_fn(ll_deval), 2*VWORD_SIZE);
     add_symbol("nop", context->add_ll_fn(ll_nop));
 
+    add_symbol("setrelative", context->add_ll_fn(ll_setrelative));
+    add_symbol("pop", context->add_ll_fn(ll_pop));
+
     add_symbol("evalparam", context->add_ll_fn(ll_eval_param), 2*VWORD_SIZE);
     add_symbol("syscall", context->add_ll_fn(ll_syscall), 6*VWORD_SIZE);
 
@@ -65,7 +68,6 @@ void init_lisp(Context* context)
     add_symbol("/", context->add_ll_fn(ll_divi), 2*VWORD_SIZE);
 
     // lisp macro
-    add_symbol("setrelative", context->add_ll_fn(ll_setrelative));
     add_symbol("expand", context->add_ll_fn(ll_expand));
     add_symbol("quote", context->add_ll_fn(ll_quote));
     add_symbol("asm", context->add_ll_fn(ll_asm));

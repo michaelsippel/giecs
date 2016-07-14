@@ -7,23 +7,9 @@
 extern Namespace* default_namespace;
 static vword_t pt = 0x80000; // TODO
 
-vword_t expand_evalparam(Context* context, vword_t p, vword_t fn, size_t l)
+vword_t expand_evalparam(Context* context, vword_t p, vword_t fn, List<SNode*>* plist)
 {
-    List<SNode*>* plist = new List<SNode*>();
-    size_t n = 0;
-    int j = 1;
-
-    // collect params
-    while(n < l)
-    {
-        SNode* sn = new SNode(context, p);
-        p += sn->vmem_size();
-        plist->pushBack(sn);
-
-        // speculated size after execution
-        n += VWORD_SIZE; // TODO
-        j++;
-    }
+    int j = plist->numOfElements() + 1;
 
     vbyte_t* listbuf = (vbyte_t*) malloc(2*sizeof(vword_t)*j);
     vword_t* lp = (vword_t*) listbuf;
@@ -31,17 +17,14 @@ vword_t expand_evalparam(Context* context, vword_t p, vword_t fn, size_t l)
     *lp++ = VWORD_SIZE;
     *lp++ = fn;
 
+    vword_t resbuf[3];
+    resbuf[0] = 2*VWORD_SIZE;
+    resbuf[1] = resolve_symbol("resw")->start;
+
     ListIterator<SNode*> it = ListIterator<SNode*>(plist);
     while(! it.isLast())
     {
         SNode* sn = it.getCurrent();
-        //sn->dump();
-
-        vword_t resbuf[3];
-        resbuf[0] = 2*VWORD_SIZE;
-        resbuf[1] = resolve_symbol("resw")->start;
-        size_t l;
-
         switch(sn->type)
         {
             case INTEGER:
@@ -50,69 +33,55 @@ vword_t expand_evalparam(Context* context, vword_t p, vword_t fn, size_t l)
                 break;
 
             case SYMBOL:
-                pt -= VWORD_SIZE;
-                asm_parse(context, pt, sn);
+                p -= VWORD_SIZE;
+                asm_parse(context, p, sn);
 
-                pt -= 2*VWORD_SIZE;
-                context->write(pt, 2*VWORD_SIZE, (vbyte_t*) &resbuf);
+                p -= 2*VWORD_SIZE;
+                context->write(p, 2*VWORD_SIZE, (vbyte_t*) &resbuf);
 
                 *lp++ = -1;
-                *lp++ = pt;
+                *lp++ = p;
                 break;
 
             case STRING:
-                pt -= lisp_parse_size(sn);
-                lisp_parse(context, pt, sn);
-
+                p -= lisp_parse_size(sn);
+                lisp_parse(context, p, sn);
                 *lp++ = VWORD_SIZE;
-                *lp++ = pt;
+                *lp++ = p;
                 break;
 
             case LIST:
-                /*                l = p;
-                                p -= lisp_parse_size(sn);
-                                lisp_parse(context, p, sn);
-                                p = ll_expand(context, p);
-                                l -= p;
-
-                                pt -= l;
-                                context->copy(pt, p, l);
-                                p += l;
-                */
-                pt -= lisp_parse_size(sn);
-                lisp_parse(context, pt, sn);
+                p -= lisp_parse_size(sn);
+                lisp_parse(context, p, sn);
+                vword_t *sp;
+                *sp = p;
+                p = expand(context, p, sp, false, true);
+                // TODO: maybe use the possible arising space here
 
                 *lp++ = -1;
-                *lp++ = expand(context, pt, false, true);
+                *lp++ = p;
                 break;
         }
 
         it.next();
     }
 
-    pt -= 2*VWORD_SIZE*j;
-    context->write(pt, 2*VWORD_SIZE*j, listbuf);
-
+    p -= 2*VWORD_SIZE*j;
+    context->write(p, 2*VWORD_SIZE*j, listbuf);
     free(listbuf);
-    delete plist;
 
     vword_t b0[4];
     b0[0] = 3*VWORD_SIZE;
     b0[1] = resolve_symbol("deval")->start;
     b0[2] = j;
-    b0[3] = pt;
+    b0[3] = p;
 
-    pt -= 4*VWORD_SIZE;
-    context->write(pt, 4*VWORD_SIZE, (vbyte_t*) &b0);
-
-    p -= VWORD_SIZE;
-    context->write_word(p, pt);
-    p -= VWORD_SIZE;
-    context->write_word(p, VWORD_SIZE);
+    p -= 4*VWORD_SIZE;
+    context->write(p, 4*VWORD_SIZE, (vbyte_t*) &b0);
 
     return p;
 }
-
+/*
 vword_t ll_expand_function(Context* context, vword_t p)
 {
     SNode* plist = new SNode(LIST);
@@ -142,9 +111,13 @@ vword_t ll_expand_function(Context* context, vword_t p)
         it.next();
     }
 
-    pt -= lisp_parse_size(val);
-    lisp_parse(context, pt, val);
-    vword_t fn = ll_expand(context, pt);
+	val->dump();
+
+    p -= lisp_parse_size(val);
+    lisp_parse(context, p, val);
+	printf("expand function first\n");
+    vword_t fn = expand(context, p, false, false);
+	context->dump(fn, 8);
 
     // unbind parameters
     it.setFirst();
@@ -162,9 +135,9 @@ vword_t ll_expand_function(Context* context, vword_t p)
 
     vword_t srb[4];
     srb[0] = 3*VWORD_SIZE;
-    srb[1] = resolve_symbol("setrelative")->start;
-    srb[2] = reqb;
-    srb[3] = fn;
+	srb[1] = resolve_symbol("pop")->start;
+	srb[2] = reqb;
+    srb[3] = resolve_symbol("setrelative")->start;
 
     context->write(pt, 4*VWORD_SIZE, (vbyte_t*) &srb);
     add_parsepoint(pt, reqb);
@@ -176,94 +149,135 @@ vword_t ll_expand_function(Context* context, vword_t p)
 
     return p;
 }
-
+*/
 // compile to lower level to avoid reparsing
 vword_t ll_expand(Context* context, vword_t p)
 {
-    return expand(context, p, false, false);
+    vword_t pt = 0x80000;
+    pt = expand(context, pt, &p, false, false);
+
+    p -= VWORD_SIZE;
+    context->write_word(p, pt);
+    p -= VWORD_SIZE;
+    context->write_word(p, VWORD_SIZE);
+
+    return p;
 }
 
-vword_t expand(Context* context, vword_t p, bool quoted, bool quoteptr)
+vword_t expand(Context* context, vword_t pt, vword_t* p, bool quoted, bool quoteptr)
 {
-    vword_t op = p;
+    vword_t op = *p;
 
-    p += VWORD_SIZE;
-    vword_t ptr = context->read_word(p);
-    p += VWORD_SIZE;
+    *p += VWORD_SIZE;
+    vword_t ptr = context->read_word(*p);
+    *p += VWORD_SIZE;
 
     size_t reqb = get_reqb(ptr);
 
     if(ptr == resolve_symbol("evalparam")->start)
     {
-        vword_t fn = context->read_word(p);
-        p += VWORD_SIZE;
-        vword_t l = context->read_word(p);
-        p += VWORD_SIZE;
+        vword_t fn = context->read_word(*p);
+        *p += VWORD_SIZE;
+        vword_t l = context->read_word(*p);
+        *p += VWORD_SIZE;
 
-        p = expand_evalparam(context, p, fn, l);
-        //context->dump(p, 8);
-    }
-    else if(ptr == resolve_symbol("macro")->start && !quoted)
-    {
-        p = ll_expand_macro(context, p);
-//        p = expand(context, p, false, false);
-    }
-    else if(ptr == resolve_symbol("function")->start)
-    {
-        p = ll_expand_function(context, p);
-    }
-    else if(ptr == resolve_symbol("quote")->start)
-    {
-        SNode* ast = new SNode(context, p);
-        p += ast->vmem_size();
+        List<SNode*>* plist = new List<SNode*>();
+        size_t n = 0;
 
-        vword_t len;
-
-        if(ast->type == LIST && quoteptr)
+        // collect params
+        while(n < l)
         {
-            pt -= lisp_parse_size(ast);
-            lisp_parse(context, pt, ast);
+            SNode* sn = new SNode(context, *p);
+            *p += sn->vmem_size();
+            plist->pushBack(sn);
 
-            vword_t fn = expand(context, pt, true, false);
+            // speculated size after execution
+            n += VWORD_SIZE; // TODO
+        }
+
+        pt = expand_evalparam(context, pt, fn, plist);
+
+        delete plist;
+    }
+    /*    else if(ptr == resolve_symbol("macro")->start && !quoted)
+        {
+    		printf("now xpand THE MARCO\n");
+            p = ll_expand_macro(context, p);
+    		p = expand(context, p, false, false);
+    *    }
+        else if(ptr == resolve_symbol("function")->start)
+        {
+            p = ll_expand_function(context, p);
+        }
+    /*    else if(ptr == resolve_symbol("quote")->start)
+        {
+            SNode* ast = new SNode(context, p);
+            p += ast->vmem_size();
+
+            vword_t len;
+
+            if(ast->type == LIST && quoteptr)
+            {
+                pt -= lisp_parse_size(ast);
+                lisp_parse(context, pt, ast);
+
+                vword_t fn = expand(context, pt, true, false);
+
+                p -= VWORD_SIZE;
+                context->write_word(p, fn);
+
+                len = VWORD_SIZE;
+            }
+            else
+            {
+                p -= lisp_parse_size(ast);
+                lisp_parse(context, p, ast);
+
+                if(ast->type == LIST)
+                {
+                    p = expand(context, p, true, false);
+                    len = context->read_word(p);
+                }
+                else
+                    len = VWORD_SIZE;
+            }
 
             p -= VWORD_SIZE;
-            context->write_word(p, fn);
+            context->write_word(p, resolve_symbol("nop")->start);
+            p -= VWORD_SIZE;
+            context->write_word(p, len+VWORD_SIZE);
 
-            len = VWORD_SIZE;
+    //		context->dump(p, len/VWORD_SIZE+1);
+        }
+        else if(reqb > 0)
+        {
+            p = expand_evalparam(context, p, ptr, reqb);
         }
         else
         {
-            p -= lisp_parse_size(ast);
-            lisp_parse(context, p, ast);
+    		vword_t l = context->read_word(ptr);
+    		if(l != -1)
+    		{
+    			printf("would weiter expand\n");
+    			l += VWORD_SIZE;
+    			p -= l;
+    			context->copy(p, ptr, l);
 
-            if(ast->type == LIST)
-            {
-                p = expand(context, p, true, false);
-                len = context->read_word(p);
-            }
-            else
-                len = VWORD_SIZE;
+    			l = p;
+    			p = expand(context, p, true, false);
+    		}
+    		else
+    			printf("oh we're at lowlevel\n");
+
+            return op;
         }
 
-        p -= VWORD_SIZE;
-        context->write_word(p, resolve_symbol("nop")->start);
-        p -= VWORD_SIZE;
-        context->write_word(p, len+VWORD_SIZE);
-
-//		context->dump(p, len/VWORD_SIZE+1);
-    }
-    else if(reqb > 0)
-    {
-        p = expand_evalparam(context, p, ptr, reqb);
-    }
-    else
-    {
-        return op;
-    }
-
-    if(!quoted && op != p)
-        return expand(context, p, false, false);
-
-    return p;
+        if(!quoted)
+    	{
+    		printf("go deeper\n");
+    		return expand(context, p, false, false);
+    	}
+    */
+    return pt;
 }
 

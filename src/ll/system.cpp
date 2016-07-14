@@ -200,19 +200,31 @@ static vword_t rel_base = 0x0;
 
 vword_t ll_setrelative(Context* context, vword_t p)
 {
-    vword_t poplen = context->read_word(p);
-    p += VWORD_SIZE;
-
     vword_t ob = rel_base;
-    rel_base = p+VWORD_SIZE;
+    rel_base = p;
 
     p = ll_eval(context, p);
 
-    size_t len = rel_base - p;
+    rel_base = ob;
+    return p;
+}
+
+vword_t ll_pop(Context* context, vword_t p)
+{
+    vword_t poplen = context->read_word(p);
+    p += VWORD_SIZE;
+
+    printf("pop %d bytes\n", poplen);
+
+    size_t len = p + VWORD_SIZE; // We assume the next call has no arguments on stack
+    p = ll_eval(context, p);
+    len -= p;
+
+    printf("returned len %d\n", len);
+
     context->copy(p+poplen, p, len);
     p += poplen;
 
-    rel_base = ob;
     return p;
 }
 

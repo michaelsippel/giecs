@@ -7,14 +7,14 @@ progn
 ;	(load "../stdlib/malloc.lisp")
 
 	(defun factorial (n)
-;		(if (eqw n 1)
-;			'1
-;			(* (factorial (- n 1)) n)))
-		(eval (oif (eqw n 1)
-			'(quote 1)
-			'(* (factorial (- n 1)) n)
-		))
-	)
+		(if (eqw n 1)
+			'1
+			(* (factorial (- n 1)) n)))
+;		(eval (oif (eqw n 1)
+;			'(quote 1)
+;			'(* (factorial (- n 1)) n)
+;		))
+;	)
 
 	(defun square (x) (* x x))
 	(printi (square 3))
