@@ -5,7 +5,6 @@
 #include <lisp/parser.h>
 
 extern Namespace* default_namespace;
-static vword_t pt = 0x80000; // TODO
 
 vword_t expand_evalparam(Context* context, vword_t p, vword_t fn, List<SNode*>* plist)
 {
@@ -81,6 +80,49 @@ vword_t expand_evalparam(Context* context, vword_t p, vword_t fn, List<SNode*>* 
 
     return p;
 }
+
+vword_t expand_macro(Context* context, vword_t pt, SNode* plist, SNode* val, vword_t* p)
+{
+    if(plist->type != LIST)
+    {
+        printf("error: no parameterlist\n");
+        return pt;
+    }
+
+    int pnum = plist->subnodes->numOfElements();
+    SNode** params = (SNode**) malloc(pnum * sizeof(SNode*));
+    char** names = (char**) malloc(pnum * sizeof(char*));
+
+    int i = 0;
+    ListIterator<SNode*> it = ListIterator<SNode*>(plist->subnodes);
+    while(! it.isLast())
+    {
+        SNode* c = it.getCurrent();
+        if(c->type == SYMBOL)
+        {
+            names[i] = c->string;
+            params[i] = new SNode(context, *p);
+            *p += params[i]->vmem_size();
+
+            i++;
+        }
+        else
+        {
+            printf("error: only symbols in paramlist allowed\n");
+        }
+
+        it.next();
+    }
+
+    val->replace(names, params, pnum);
+    val->dump();
+
+    pt -= lisp_parse_size(val);
+    lisp_parse(context, pt, val);
+
+    return pt;
+}
+
 /*
 vword_t ll_expand_function(Context* context, vword_t p)
 {
@@ -151,9 +193,9 @@ vword_t ll_expand_function(Context* context, vword_t p)
 }
 */
 // compile to lower level to avoid reparsing
+static vword_t pt = 0x80000;
 vword_t ll_expand(Context* context, vword_t p)
 {
-    vword_t pt = 0x80000;
     pt = expand(context, pt, &p, false, false);
 
     p -= VWORD_SIZE;
@@ -199,13 +241,18 @@ vword_t expand(Context* context, vword_t pt, vword_t* p, bool quoted, bool quote
 
         delete plist;
     }
-    /*    else if(ptr == resolve_symbol("macro")->start && !quoted)
-        {
-    		printf("now xpand THE MARCO\n");
-            p = ll_expand_macro(context, p);
-    		p = expand(context, p, false, false);
-    *    }
-        else if(ptr == resolve_symbol("function")->start)
+    else if(ptr == resolve_symbol("macro")->start && !quoted)
+    {
+        SNode* plist = new SNode(LIST);
+        *p += plist->read_vmem(context, *p);
+
+        SNode* val = new SNode(LIST);
+        *p += val->read_vmem(context, *p);
+
+        printf("now xpand THE MARCO\n");
+        pt = expand_macro(context, pt, plist, val, p);
+    }
+    /*    else if(ptr == resolve_symbol("function")->start)
         {
             p = ll_expand_function(context, p);
         }
@@ -253,31 +300,19 @@ vword_t expand(Context* context, vword_t pt, vword_t* p, bool quoted, bool quote
         {
             p = expand_evalparam(context, p, ptr, reqb);
         }
-        else
-        {
-    		vword_t l = context->read_word(ptr);
-    		if(l != -1)
-    		{
-    			printf("would weiter expand\n");
-    			l += VWORD_SIZE;
-    			p -= l;
-    			context->copy(p, ptr, l);
-
-    			l = p;
-    			p = expand(context, p, true, false);
-    		}
-    		else
-    			printf("oh we're at lowlevel\n");
-
-            return op;
-        }
-
-        if(!quoted)
-    	{
-    		printf("go deeper\n");
-    		return expand(context, p, false, false);
-    	}
     */
+    else
+    {
+        vword_t l = context->read_word(ptr);
+        if(l == -1)
+            return op;
+    }
+
+    if(!quoted)
+    {
+        return expand(context, pt, &pt, false, false);
+    }
+
     return pt;
 }
 

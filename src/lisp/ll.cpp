@@ -228,44 +228,7 @@ vword_t ll_expand_macro(Context* context, vword_t p)
     SNode* val = new SNode(LIST);
     p += val->read_vmem(context, p);
 
-    //plist->dump();
-    //val->dump();
-
-    if(plist->type != LIST)
-    {
-        printf("error: no parameterlist\n");
-        return p;
-    }
-
-    int pnum = plist->subnodes->numOfElements();
-    SNode** params = (SNode**) malloc(pnum * sizeof(SNode*));
-    char** names = (char**) malloc(pnum * sizeof(char*));
-
-    int i = 0;
-    ListIterator<SNode*> it = ListIterator<SNode*>(plist->subnodes);
-    while(! it.isLast())
-    {
-        SNode* c = it.getCurrent();
-        if(c->type == SYMBOL)
-        {
-            names[i] = c->string;
-            params[i] = new SNode(LIST);
-            p += params[i]->read_vmem(context, p);
-
-            i++;
-        }
-        else
-        {
-            printf("error: only symbols in paramlist allowed\n");
-        }
-
-        it.next();
-    }
-
-    val->replace(names, params, pnum);
-
-    p -= lisp_parse_size(val);
-    lisp_parse(context, p, val);
+    p = expand_macro(context, p, plist, val, &p);
 
     return p;
 }
@@ -350,14 +313,13 @@ vword_t ll_declare(Context* context, vword_t p)
             size_t pl = lisp_parse_size(value);
             p -= pl;
             lisp_parse(context, p, value);
-
+/*
             size_t reqb = 0;
             if(value->type == LIST)
             {
                 // TODO: clean this up
-                vword_t p2 = p - pl;
-                context->copy(p2, p, pl);
-                p2 = ll_expand(context, p2);
+				vword_t p2 = p;
+                p2 = expand(context, p2p, &p2, false, false);
                 p2 = ll_eval(context, p2+VWORD_SIZE);
 
                 vword_t ptr = context->read_word(p2+VWORD_SIZE);
@@ -365,10 +327,10 @@ vword_t ll_declare(Context* context, vword_t p)
             }
 
             ns->add_parsepoint(def_start, reqb);
-
+*/
             if(value->type == LIST)
             {
-                p = ll_expand(context, p);
+              //  p = ll_expand(context, p);
                 p = ll_eval(context, p+VWORD_SIZE);
             }
 
@@ -378,7 +340,7 @@ vword_t ll_declare(Context* context, vword_t p)
             def_start += len;
             p += len;
 
-            //logger->log(linfo, "declared \'%s\': 0x%x, %d bytes", name->string, def_top, len);
+            logger->log(linfo, "declared \'%s\': 0x%x, %d bytes", name->string, def_start, len);
         }
         else
             logger->log(lerror, "symbol \'%s\' already in use", name->string);
