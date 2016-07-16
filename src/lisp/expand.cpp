@@ -6,8 +6,10 @@
 
 extern Namespace* default_namespace;
 
-vword_t expand_evalparam(Context* context, vword_t p, vword_t fn, List<SNode*>* plist)
+size_t expand_evalparam(Context* context, vword_t p, vword_t fn, List<SNode*>* plist)
 {
+    size_t len = 4*VWORD_SIZE;
+
     int j = plist->numOfElements() + 1;
 
     vbyte_t* listbuf = (vbyte_t*) malloc(2*sizeof(vword_t)*j);
@@ -19,6 +21,8 @@ vword_t expand_evalparam(Context* context, vword_t p, vword_t fn, List<SNode*>* 
     vword_t resbuf[3];
     resbuf[0] = 2*VWORD_SIZE;
     resbuf[1] = resolve_symbol("resw")->start;
+
+    vword_t ptr, tmp;
 
     ListIterator<SNode*> it = ListIterator<SNode*>(plist);
     while(! it.isLast())
@@ -32,53 +36,48 @@ vword_t expand_evalparam(Context* context, vword_t p, vword_t fn, List<SNode*>* 
                 break;
 
             case SYMBOL:
-                p -= VWORD_SIZE;
-                asm_parse(context, p, sn);
-
-                p -= 2*VWORD_SIZE;
-                context->write(p, 2*VWORD_SIZE, (vbyte_t*) &resbuf);
+                ptr = p+len;
+                len += context->write(ptr, 2*VWORD_SIZE, (vbyte_t*) &resbuf);
+                len += asm_parse(context, p+len, sn);
 
                 *lp++ = -1;
-                *lp++ = p;
+                *lp++ = ptr;
                 break;
 
             case STRING:
-                p -= lisp_parse_size(sn);
-                lisp_parse(context, p, sn);
+                ptr = p+len;
+                lisp_parse(context, ptr, sn);
                 *lp++ = VWORD_SIZE;
-                *lp++ = p;
+                *lp++ = ptr;
                 break;
 
             case LIST:
-                p -= lisp_parse_size(sn);
-                lisp_parse(context, p, sn);
-                vword_t *sp;
-                *sp = p;
-                p = expand(context, p, sp, false, true);
-                // TODO: maybe use the possible arising space here
+                ptr = p+len;
+                tmp = ptr;
+                len += lisp_parse(context, ptr, sn);
+                len += expand(context, ptr, &tmp, false, true);
 
                 *lp++ = -1;
-                *lp++ = p;
+                *lp++ = ptr;
                 break;
         }
 
         it.next();
     }
 
-    p -= 2*VWORD_SIZE*j;
-    context->write(p, 2*VWORD_SIZE*j, listbuf);
+    ptr = p+len;
+    len += context->write(ptr, 2*VWORD_SIZE*j, listbuf);
     free(listbuf);
 
     vword_t b0[4];
     b0[0] = 3*VWORD_SIZE;
     b0[1] = resolve_symbol("deval")->start;
     b0[2] = j;
-    b0[3] = p;
+    b0[3] = ptr;
 
-    p -= 4*VWORD_SIZE;
     context->write(p, 4*VWORD_SIZE, (vbyte_t*) &b0);
 
-    return p;
+    return len;
 }
 
 vword_t expand_macro(Context* context, vword_t pt, SNode* plist, SNode* val, vword_t* p)
@@ -193,28 +192,29 @@ vword_t ll_expand_function(Context* context, vword_t p)
 }
 */
 // compile to lower level to avoid reparsing
-static vword_t pt = 0x80000;
+static vword_t pt = 0x10000;
 vword_t ll_expand(Context* context, vword_t p)
 {
-    pt = expand(context, pt, &p, false, false);
+    size_t l = expand(context, pt, &p, false, false);
 
     p -= VWORD_SIZE;
     context->write_word(p, pt);
     p -= VWORD_SIZE;
     context->write_word(p, VWORD_SIZE);
 
+    pt += l;
+
     return p;
 }
 
-vword_t expand(Context* context, vword_t pt, vword_t* p, bool quoted, bool quoteptr)
+size_t expand(Context* context, vword_t pt, vword_t* p, bool quoted, bool quoteptr)
 {
-    vword_t op = *p;
+    size_t len = 0;
 
+    vword_t flen = context->read_word(*p);
     *p += VWORD_SIZE;
     vword_t ptr = context->read_word(*p);
     *p += VWORD_SIZE;
-
-    size_t reqb = get_reqb(ptr);
 
     if(ptr == resolve_symbol("evalparam")->start)
     {
@@ -237,82 +237,92 @@ vword_t expand(Context* context, vword_t pt, vword_t* p, bool quoted, bool quote
             n += VWORD_SIZE; // TODO
         }
 
-        pt = expand_evalparam(context, pt, fn, plist);
+        len = expand_evalparam(context, pt, fn, plist);
 
         delete plist;
     }
-    else if(ptr == resolve_symbol("macro")->start && !quoted)
-    {
-        SNode* plist = new SNode(LIST);
-        *p += plist->read_vmem(context, *p);
-
-        SNode* val = new SNode(LIST);
-        *p += val->read_vmem(context, *p);
-
-        printf("now xpand THE MARCO\n");
-        pt = expand_macro(context, pt, plist, val, p);
-    }
-    /*    else if(ptr == resolve_symbol("function")->start)
+    /*    else if(ptr == resolve_symbol("macro")->start && !quoted)
         {
-            p = ll_expand_function(context, p);
+            SNode* plist = new SNode(LIST);
+            *p += plist->read_vmem(context, *p);
+
+            SNode* val = new SNode(LIST);
+            *p += val->read_vmem(context, *p);
+
+            printf("now xpand THE MARCO\n");
+            pt = expand_macro(context, pt, plist, val, p);
         }
-    /*    else if(ptr == resolve_symbol("quote")->start)
-        {
-            SNode* ast = new SNode(context, p);
-            p += ast->vmem_size();
-
-            vword_t len;
-
-            if(ast->type == LIST && quoteptr)
+            else if(ptr == resolve_symbol("function")->start)
             {
-                pt -= lisp_parse_size(ast);
-                lisp_parse(context, pt, ast);
-
-                vword_t fn = expand(context, pt, true, false);
-
-                p -= VWORD_SIZE;
-                context->write_word(p, fn);
-
-                len = VWORD_SIZE;
+                p = ll_expand_function(context, p);
             }
-            else
+        /*    else if(ptr == resolve_symbol("quote")->start)
             {
-                p -= lisp_parse_size(ast);
-                lisp_parse(context, p, ast);
+                SNode* ast = new SNode(context, p);
+                p += ast->vmem_size();
 
-                if(ast->type == LIST)
+                vword_t len;
+
+                if(ast->type == LIST && quoteptr)
                 {
-                    p = expand(context, p, true, false);
-                    len = context->read_word(p);
+                    pt -= lisp_parse_size(ast);
+                    lisp_parse(context, pt, ast);
+
+                    vword_t fn = expand(context, pt, true, false);
+
+                    p -= VWORD_SIZE;
+                    context->write_word(p, fn);
+
+                    len = VWORD_SIZE;
                 }
                 else
-                    len = VWORD_SIZE;
+                {
+                    p -= lisp_parse_size(ast);
+                    lisp_parse(context, p, ast);
+
+                    if(ast->type == LIST)
+                    {
+                        p = expand(context, p, true, false);
+                        len = context->read_word(p);
+                    }
+                    else
+                        len = VWORD_SIZE;
+                }
+
+                p -= VWORD_SIZE;
+                context->write_word(p, resolve_symbol("nop")->start);
+                p -= VWORD_SIZE;
+                context->write_word(p, len+VWORD_SIZE);
+
+        //		context->dump(p, len/VWORD_SIZE+1);
             }
-
-            p -= VWORD_SIZE;
-            context->write_word(p, resolve_symbol("nop")->start);
-            p -= VWORD_SIZE;
-            context->write_word(p, len+VWORD_SIZE);
-
-    //		context->dump(p, len/VWORD_SIZE+1);
-        }
-        else if(reqb > 0)
-        {
-            p = expand_evalparam(context, p, ptr, reqb);
-        }
-    */
+            else if(reqb > 0)
+            {
+                p = expand_evalparam(context, p, ptr, reqb);
+            }
+        */
     else
     {
+        // don't expand lowlevel functions
         vword_t l = context->read_word(ptr);
         if(l == -1)
-            return op;
-    }
+        {
+            *p -= 2*VWORD_SIZE;
+            len = flen+VWORD_SIZE;
+            context->copy(pt, *p, len);
+            *p += len;
 
-    if(!quoted)
-    {
-        return expand(context, pt, &pt, false, false);
+            return len;
+        }
     }
+    /*
+    	len -= pt;
 
-    return pt;
+        if(!quoted)
+        {
+            return len + expand(context, pt, &pt, false, false);
+        }
+    */
+    return len;
 }
 

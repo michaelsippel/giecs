@@ -10,9 +10,9 @@ vword_t ll_quote(Context* context, vword_t p);
 vword_t ll_asm(Context* context, vword_t p);
 
 vword_t ll_expand(Context* context, vword_t p);
-vword_t expand(Context* context, vword_t pt, vword_t* p, bool quoted, bool quoteptr);
+size_t expand(Context* context, vword_t pt, vword_t* p, bool quoted, bool quoteptr);
 
-vword_t expand_evalparam(Context* context, vword_t p, vword_t fn, List<SNode*>* plist);
+size_t expand_evalparam(Context* context, vword_t p, vword_t fn, List<SNode*>* plist);
 vword_t expand_macro(Context* context, vword_t pt, SNode* plist, SNode* val, vword_t* p);
 
 vword_t ll_eval_param(Context* context, vword_t p);

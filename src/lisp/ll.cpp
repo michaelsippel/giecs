@@ -286,7 +286,7 @@ vword_t ll_declare(Context* context, vword_t p)
 {
     static Logger* logger = new Logger(lisp_logger, "declare");
 
-    static vword_t def_start = 0xA0000;
+    static vword_t def_start = 0x1000;
 
     SNode* parent = new SNode(context, p);
     p += parent->vmem_size();
@@ -309,36 +309,24 @@ vword_t ll_declare(Context* context, vword_t p)
 
             ns->add_symbol(name->string, def_start);
 
-            size_t len = p;
-            size_t pl = lisp_parse_size(value);
-            p -= pl;
-            lisp_parse(context, p, value);
-/*
-            size_t reqb = 0;
+            vword_t tmp = def_start;
+            size_t len = lisp_parse(context, def_start, value);
+
             if(value->type == LIST)
             {
-                // TODO: clean this up
-				vword_t p2 = p;
-                p2 = expand(context, p2p, &p2, false, false);
-                p2 = ll_eval(context, p2+VWORD_SIZE);
+                expand(context, def_start, &tmp, false, false);
 
-                vword_t ptr = context->read_word(p2+VWORD_SIZE);
-                reqb = get_reqb(ptr);
+                len = p;
+                p -= VWORD_SIZE;
+                context->write_word(p, def_start);
+                p = ll_eval(context, p);
+                len -= p;
+
+                context->copy(def_start, p, len);
+                p += len;
             }
 
-            ns->add_parsepoint(def_start, reqb);
-*/
-            if(value->type == LIST)
-            {
-              //  p = ll_expand(context, p);
-                p = ll_eval(context, p+VWORD_SIZE);
-            }
-
-            len -= p;
-
-            context->copy(def_start, p, len);
             def_start += len;
-            p += len;
 
             logger->log(linfo, "declared \'%s\': 0x%x, %d bytes", name->string, def_start, len);
         }

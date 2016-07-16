@@ -49,7 +49,7 @@ int lisp_parse_list(Context* context, vword_t addr, SNode* ast)
 {
     // needed space
 //    size_t n = ast->subnodes->numOfElements();
-    size_t len;
+    size_t len = 0;
 
     ListIterator<SNode*> it = ListIterator<SNode*>(ast->subnodes);
 
