@@ -201,7 +201,7 @@ static vword_t rel_base = 0x0;
 vword_t ll_setrelative(Context* context, vword_t p)
 {
     vword_t ob = rel_base;
-    rel_base = p;
+    rel_base = p + VWORD_SIZE;
 
     p = ll_eval(context, p);
 

@@ -48,8 +48,7 @@ int asm_parse_list(Context* context, vword_t addr, SNode* ast)
 int lisp_parse_list(Context* context, vword_t addr, SNode* ast)
 {
     // needed space
-//    size_t n = ast->subnodes->numOfElements();
-    size_t len = 0;
+    size_t len = VWORD_SIZE;
 
     ListIterator<SNode*> it = ListIterator<SNode*>(ast->subnodes);
 
@@ -59,8 +58,6 @@ int lisp_parse_list(Context* context, vword_t addr, SNode* ast)
     int n;
     vword_t fn;
     size_t reqb;
-
-    len = VWORD_SIZE;
 
     // first word
     switch(sn->type)
