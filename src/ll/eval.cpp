@@ -41,7 +41,7 @@ void ll_deval(StackFrame& stack)
 
     vword_t* list_index = (vword_t*) malloc(num_list * sizeof(vword_t));
 
-	StackFrame liststack = StackFrame(stack.context, addr_list);
+    StackFrame liststack = StackFrame(stack.context, addr_list);
 
     int i;
     for(i = 0; i < num_list; i++)
@@ -56,14 +56,14 @@ void ll_deval(StackFrame& stack)
     {
         vword_t list_addr = list_index[i];
 
-		StackFrame s = StackFrame(stack.context, list_addr);
+        StackFrame s = StackFrame(stack.context, list_addr);
 
         vword_t attr = s.pop_word();
         if(attr == (vword_t)-1)
         {
             // execute
             vword_t w = s.pop_word();
-			stack.push_word(w);
+            stack.push_word(w);
 
             ll_eval(stack);
         }
@@ -71,7 +71,7 @@ void ll_deval(StackFrame& stack)
         {
             stack.move(-attr);
             stack.context->copy(stack.ptr(), s.ptr(), attr);
-			s.move(attr);
+            s.move(attr);
         }
     }
 

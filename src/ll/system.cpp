@@ -44,7 +44,7 @@ void ll_load(StackFrame& stack)
         stack.move(-lisp_parse_size(ast));
         if(lisp_parse(stack.context, stack.ptr(), ast) > 0)
         {
-			stack.move(VWORD_SIZE);
+            stack.move(VWORD_SIZE);
             ll_eval(stack);
         }
     }
@@ -56,7 +56,7 @@ void ll_load(StackFrame& stack)
 void ll_syscall(StackFrame& stack)
 {
     vword_t regs_in[6];
-	stack.pop((vbyte_t*) &regs_in, 6*VWORD_SIZE);
+    stack.pop((vbyte_t*) &regs_in, 6*VWORD_SIZE);
 
     long sys_id = regs_in[0];
     void* regs_out[6] = {(void*)sys_id,0,0,0,0,0};
@@ -119,7 +119,7 @@ void ll_syscall(StackFrame& stack)
     asm("int $0x80;"
         : "=a" (retv) : "a" (regs_out[0]),  "b" (regs_out[1]), "c"(regs_out[2]), "d"(regs_out[3]), "S"(regs_out[4]), "D"(regs_out[5]));
 
-	stack.push_word((vword_t) retv);
+    stack.push_word((vword_t) retv);
 
     for(i = 0; i < 5; i++)
     {
@@ -133,44 +133,44 @@ void ll_syscall(StackFrame& stack)
 
 void ll_addi(StackFrame& stack)
 {
-	vword_t v1 = stack.pop_word();
-	vword_t v2 = stack.pop_word();
+    vword_t v1 = stack.pop_word();
+    vword_t v2 = stack.pop_word();
 
     vword_t ret = v1 + v2;
-	stack.push_word(ret);
+    stack.push_word(ret);
 }
 
 void ll_muli(StackFrame& stack)
 {
-	vword_t v1 = stack.pop_word();
-	vword_t v2 = stack.pop_word();
+    vword_t v1 = stack.pop_word();
+    vword_t v2 = stack.pop_word();
 
     vword_t ret = v1 * v2;
-	stack.push_word(ret);
+    stack.push_word(ret);
 }
 
 void ll_subi(StackFrame& stack)
 {
-	vword_t v1 = stack.pop_word();
-	vword_t v2 = stack.pop_word();
+    vword_t v1 = stack.pop_word();
+    vword_t v2 = stack.pop_word();
 
     vword_t ret = v1 - v2;
-	stack.push_word(ret);
+    stack.push_word(ret);
 }
 
 void ll_divi(StackFrame& stack)
 {
-	vword_t v1 = stack.pop_word();
-	vword_t v2 = stack.pop_word();
+    vword_t v1 = stack.pop_word();
+    vword_t v2 = stack.pop_word();
 
     vword_t ret = v1 / v2;
-	stack.push_word(ret);
+    stack.push_word(ret);
 }
 
 void ll_printi(StackFrame& stack)
 {
-	vword_t v = stack.pop_word();
-	printf("%d\n", v);
+    vword_t v = stack.pop_word();
+    printf("%d\n", v);
 }
 
 void ll_printb(StackFrame& stack)
@@ -214,7 +214,7 @@ void ll_resw(StackFrame& stack)
         ptr = rel_base - ptr;
 
     vword_t v = stack.context->read_word(ptr);
-	stack.push_word(v);
+    stack.push_word(v);
 }
 
 void ll_setw(StackFrame& stack)
@@ -234,7 +234,7 @@ void ll_resb(StackFrame& stack)
     vbyte_t v;
     stack.context->read(ptr, 1, &v);
 
-	stack.push_byte(v);
+    stack.push_byte(v);
 }
 
 void ll_setb(StackFrame& stack)
@@ -242,7 +242,7 @@ void ll_setb(StackFrame& stack)
     vword_t ptr = stack.pop_word();
     vbyte_t v = stack.pop_byte();
 
-	stack.context->write(ptr, 1, &v);
+    stack.context->write(ptr, 1, &v);
 }
 
 void ll_nop(StackFrame& stack)

@@ -11,28 +11,28 @@ void ll_cond(StackFrame& stack)
     vword_t v0 = stack.pop_word();
 
     if(c)
-	{
-		stack.move(VWORD_SIZE);
-		stack.push_word(v0);
-	}
+    {
+        stack.move(VWORD_SIZE);
+        stack.push_word(v0);
+    }
 }
 
 void ll_eqw(StackFrame& stack)
 {
-	vword_t v0 = stack.pop_word();
-	vword_t v1 = stack.pop_word();
+    vword_t v0 = stack.pop_word();
+    vword_t v1 = stack.pop_word();
 
-	vbyte_t r = (v0 == v1) ? 1 : 0;
-	stack.push_byte(r);
+    vbyte_t r = (v0 == v1) ? 1 : 0;
+    stack.push_byte(r);
 }
 
 void ll_eqb(StackFrame& stack)
 {
-	vbyte_t v0 = stack.pop_byte();
-	vbyte_t v1 = stack.pop_byte();
+    vbyte_t v0 = stack.pop_byte();
+    vbyte_t v1 = stack.pop_byte();
 
-	vbyte_t r = (v0 == v1) ? 1 : 0;
-	stack.push_byte(r);
+    vbyte_t r = (v0 == v1) ? 1 : 0;
+    stack.push_byte(r);
 }
 
 void ll_map(StackFrame& stack)
@@ -58,7 +58,7 @@ void ll_map(StackFrame& stack)
         for(j = 0; j < entry_size; j++)
             *d++ = list[i*entry_size + j];
 
-		stack.push(dest, sl);
+        stack.push(dest, sl);
 
         ll_eval(stack);
     }
