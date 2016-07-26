@@ -44,32 +44,20 @@ int main(int argc, char** argv)
     Context* context = new Context(0x1000, 4096);
 
     // place stack at end of memory
-    vword_t stack = context->upper_limit();
+    StackFrame stack = StackFrame(context, context->upper_limit());
 
     init_lisp(context);
-    init_brainfuck(context);
+    /*    init_brainfuck(context);
 
-    StackFrame s = StackFrame(context, context->upper_limit());
 
-	StackFrame fn = StackFrame(context, 0x4000);
-    fn.push_word(123);
-    fn.push_word(resolve_symbol("printi")->start);
-    fn.push_word(2*VWORD_SIZE);
+            // parse a simple program
+            SNode* ast = new SNode(LIST, (char*) "12 deval 1 (-1 (12 brainfuck \"++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.\"))");
+            asm_parse_list(context, 0x2000, ast);
 
-    s.push_word(fn.ptr());
-
-    ll_eval(s);
-
-    return 0;
-
-    // parse a simple program
-    SNode* ast = new SNode(LIST, (char*) "12 deval 1 (-1 (12 brainfuck \"++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.\"))");
-    asm_parse_list(context, 0x2000, ast);
-
-    // set entry point and run
-    context->write_word(stack-VWORD_SIZE, 0x2000);
-    ll_eval(context, stack-VWORD_SIZE);
-
+            // set entry point and run
+            context->write_word(stack-VWORD_SIZE, 0x2000);
+            ll_eval(context, stack-VWORD_SIZE);
+    */
     // loading scripts
     int i;
     for(i = 1; i < argc; i++)
@@ -86,9 +74,12 @@ int main(int argc, char** argv)
         {
             int cwd = open(".", O_RDONLY);
             chdir(dirname(argv[i]));
-            stack -= lisp_parse_size(ast);
-            lisp_parse(context, stack, ast);
-            ll_eval(context, stack+VWORD_SIZE);
+
+            stack.move(-lisp_parse_size(ast));
+            lisp_parse(context, stack.ptr(), ast);
+            stack.move(VWORD_SIZE);
+            ll_eval(stack);
+
             fchdir(cwd);
 
             close(cwd);
@@ -109,29 +100,30 @@ int main(int argc, char** argv)
         if(! ast->subnodes->isEmpty())
         {
             //ast->dump();
-            vword_t s = stack;
-            stack -= lisp_parse_size(ast);
-            if(lisp_parse(context, stack, ast) > 0)
+            vword_t s = stack.ptr();
+            stack.move(-lisp_parse_size(ast));
+            if(lisp_parse(stack.context, stack.ptr(), ast) > 0)
             {
-//                stack = ll_expand(context, stack);
-                stack = ll_eval(context, stack+VWORD_SIZE);
+                //                stack = ll_expand(context, stack);
+                stack.move(VWORD_SIZE);
+                ll_eval(stack);
 
-                size_t l = s-stack;
+                size_t l = s-stack.ptr();
                 if(l > 0)
                 {
                     printf("return: ");
                     switch(l)
                     {
                         case 1:
-                            ll_printb(context, stack);
+                            ll_printb(stack);
                             break;
 
                         case VWORD_SIZE:
-                            ll_printi(context, stack);
+                            ll_printi(stack);
                             break;
 
                         default:
-                            context->dump(stack, l/VWORD_SIZE);
+                            context->dump(stack.ptr(), l/VWORD_SIZE);
                     }
                 }
             }

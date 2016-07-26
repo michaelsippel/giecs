@@ -5,7 +5,7 @@
 #include <context.h>
 #include <lisp/parser.h>
 #include <brainfuck/parser.h>
-
+/*
 vword_t ll_bf_case(Context* context, vword_t p)
 {
     vword_t addr = (vword_t) context->read_word(p);
@@ -231,4 +231,4 @@ vword_t ll_parse_brainfuck(Context* context, vword_t p)
 
     return p;
 }
-
+*/

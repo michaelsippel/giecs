@@ -175,19 +175,19 @@ size_t expand_function(Context* context, vword_t p, SNode* plist, SNode* val)
 }
 
 // compile to lower level to avoid reparsing
-vword_t ll_expand(Context* context, vword_t p)
+void ll_expand(StackFrame& stack)
 {
     static vword_t pt = 0x10000;
-    size_t l = expand(context, pt, &p, false, false);
 
-    p -= VWORD_SIZE;
-    context->write_word(p, pt);
-    p -= VWORD_SIZE;
-    context->write_word(p, VWORD_SIZE);
+    vword_t p = stack.ptr();
+    size_t l = expand(stack.context, pt, &p, false, false);
+
+    stack = StackFrame(stack.context, p);
+
+    stack.push_word(pt);
+    stack.push_word(VWORD_SIZE);
 
     pt += l;
-
-    return p;
 }
 
 size_t expand(Context* context, vword_t pt, vword_t* p, bool quoted, bool quoteptr)

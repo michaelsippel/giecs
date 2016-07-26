@@ -14,7 +14,7 @@ Logger* lisp_parser_logger;
 Logger* lisp_atom_logger;
 
 extern Namespace* default_namespace;
-
+/*
 vword_t lisp_exec(Context* context, const char* str)
 {
     vword_t stack = 4096*0x1000 - VWORD_SIZE;
@@ -25,9 +25,9 @@ vword_t lisp_exec(Context* context, const char* str)
 
     // set entry point and run
     context->write_word(stack, entry_point);
-    return ll_eval(context, stack);
+    ll_eval(stack);
 }
-
+*/
 void init_lisp(Context* context)
 {
     lisp_logger = new Logger("lisp");
@@ -100,6 +100,8 @@ vword_t eval_params(Context* context, vword_t* p, size_t l)
         size_t n = 0;
         vword_t pushs, fn;
 
+        StackFrame f = StackFrame(context, 0);
+
         // self-eval lists
         switch(sn->type)
         {
@@ -120,7 +122,9 @@ vword_t eval_params(Context* context, vword_t* p, size_t l)
                     quote_stack = 0;
 
                 n = pt + pushs;
-                pt = ll_eval(context, pt);
+                f = StackFrame(context, pt);
+                ll_eval(f);
+                pt = f.ptr();
                 n -= pt;
                 break;
 
@@ -136,7 +140,9 @@ vword_t eval_params(Context* context, vword_t* p, size_t l)
                 pt -= lisp_parse_size(sn);
                 n = lisp_parse(context, pt, sn);
 
-                pt = ll_resw(context, pt);
+                f = StackFrame(context, pt);
+                ll_resw(f);
+                pt = f.ptr();
                 break;
         }
 
@@ -161,13 +167,13 @@ vword_t eval_params(Context* context, vword_t* p, size_t l)
     return pt;
 }
 
-vword_t ll_function(Context* context, vword_t p)
+void ll_function(StackFrame& stack)
 {
-    SNode* plist = new SNode(LIST);
-    p += plist->read_vmem(context, p);
+    SNode* plist = new SNode(stack.context, stack.ptr());
+    stack.move(plist->vmem_size());
 
-    SNode* val = new SNode(LIST);
-    p += val->read_vmem(context, p);
+    SNode* val = new SNode(stack.context, stack.ptr());
+    stack.move(val->vmem_size());
 
 //    plist->dump();
 //    val->dump();
@@ -175,7 +181,10 @@ vword_t ll_function(Context* context, vword_t p)
     int nparam = plist->subnodes->numOfElements();
     size_t reqb = nparam * VWORD_SIZE;
 
-    vword_t pt = eval_params(context, &p, reqb);
+    vword_t p = stack.ptr();
+    vword_t pt = eval_params(stack.context, &p, reqb);
+    stack = StackFrame(stack.context, p);
+    StackFrame f = StackFrame(stack.context, pt);
 
     // use stack pointer as group id for symbols
     Namespace* old_ns = default_namespace;
@@ -187,19 +196,18 @@ vword_t ll_function(Context* context, vword_t p)
     while(! it.isLast())
     {
         SNode* sn = it.getCurrent();
-        vword_t start = pt + (i++)*VWORD_SIZE;
-        add_symbol(sn->string, start, 0);
+        vword_t start = f.ptr() + (i++)*VWORD_SIZE;
+        add_symbol(sn->string, start);
 
         it.next();
     }
 
-    size_t n = pt;
-    pt -= lisp_parse_size(val);
-    lisp_parse(context, pt, val);
-
-    pt = ll_eval(context, pt+VWORD_SIZE);
-
-    n -= pt;
+    size_t n = f.ptr();
+    f.move(-lisp_parse_size(val));
+    lisp_parse(f.context, f.ptr(), val);
+    f.move(VWORD_SIZE);
+    ll_eval(f);
+    n -= f.ptr();
 
     // unbind parameters
     it.setFirst();
@@ -214,19 +222,17 @@ vword_t ll_function(Context* context, vword_t p)
     default_namespace = old_ns;
 
     // copy back
-    p -= n;
-    context->copy(p, pt, n);
-
-    return p;
+    stack.move(-n);
+    stack.context->copy(stack.ptr(), f.ptr(), n);
 }
 
-vword_t ll_expand_macro(Context* context, vword_t p)
+void ll_expand_macro(StackFrame& stack)
 {
-    SNode* plist = new SNode(LIST);
-    p += plist->read_vmem(context, p);
+    SNode* plist = new SNode(stack.context, stack.ptr());
+    stack.move(plist->vmem_size());
 
-    SNode* val = new SNode(LIST);
-    p += val->read_vmem(context, p);
+    SNode* val = new SNode(stack.context, stack.ptr());
+    stack.move(val->vmem_size());
 
     //plist->dump();
     //val->dump();
@@ -234,7 +240,7 @@ vword_t ll_expand_macro(Context* context, vword_t p)
     if(plist->type != LIST)
     {
         printf("error: no parameterlist\n");
-        return p;
+        return;
     }
 
     int pnum = plist->subnodes->numOfElements();
@@ -249,8 +255,8 @@ vword_t ll_expand_macro(Context* context, vword_t p)
         if(c->type == SYMBOL)
         {
             names[i] = c->string;
-            params[i] = new SNode(LIST);
-            p += params[i]->read_vmem(context, p);
+            params[i] = new SNode(stack.context, stack.ptr());
+            stack.move(params[i]->vmem_size());
 
             i++;
         }
@@ -264,73 +270,65 @@ vword_t ll_expand_macro(Context* context, vword_t p)
 
     val->replace(names, params, pnum);
 
-    p -= lisp_parse_size(val);
-    lisp_parse(context, p, val);
-
-    return p;
+    stack.move(-lisp_parse_size(val));
+    lisp_parse(stack.context, stack.ptr(), val);
 }
 
-vword_t ll_macro(Context* context, vword_t p)
+void ll_macro(StackFrame& stack)
 {
-    p = ll_expand_macro(context, p);
-    p = ll_eval(context, p+VWORD_SIZE);
+    ll_expand_macro(stack);
 
-    return p;
+    stack.move(VWORD_SIZE);
+    ll_eval(stack);
 }
 
-vword_t ll_eval_param(Context* context, vword_t p)
+void ll_eval_param(StackFrame& stack)
 {
-    vword_t fn = context->read_word(p);
-    p += VWORD_SIZE;
-    vword_t l = context->read_word(p);
-    p += VWORD_SIZE;
+    vword_t fn = stack.pop_word();
+    vword_t l = stack.pop_word();
 
-    vword_t pt = eval_params(context, &p, l);
+    vword_t p = stack.ptr();
+    vword_t pt = eval_params(stack.context, &p, l);
 
-    pt -= VWORD_SIZE;
-    context->write_word(pt, fn);
+    stack = StackFrame(stack.context, p);
+    StackFrame f = StackFrame(stack.context, pt);
+
+    f.push_word(fn);
 
     // eval
-    size_t n = pt + l + VWORD_SIZE;
-    pt = ll_eval(context, pt);
-    n -= pt;
+    size_t n = f.ptr() + l + VWORD_SIZE;
+
+    ll_eval(f);
+    n -= f.ptr();
 
     // copy back
-    p -= n;
-    context->copy(p, pt, n);
-
-    return p;
+    stack.move(-n);
+    stack.context->copy(stack.ptr(), f.ptr(), n);
 }
 
-vword_t ll_isdef(Context* context, vword_t p)
+void ll_isdef(StackFrame& stack)
 {
-    SNode* sym = new SNode(context, p);
-    p += sym->vmem_size();
+    SNode* sym = new SNode(stack.context, stack.ptr());
+    stack.move(sym->vmem_size());
 
-    vbyte_t t = (vbyte_t)1;
-    vbyte_t f = (vbyte_t)0;
-
-    p -= 1;
     if(resolve_symbol(sym->string) == NULL)
-        context->write(p, 1, &f);
+        stack.push_byte((vbyte_t) 0);
     else
-        context->write(p, 1, &t);
-
-    return p;
+        stack.push_byte((vbyte_t) 1);
 }
 
-vword_t ll_declare(Context* context, vword_t p)
+void ll_declare(StackFrame& stack)
 {
     static Logger* logger = new Logger(lisp_logger, "declare");
 
     static vword_t def_start = 0x2000;
 
-    SNode* parent = new SNode(context, p);
-    p += parent->vmem_size();
-    SNode* name = new SNode(context, p);
-    p += name->vmem_size();
-    SNode* value = new SNode(context, p);
-    p += value->vmem_size();
+    SNode* parent = new SNode(stack.context, stack.ptr());
+    stack.move(parent->vmem_size());
+    SNode* name = new SNode(stack.context, stack.ptr());
+    stack.move(name->vmem_size());
+    SNode* value = new SNode(stack.context, stack.ptr());
+    stack.move(value->vmem_size());
 
     if(name->type == SYMBOL)
     {
@@ -347,24 +345,22 @@ vword_t ll_declare(Context* context, vword_t p)
             ns->add_symbol(name->string, def_start);
 
             vword_t tmp = def_start;
-            size_t len = lisp_parse(context, def_start, value);
+            size_t len = lisp_parse(stack.context, def_start, value);
 
             if(value->type == LIST)
             {
                 //expand(context, def_start, &tmp, false, false);
 
-                len = p;
-                p -= VWORD_SIZE;
-                context->write_word(p, def_start);
-                p = ll_eval(context, p);
-                len -= p;
+                len = stack.ptr();
+                stack.push_word(def_start);
+                ll_eval(stack);
+                len -= stack.ptr();
 
-                context->copy(def_start, p, len);
-                p += len;
+                stack.context->copy(def_start, stack.ptr(), len);
+                stack.move(len);
             }
 
             def_start += len;
-
 
 //            logger->log(linfo, "declared \'%s\': 0x%x, %d bytes", name->string, def_start, len);
         }
@@ -376,94 +372,83 @@ vword_t ll_declare(Context* context, vword_t p)
 
     delete name;
     delete value;
-
-    return p;
 }
 
-vword_t ll_asm(Context* context, vword_t p)
+void ll_asm(StackFrame& stack)
 {
-    SNode* ast = new SNode(context, p);
-    p += ast->vmem_size();
+    SNode* ast = new SNode(stack.context, stack.ptr());
+    stack.move(ast->vmem_size());
 
-    size_t l = asm_parse(context, 0x2000, ast);
-
-    p -= VWORD_SIZE;
-    context->write_word(p, 0x2000);
-
-    return p;
+    size_t l = asm_parse(stack.context, 0x2000, ast);
+    stack.push_word(0x2000);
 }
 
-vword_t ll_quote(Context* context, vword_t p)
+void ll_quote(StackFrame& stack)
 {
-    SNode* ast = new SNode(context, p);
-    p += ast->vmem_size();
+    SNode* ast = new SNode(stack.context, stack.ptr());
+    stack.move(ast->vmem_size());
 
     if(ast->type == LIST && quote_stack != (vword_t)0)
     {
         quote_stack -= lisp_parse_size(ast);
-        lisp_parse(context, quote_stack, ast);
+        lisp_parse(stack.context, quote_stack, ast);
 //        quote_stack = ll_expand(context, quote_stack);
 
-        p -= VWORD_SIZE;
-        context->write_word(p, quote_stack);
+        stack.push_word(quote_stack);
     }
     else
     {
-        p -= lisp_parse_size(ast);
-        lisp_parse(context, p, ast);
+        stack.move(-lisp_parse_size(ast));
+        lisp_parse(stack.context, stack.ptr(), ast);
     }
-
-    return p;
 }
 
-vword_t ll_lmap(Context* context, vword_t p)
+void ll_lmap(StackFrame& stack)
 {
-    SNode* fn = new SNode(context, p);
-    p += fn->vmem_size();
+    SNode* fn = new SNode(stack.context, stack.ptr());
+    stack.move(fn->vmem_size());
 
-    SNode* list = new SNode(context, p);
-    p += list->vmem_size();
+    SNode* list = new SNode(stack.context, stack.ptr());
+    stack.move(list->vmem_size());
 
     ListIterator<SNode*> it = ListIterator<SNode*>(list->subnodes);
     while(! it.isLast())
     {
         SNode* param = it.getCurrent();
 
-        p -= param->vmem_size();
-        param->write_vmem(context, p);
+        stack.move(-param->vmem_size());
+        param->write_vmem(stack.context, stack.ptr());
 
-        p -= lisp_parse_size(fn);
-        lisp_parse(context, p, fn);
+        stack.move(-lisp_parse_size(fn));
+        lisp_parse(stack.context, stack.ptr(), fn);
         if(fn->type == LIST)
-            p += VWORD_SIZE;
-        p = ll_eval(context, p);
+            stack.move(VWORD_SIZE);
+
+        ll_eval(stack);
 
         it.next();
     }
-
-    return p;
 }
 
-vword_t ll_progn(Context* context, vword_t p)
+void ll_progn(StackFrame& stack)
 {
-    SNode* list = new SNode(context, p);
-    p += list->vmem_size();
+    SNode* list = new SNode(stack.context, stack.ptr());
+    stack.move(list->vmem_size());
 
     ListIterator<SNode*> it = ListIterator<SNode*>(list->subnodes);
     while(! it.isLast())
     {
         SNode* fn = it.getCurrent();
 
-        p -= lisp_parse_size(fn);
-        lisp_parse(context, p, fn);
+        stack.move(-lisp_parse_size(fn));
+        lisp_parse(stack.context, stack.ptr(), fn);
 
         if(fn->type == LIST)
-            p += VWORD_SIZE;
-        p = ll_eval(context, p);
+            stack.move(VWORD_SIZE);
+
+        ll_eval(stack);
 
         it.next();
     }
-
-    return p;
 }
 
