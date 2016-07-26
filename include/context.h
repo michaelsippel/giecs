@@ -24,6 +24,9 @@ class Context
         Context(size_t page_size_, int num_pages_);
         ~Context();
 
+		vword_t lower_limit(void);
+		vword_t upper_limit(void);
+
         void resize(unsigned int num_pages_);
 
         void dump(vword_t start, size_t length);

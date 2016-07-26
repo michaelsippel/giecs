@@ -25,6 +25,16 @@ Context::~Context()
     free((void*)this->pages);
 }
 
+vword_t Context::lower_limit(void)
+{
+	return 0x0;	
+}
+
+vword_t Context::upper_limit(void)
+{
+	return this->num_pages * this->page_size;
+}
+
 void Context::dump(vword_t start, size_t length)
 {
     printf("MEMORY-DUMP (%d words)\n", length);
