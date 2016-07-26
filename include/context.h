@@ -4,12 +4,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <logger.h>
+#include <stackframe.h>
 
-typedef uint8_t vbyte_t;
-typedef uint32_t vword_t;
-#define VWORD_SIZE (sizeof(vword_t) / sizeof(vbyte_t))
-#define IWORD_SIZE (sizeof(void*) / sizeof(vbyte_t))
+#include <logger.h>
+#include <itype.h>
 
 struct page
 {
@@ -41,7 +39,7 @@ class Context
 
         void copy(vword_t dest, vword_t src, size_t length);
 
-        vword_t add_ll_fn(vword_t (*fn)(Context*, vword_t));
+        vword_t add_ll_fn(void (*fn)(StackFrame&));
 
     private:
         static Logger* logger;

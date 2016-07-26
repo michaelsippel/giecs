@@ -182,7 +182,7 @@ void Context::write_word(vword_t addr, vword_t val)
     this->write(addr, VWORD_SIZE, (vbyte_t*) &val);
 }
 
-vword_t Context::add_ll_fn(vword_t (*fn)(Context*, vword_t))
+vword_t Context::add_ll_fn(void (*fn)(StackFrame&))
 {
     static vword_t addr = 0x1;
     vword_t ret = addr;

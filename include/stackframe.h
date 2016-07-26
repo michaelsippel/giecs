@@ -2,8 +2,10 @@
 #ifndef _stackframe_h_
 #define _stackframe_h_
 
-#include <context.h>
 #include <logger.h>
+#include <itype.h>
+
+class Context;
 
 class StackFrame
 {
