@@ -4,37 +4,37 @@
 #include <context.h>
 #include <stackframe.h>
 
-void ll_eval(StackFrame frame);
-vword_t ll_eval(Context* context, vword_t p);
+void ll_eval(StackFrame& stack);
 
+void ll_deval(StackFrame& stack);
+void ll_nop(StackFrame& stack);
 
-vword_t ll_deval(Context* context, vword_t p);
-vword_t ll_nop(Context* context, vword_t p);
+void ll_setrelative(StackFrame& stack);
+void ll_pop(StackFrame& stack);
 
-vword_t ll_setrelative(Context* context, vword_t p);
-vword_t ll_pop(Context* context, vword_t p);
+void ll_load(StackFrame& stack);
+void ll_syscall(StackFrame& stack);
 
-vword_t ll_load(Context* context, vword_t p);
-vword_t ll_syscall(Context* context, vword_t p);
+void ll_eqw(StackFrame& stack);
+void ll_eqb(StackFrame& stack);
+void ll_gtb(StackFrame& stack);
 
-vword_t ll_eqw(Context* context, vword_t p);
-vword_t ll_eqb(Context* context, vword_t p);
-vword_t ll_gtb(Context* context, vword_t p);
+void ll_resw(StackFrame& stack);
+void ll_setw(StackFrame& stack);
+void ll_resb(StackFrame& stack);
+void ll_setb(StackFrame& stack);
+void ll_map(StackFrame& stack);
+void ll_cond(StackFrame& stack);
 
-vword_t ll_resw(Context* context, vword_t p);
-vword_t ll_setw(Context* context, vword_t p);
-vword_t ll_resb(Context* context, vword_t p);
-vword_t ll_setb(Context* context, vword_t p);
-vword_t ll_map(Context* context, vword_t p);
-vword_t ll_cond(Context* context, vword_t p);
+void ll_printi(StackFrame& stack);
+void ll_printi(StackFrame& stack);
+void ll_printb(StackFrame& stack);
 
-vword_t ll_printi(Context* context, vword_t p);
-vword_t ll_printb(Context* context, vword_t p);
-
-vword_t ll_addi(Context* context, vword_t p);
-vword_t ll_subi(Context* context, vword_t p);
-vword_t ll_muli(Context* context, vword_t p);
-vword_t ll_divi(Context* context, vword_t p);
+void ll_addi(StackFrame& stack);
+void ll_addi(StackFrame& stack);
+void ll_subi(StackFrame& stack);
+void ll_muli(StackFrame& stack);
+void ll_divi(StackFrame& stack);
 
 #endif
 

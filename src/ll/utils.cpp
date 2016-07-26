@@ -5,64 +5,47 @@
 #include <context.h>
 #include <ll.h>
 
-vword_t ll_cond(Context* context, vword_t p)
+void ll_cond(StackFrame& stack)
 {
-    vbyte_t c;
-    context->read(p, 1, &c);
-    p += 1;
-
-    vword_t v0 = context->read_word(p);
-    p += VWORD_SIZE;
+    vbyte_t c = stack.pop_byte();
+    vword_t v0 = stack.pop_word();
 
     if(c)
-        context->write_word(p, v0);
-
-    return p;
+	{
+		stack.move(VWORD_SIZE);
+		stack.push_word(v0);
+	}
 }
 
-vword_t ll_eqw(Context* context, vword_t p)
+void ll_eqw(StackFrame& stack)
 {
-    vword_t v[2];
-    context->read(p, 2*VWORD_SIZE, (vbyte_t*) &v);
+	vword_t v0 = stack.pop_word();
+	vword_t v1 = stack.pop_word();
 
-    p = p + 2 * VWORD_SIZE - 1;
-
-    vbyte_t r = (v[0] == v[1]) ? 1 : 0;
-    context->write(p, 1, &r);
-
-    return p;
+	vbyte_t r = (v0 == v1) ? 1 : 0;
+	stack.push_byte(r);
 }
 
-vword_t ll_eqb(Context* context, vword_t p)
+void ll_eqb(StackFrame& stack)
 {
-    vbyte_t v[2];
-    context->read(p, 2, (vbyte_t*) &v);
+	vbyte_t v0 = stack.pop_byte();
+	vbyte_t v1 = stack.pop_byte();
 
-    p += 1;
-
-    vbyte_t r = (v[0] == v[1]) ? 1 : 0;
-    context->write(p, 1, &r);
-
-    return p;
+	vbyte_t r = (v0 == v1) ? 1 : 0;
+	stack.push_byte(r);
 }
 
-
-vword_t ll_map(Context* context, vword_t p)
+void ll_map(StackFrame& stack)
 {
-    vword_t v[4];
-    context->read(p, 4 * VWORD_SIZE, (vbyte_t*) &v);
-
-    vword_t fn_addr = v[0];
-    vword_t list_len = v[1];
-    vword_t entry_size = v[2];
-    vword_t list_addr = v[3];
-
-    p += 4 * VWORD_SIZE;
+    vword_t fn_addr = stack.pop_word();
+    vword_t list_len = stack.pop_word();
+    vword_t entry_size = stack.pop_word();
+    vword_t list_addr = stack.pop_word();
 
     size_t l = list_len * entry_size;
 
     vbyte_t* list = (vbyte_t*) malloc(l * sizeof(vbyte_t));
-    context->read(list_addr, l, list);
+    stack.context->read(list_addr, l, list);
 
     size_t sl = entry_size + VWORD_SIZE;
     vbyte_t* dest = (vbyte_t*) malloc(sl * sizeof(vbyte_t));
@@ -75,15 +58,12 @@ vword_t ll_map(Context* context, vword_t p)
         for(j = 0; j < entry_size; j++)
             *d++ = list[i*entry_size + j];
 
-        p -= sl;
-        context->write(p, sl, dest);
+		stack.push(dest, sl);
 
-        p = ll_eval(context, p);
+        ll_eval(stack);
     }
 
     free(dest);
     free(list);
-
-    return p;
 }
 

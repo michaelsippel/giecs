@@ -12,21 +12,20 @@
 #include <ll.h>
 #include <syscalls.h>
 
-vword_t ll_load(Context* context, vword_t p)
+void ll_load(StackFrame& stack)
 {
-    vword_t ptr = context->read_word(p);
-    p += VWORD_SIZE;
+    vword_t ptr = stack.pop_word();
 
     int cwd = open(".", O_RDONLY);
 
     char path[PATH_MAX+1];
-    context->read_str(ptr, (vbyte_t*) &path);
+    stack.context->read_str(ptr, (vbyte_t*) &path);
 
     int fd = open(path, O_RDONLY);
     if(fd < 0)
     {
         printf("can't open \"%s\"\n", path);
-        return p;
+        return;
     }
 
     chdir(dirname(path));
@@ -42,23 +41,22 @@ vword_t ll_load(Context* context, vword_t p)
     SNode* ast = new SNode(LIST, buf);
     if(! ast->subnodes->isEmpty())
     {
-        p -= lisp_parse_size(ast);
-        if(lisp_parse(context, p, ast) > 0)
+        stack.move(-lisp_parse_size(ast));
+        if(lisp_parse(stack.context, stack.ptr(), ast) > 0)
         {
-            p = ll_eval(context, p+VWORD_SIZE);
+			stack.move(VWORD_SIZE);
+            ll_eval(stack);
         }
     }
 
     fchdir(cwd);
     close(cwd);
-
-    return p;
 }
 
-vword_t ll_syscall(Context* context, vword_t p)
+void ll_syscall(StackFrame& stack)
 {
     vword_t regs_in[6];
-    p += context->read(p, 6*VWORD_SIZE, (vbyte_t*) &regs_in);
+	stack.pop((vbyte_t*) &regs_in, 6*VWORD_SIZE);
 
     long sys_id = regs_in[0];
     void* regs_out[6] = {(void*)sys_id,0,0,0,0,0};
@@ -83,7 +81,7 @@ vword_t ll_syscall(Context* context, vword_t p)
                 j = 0;
                 do
                 {
-                    context->read(regs_in[i+1]+j, 1, &c);
+                    stack.context->read(regs_in[i+1]+j, 1, &c);
                     j++;
                 }
                 while(c != '\0');
@@ -113,178 +111,142 @@ vword_t ll_syscall(Context* context, vword_t p)
         }
 
         buf[i] = (vbyte_t*) malloc(sizes[i] * sizeof(vbyte_t));
-        context->read(regs_in[i+1], sizes[i], buf[i]);
+        stack.context->read(regs_in[i+1], sizes[i], buf[i]);
         regs_out[i+1] = (void*) buf[i];
     }
 
-    uint32_t retv = 0;
+    int retv = 0;
     asm("int $0x80;"
         : "=a" (retv) : "a" (regs_out[0]),  "b" (regs_out[1]), "c"(regs_out[2]), "d"(regs_out[3]), "S"(regs_out[4]), "D"(regs_out[5]));
 
-    p -= VWORD_SIZE;
-    context->write_word(p, retv);
+	stack.push_word((vword_t) retv);
 
     for(i = 0; i < 5; i++)
     {
         if(buf[i] != NULL)
         {
-            context->write(regs_in[i+1], sizes[i], buf[i]);
+            stack.context->write(regs_in[i+1], sizes[i], buf[i]);
             free(buf[i]);
         }
     }
-
-    return p;
 }
 
-vword_t ll_addi(Context* context, vword_t p)
+void ll_addi(StackFrame& stack)
 {
-    vword_t val[2];
-    context->read(p, 2*VWORD_SIZE, (vbyte_t*) &val);
+	vword_t v1 = stack.pop_word();
+	vword_t v2 = stack.pop_word();
 
-    vword_t ret = val[0] + val[1];
-    context->write_word(p+VWORD_SIZE, ret);
-
-    return p + VWORD_SIZE;
+    vword_t ret = v1 + v2;
+	stack.push_word(ret);
 }
 
-vword_t ll_muli(Context* context, vword_t p)
+void ll_muli(StackFrame& stack)
 {
-    vword_t val[2];
-    context->read(p, 2*VWORD_SIZE, (vbyte_t*) &val);
+	vword_t v1 = stack.pop_word();
+	vword_t v2 = stack.pop_word();
 
-    vword_t ret = val[0] * val[1];
-    context->write_word(p+VWORD_SIZE, ret);
-
-    return p + VWORD_SIZE;
+    vword_t ret = v1 * v2;
+	stack.push_word(ret);
 }
 
-vword_t ll_subi(Context* context, vword_t p)
+void ll_subi(StackFrame& stack)
 {
-    vword_t val[2];
-    context->read(p, 2*VWORD_SIZE, (vbyte_t*) &val);
+	vword_t v1 = stack.pop_word();
+	vword_t v2 = stack.pop_word();
 
-    vword_t ret = val[0] - val[1];
-    context->write_word(p+VWORD_SIZE, ret);
-
-    return p + VWORD_SIZE;
+    vword_t ret = v1 - v2;
+	stack.push_word(ret);
 }
 
-vword_t ll_divi(Context* context, vword_t p)
+void ll_divi(StackFrame& stack)
 {
-    vword_t val[2];
-    context->read(p, 2*VWORD_SIZE, (vbyte_t*) &val);
+	vword_t v1 = stack.pop_word();
+	vword_t v2 = stack.pop_word();
 
-    vword_t ret = val[0] / val[1];
-    context->write_word(p+VWORD_SIZE, ret);
-
-    return p + VWORD_SIZE;
+    vword_t ret = v1 / v2;
+	stack.push_word(ret);
 }
 
-vword_t ll_printi(Context* context, vword_t p)
+void ll_printi(StackFrame& stack)
 {
-    vword_t val = context->read_word(p);
-    printf("%d\n", val);
-
-    return p + VWORD_SIZE;
+	vword_t v = stack.pop_word();
+	printf("%d\n", v);
 }
 
-vword_t ll_printb(Context* context, vword_t p)
+void ll_printb(StackFrame& stack)
 {
-    vbyte_t val;
-    context->read(p, 1, &val);
+    vbyte_t val = stack.pop_byte();
     printf("%s\n", val ? "true" : "false");
-    return p + 1;
 }
 
 static vword_t rel_base = 0x0;
 
-vword_t ll_setrelative(Context* context, vword_t p)
+void ll_setrelative(StackFrame& stack)
 {
     vword_t ob = rel_base;
-    rel_base = p + VWORD_SIZE;
+    rel_base = stack.ptr() + VWORD_SIZE;
 
-    p = ll_eval(context, p);
+    ll_eval(stack);
 
     rel_base = ob;
-    return p;
 }
 
-vword_t ll_pop(Context* context, vword_t p)
+void ll_pop(StackFrame& stack)
 {
-    vword_t poplen = context->read_word(p);
-    p += VWORD_SIZE;
+    vword_t poplen = stack.pop_word();
 
     printf("pop %d bytes\n", poplen);
 
-    size_t len = p + VWORD_SIZE; // We assume the next call has no arguments on stack
-    p = ll_eval(context, p);
-    len -= p;
+    size_t len = stack.ptr() + VWORD_SIZE; // We assume the next call has no arguments on stack
+    ll_eval(stack);
+    len -= stack.ptr();
 
     printf("returned len %d\n", len);
 
-    context->copy(p+poplen, p, len);
-    p += poplen;
-
-    return p;
+    stack.context->copy(stack.ptr()+poplen, stack.ptr(), len);
+    stack.move(poplen);
 }
 
-vword_t ll_resw(Context* context, vword_t p)
+void ll_resw(StackFrame& stack)
 {
-    vword_t ptr = context->read_word(p);
-
+    vword_t ptr = stack.pop_word();
     if((int)ptr < 1)
         ptr = rel_base - ptr;
 
-    vword_t v = context->read_word(ptr);
-    context->write_word(p, v);
-
-    return p;
+    vword_t v = stack.context->read_word(ptr);
+	stack.push_word(v);
 }
 
-vword_t ll_setw(Context* context, vword_t p)
+void ll_setw(StackFrame& stack)
 {
-    vword_t ptr = context->read_word(p);
-    p += VWORD_SIZE;
-
+    vword_t ptr = stack.pop_word();
     if((int)ptr < 1)
         ptr = rel_base - ptr;
 
-    vword_t v = context->read_word(p);
-    p += VWORD_SIZE;
-    context->write_word(ptr, v);
-
-    return p;
+    vword_t v = stack.pop_word();
+    stack.context->write_word(ptr, v);
 }
 
-vword_t ll_resb(Context* context, vword_t p)
+void ll_resb(StackFrame& stack)
 {
-    vword_t ptr = context->read_word(p);
-    p += VWORD_SIZE;
+    vword_t ptr = stack.pop_word();
 
     vbyte_t v;
-    context->read(ptr, 1, &v);
+    stack.context->read(ptr, 1, &v);
 
-    p -= 1;
-    context->write(p, 1, &v);
-
-    return p;
+	stack.push_byte(v);
 }
 
-vword_t ll_setb(Context* context, vword_t p)
+void ll_setb(StackFrame& stack)
 {
-    vword_t ptr = context->read_word(p);
-    p += VWORD_SIZE;
-    vbyte_t v;
-    context->read(p, 1, &v);
-    p += 1;
+    vword_t ptr = stack.pop_word();
+    vbyte_t v = stack.pop_byte();
 
-    context->write(ptr, 1, &v);
-
-    return p;
+	stack.context->write(ptr, 1, &v);
 }
 
-vword_t ll_nop(Context* context, vword_t p)
+void ll_nop(StackFrame& stack)
 {
-    return p;
+    return;
 }
 
