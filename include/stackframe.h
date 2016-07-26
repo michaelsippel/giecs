@@ -8,12 +8,12 @@
 class StackFrame
 {
     public:
-        StackFrame(Context* context_, vword_t ptr_);
+        StackFrame(Context* context_, vword_t base_);
         ~StackFrame();
 
         int move(int offset);
         int offset(void);
-		vword_t ptr(void);
+        vword_t ptr(void);
 
         int push(vbyte_t* buf, size_t len);
         int pop(vbyte_t* buf, size_t len);
@@ -35,11 +35,12 @@ class StackFrame
             return this->unmap_void((void*) buf);
         }
 
+        Context* context;
+
     private:
         void* map_void(size_t len);
         int unmap_void(void* buf);
 
-        Context* context;
         vword_t base;
         int pos;
 

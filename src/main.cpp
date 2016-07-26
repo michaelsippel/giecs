@@ -49,6 +49,19 @@ int main(int argc, char** argv)
     init_lisp(context);
     init_brainfuck(context);
 
+    StackFrame s = StackFrame(context, context->upper_limit());
+
+	StackFrame fn = StackFrame(context, 0x4000);
+    fn.push_word(123);
+    fn.push_word(resolve_symbol("printi")->start);
+    fn.push_word(2*VWORD_SIZE);
+
+    s.push_word(fn.ptr());
+
+    ll_eval(s);
+
+    return 0;
+
     // parse a simple program
     SNode* ast = new SNode(LIST, (char*) "12 deval 1 (-1 (12 brainfuck \"++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.\"))");
     asm_parse_list(context, 0x2000, ast);

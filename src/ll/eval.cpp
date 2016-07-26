@@ -3,36 +3,39 @@
 #include <stdlib.h>
 
 #include <context.h>
+#include <stackframe.h>
+
 #include <lisp/parser.h>
+#include <ll.h>
 
 vword_t ll_eval(Context* context, vword_t p)
 {
-    vword_t addr = context->read_word(p);
-    p += VWORD_SIZE;
+    return p;
+}
 
-    if(addr == p)
-        return ll_eval(context, p);
+void ll_eval(StackFrame stack)
+{
+    vword_t addr = stack.pop_word();
 
-    vword_t len = context->read_word(addr);
-    addr += VWORD_SIZE;
+    StackFrame fn = StackFrame(stack.context, addr);
+    vword_t len = fn.pop_word();
 
     if(len != (vword_t)-1)
     {
-        p -= len;
-
         // apply parameters
-        context->copy(p, addr, len);
+        stack.move(-len);
+        stack.context->copy(stack.ptr(), fn.ptr(), len);
 
         // eval again
-        return ll_eval(context, p);
+        ll_eval(stack);
     }
     else
     {
         // call low-level function
-        vword_t (*fn)(Context*, vword_t);
-        context->read(addr, IWORD_SIZE, (vbyte_t*) &fn);
+        vword_t (*f)(Context*, vword_t);
+        fn.pop((vbyte_t*) &f, IWORD_SIZE);
 
-        return fn(context, p);
+        f(stack.context, stack.ptr());
     }
 }
 

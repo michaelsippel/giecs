@@ -48,7 +48,7 @@ int StackFrame::offset(void)
 
 vword_t StackFrame::ptr(void)
 {
-	return this->base + this->pos;
+    return this->base + this->pos;
 }
 
 int StackFrame::push(vbyte_t* buf, size_t len)

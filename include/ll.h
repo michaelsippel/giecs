@@ -2,8 +2,12 @@
 #define _ll_h_
 
 #include <context.h>
+#include <stackframe.h>
 
+void ll_eval(StackFrame frame);
 vword_t ll_eval(Context* context, vword_t p);
+
+
 vword_t ll_deval(Context* context, vword_t p);
 vword_t ll_nop(Context* context, vword_t p);
 
