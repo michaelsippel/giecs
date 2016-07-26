@@ -10,6 +10,7 @@
 
 #include <ll.h>
 #include <context.h>
+#include <stackframe.h>
 
 #include <lisp/reader.h>
 #include <lisp/parser.h>
@@ -43,7 +44,7 @@ int main(int argc, char** argv)
     Context* context = new Context(0x1000, 4096);
 
     // place stack at end of memory
-    vword_t stack = 4096*0x1000;
+    vword_t stack = context->upper_limit();
 
     init_lisp(context);
     init_brainfuck(context);
