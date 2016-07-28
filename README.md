@@ -1,8 +1,7 @@
-[![License](https://img.shields.io/github/license/michaelsippel/cautious-potato.svg)]()
-[![Tag](https://img.shields.io/github/tag/michaelsippel/cautious-potato.svg)](https://github.com/michaelsippel/cautious-potato/tags)
-
-[![Build-Dev](https://img.shields.io/travis/michaelsippel/cautious-potato/dev.svg?label=dev)](https://travis-ci.org/michaelsippel/cautious-potato/branches)
 [![Build-Master](https://img.shields.io/travis/michaelsippel/cautious-potato/master.svg?label=master)](https://travis-ci.org/michaelsippel/cautious-potato/branches)
+[![Build-Dev](https://img.shields.io/travis/michaelsippel/cautious-potato/dev.svg?label=dev)](https://travis-ci.org/michaelsippel/cautious-potato/branches)
+[![Tag](https://img.shields.io/github/tag/michaelsippel/cautious-potato.svg)](https://github.com/michaelsippel/cautious-potato/tags)
+[![License](https://img.shields.io/github/license/michaelsippel/cautious-potato.svg)](https://github.com/michaelsippel/cautious-potato/blob/doc/LICENSE)
 
 ### About
 My low-level-lisp-vm for compiling and scripting.
