@@ -1,0 +1,8 @@
+site_name: GIECS Documentation
+pages:
+- Home: index.md
+- Building: building.md
+- Bugs: bugs.md
+
+theme: readthedocs
+

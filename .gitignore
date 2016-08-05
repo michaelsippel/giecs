@@ -9,4 +9,5 @@ makefile~
 Makefile~
 .gitignore~
 vm_*
+site/
 

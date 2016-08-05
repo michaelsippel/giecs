@@ -51,6 +51,9 @@ style: $(C_SRCS) $(C_HDRS)
 test: $(BIN)
 	cd examples && ./test.lisp
 
+doc:
+	$(MAKE) -c doc html
+
 clean:
 	rm $(OBJS)
 	rm $(BIN)
