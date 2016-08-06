@@ -1,8 +1,10 @@
 site_name: GIECS Documentation
-pages:
-- Home: index.md
-- Building: building.md
-- Bugs: bugs.md
-
+repo_url: https://github.com/michaelsippel/giecs
 theme: readthedocs
+
+pages:
+- Home: 'index.md'
+- License: 'license.md'
+- Building: 'building.md'
+- Bugs: 'bugs.md'
 
