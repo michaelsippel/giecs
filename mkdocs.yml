@@ -4,6 +4,9 @@ theme: readthedocs
 
 pages:
 - Home: 'index.md'
+- The Virtual Machine:
+    - Memory: 'vm/memory.md'
+    - Evaluation: 'vm/eval.md'
 - License: 'license.md'
 - Building: 'building.md'
 - Bugs: 'bugs.md'
