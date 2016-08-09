@@ -41,10 +41,10 @@ void ll_load(StackFrame& stack)
     SNode* ast = new SNode(LIST, buf);
     if(! ast->subnodes->isEmpty())
     {
-        stack.move(-lisp_parse_size(ast));
+        stack.move(lisp_parse_size(ast));
         if(lisp_parse(stack.context, stack.ptr(), ast) > 0)
         {
-            stack.move(VWORD_SIZE);
+            stack.move(-VWORD_SIZE);
             ll_eval(stack);
         }
     }
@@ -204,7 +204,7 @@ void ll_pop(StackFrame& stack)
     printf("returned len %d\n", len);
 
     stack.context->copy(stack.ptr()+poplen, stack.ptr(), len);
-    stack.move(poplen);
+    stack.move(-poplen);
 }
 
 void ll_resw(StackFrame& stack)

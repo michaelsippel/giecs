@@ -18,7 +18,7 @@ void ll_eval(StackFrame& stack)
     if(len != (vword_t)-1)
     {
         // apply parameters
-        stack.move(-len);
+        stack.move(len);
         stack.context->copy(stack.ptr(), fn.ptr(), len);
 
         // eval again
@@ -49,7 +49,7 @@ void ll_deval(StackFrame& stack)
         list_index[i] = liststack.ptr();
 
         vword_t attr = liststack.pop_word();
-        liststack.move( (attr == (vword_t)-1) ? VWORD_SIZE : attr );
+        liststack.move( (attr == (vword_t)-1) ? -VWORD_SIZE : -attr );
     }
 
     for(i = num_list-1; i >= 0; i--)

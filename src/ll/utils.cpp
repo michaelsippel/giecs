@@ -12,7 +12,7 @@ void ll_cond(StackFrame& stack)
 
     if(c)
     {
-        stack.move(VWORD_SIZE);
+        stack.move(-VWORD_SIZE);
         stack.push_word(v0);
     }
 }

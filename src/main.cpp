@@ -101,11 +101,11 @@ int main(int argc, char** argv)
         {
             //ast->dump();
             vword_t s = stack.ptr();
-            stack.move(-lisp_parse_size(ast));
+            stack.move(lisp_parse_size(ast));
             if(lisp_parse(stack.context, stack.ptr(), ast) > 0)
             {
                 //                stack = ll_expand(context, stack);
-                stack.move(VWORD_SIZE);
+                stack.move(-VWORD_SIZE);
                 ll_eval(stack);
 
                 size_t l = s-stack.ptr();
