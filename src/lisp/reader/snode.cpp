@@ -20,6 +20,11 @@ SNode::SNode(Context* context, vword_t addr)
     this->read_vmem(context, addr);
 }
 
+SNode::SNode(StackFrame& stack)
+{
+    this->pop(stack);
+}
+
 SNode::~SNode()
 {
     // TODO
@@ -91,6 +96,82 @@ void SNode::dump(int indent)
             break;
 
     }
+}
+
+void SNode::pop(StackFrame& stack)
+{
+    this->type = (enum snode_type) stack.pop_word();
+
+    vword_t n;
+    int i = 0;
+    size_t len;
+
+    vbyte_t buf[512];
+
+    switch(this->type)
+    {
+        case LIST:
+            n = stack.pop_word();
+            this->subnodes = new List<SNode*>();
+            for(i = 0; i < n; i++)
+            {
+                SNode* sn = new SNode(stack);
+                //sn->dump();
+                this->subnodes->pushBack(sn);
+            }
+            break;
+
+        case SYMBOL:
+        case STRING:
+            // TODO: arbitrary length
+            len = stack.context->read_str(stack.ptr(), buf) + 1;
+            this->string = (char*) malloc(len);
+            strcpy(this->string, (char*) buf);
+            stack.move(-len);
+            break;
+
+        case INTEGER:
+            this->integer = stack.pop_word();
+            break;
+    }
+}
+
+void SNode::push(StackFrame& stack)
+{
+    switch(this->type)
+    {
+        case LIST:
+        {
+            // insert subnodes
+            ListIterator<SNode*> it = ListIterator<SNode*>(this->subnodes);
+            it.setLast();
+            while(! it.isLast())
+            {
+                it.getCurrent()->push(stack);
+                it.previous();
+            }
+
+            // write number of elements
+            int n = this->subnodes->numOfElements();
+            stack.push_word((vword_t)n);
+            break;
+        }
+
+        case SYMBOL:
+        case STRING:
+        {
+            int n = strlen(this->string) + 1;
+            stack.push((vbyte_t*) this->string, n);
+            break;
+        }
+
+        case INTEGER:
+            stack.push_word((vword_t)this->integer);
+            break;
+    }
+
+    // write type
+    stack.push_word((vword_t)this->type);
 }
 
 size_t SNode::vmem_size(void)

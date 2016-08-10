@@ -169,14 +169,11 @@ vword_t eval_params(Context* context, vword_t* p, size_t l)
 
 void ll_function(StackFrame& stack)
 {
-    SNode* plist = new SNode(stack.context, stack.ptr());
-    stack.move(-plist->vmem_size());
+    SNode* plist = new SNode(stack);
+    SNode* val = new SNode(stack);
 
-    SNode* val = new SNode(stack.context, stack.ptr());
-    stack.move(-val->vmem_size());
-
-//    plist->dump();
-//    val->dump();
+    plist->dump();
+    val->dump();
 
     int nparam = plist->subnodes->numOfElements();
     size_t reqb = nparam * VWORD_SIZE;
@@ -228,11 +225,8 @@ void ll_function(StackFrame& stack)
 
 void ll_expand_macro(StackFrame& stack)
 {
-    SNode* plist = new SNode(stack.context, stack.ptr());
-    stack.move(-plist->vmem_size());
-
-    SNode* val = new SNode(stack.context, stack.ptr());
-    stack.move(-val->vmem_size());
+    SNode* plist = new SNode(stack);
+    SNode* val = new SNode(stack);
 
     //plist->dump();
     //val->dump();
@@ -255,9 +249,7 @@ void ll_expand_macro(StackFrame& stack)
         if(c->type == SYMBOL)
         {
             names[i] = c->string;
-            params[i] = new SNode(stack.context, stack.ptr());
-            stack.move(-params[i]->vmem_size());
-
+            params[i] = new SNode(stack);
             i++;
         }
         else
@@ -308,8 +300,7 @@ void ll_eval_param(StackFrame& stack)
 
 void ll_isdef(StackFrame& stack)
 {
-    SNode* sym = new SNode(stack.context, stack.ptr());
-    stack.move(-sym->vmem_size());
+    SNode* sym = new SNode(stack);
 
     if(resolve_symbol(sym->string) == NULL)
         stack.push_byte((vbyte_t) 0);
@@ -323,12 +314,9 @@ void ll_declare(StackFrame& stack)
 
     static vword_t def_start = 0x2000;
 
-    SNode* parent = new SNode(stack.context, stack.ptr());
-    stack.move(-parent->vmem_size());
-    SNode* name = new SNode(stack.context, stack.ptr());
-    stack.move(-name->vmem_size());
-    SNode* value = new SNode(stack.context, stack.ptr());
-    stack.move(-value->vmem_size());
+    SNode* parent = new SNode(stack);
+    SNode* name = new SNode(stack);
+    SNode* value = new SNode(stack);
 
     if(name->type == SYMBOL)
     {
@@ -376,17 +364,14 @@ void ll_declare(StackFrame& stack)
 
 void ll_asm(StackFrame& stack)
 {
-    SNode* ast = new SNode(stack.context, stack.ptr());
-    stack.move(-ast->vmem_size());
-
+    SNode* ast = new SNode(stack);
     size_t l = asm_parse(stack.context, 0x2000, ast);
     stack.push_word(0x2000);
 }
 
 void ll_quote(StackFrame& stack)
 {
-    SNode* ast = new SNode(stack.context, stack.ptr());
-    stack.move(-ast->vmem_size());
+    SNode* ast = new SNode(stack);
 
     if(ast->type == LIST && quote_stack != (vword_t)0)
     {
@@ -405,11 +390,8 @@ void ll_quote(StackFrame& stack)
 
 void ll_lmap(StackFrame& stack)
 {
-    SNode* fn = new SNode(stack.context, stack.ptr());
-    stack.move(-fn->vmem_size());
-
-    SNode* list = new SNode(stack.context, stack.ptr());
-    stack.move(-list->vmem_size());
+    SNode* fn = new SNode(stack);
+    SNode* list = new SNode(stack);
 
     ListIterator<SNode*> it = ListIterator<SNode*>(list->subnodes);
     while(! it.isLast())
@@ -432,8 +414,7 @@ void ll_lmap(StackFrame& stack)
 
 void ll_progn(StackFrame& stack)
 {
-    SNode* list = new SNode(stack.context, stack.ptr());
-    stack.move(-list->vmem_size());
+    SNode* list = new SNode(stack);
 
     ListIterator<SNode*> it = ListIterator<SNode*>(list->subnodes);
     while(! it.isLast())

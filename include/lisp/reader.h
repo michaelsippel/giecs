@@ -18,6 +18,7 @@ class SNode
         SNode(enum snode_type type_);
         SNode(enum snode_type type_, char* src);
         SNode(Context* context, vword_t addr);
+        SNode(StackFrame& stack);
         ~SNode();
 
         enum snode_type type;
@@ -39,6 +40,9 @@ class SNode
         void dump(int indent);
 
         void replace(char** names, SNode** nodes, int num);
+
+        void pop(StackFrame& stack);
+        void push(StackFrame& stack);
 
         size_t vmem_size(void);
         size_t write_vmem(Context* context, vword_t addr);
