@@ -25,6 +25,10 @@ class StackFrame
         void push_byte(vbyte_t v);
         void push_word(vword_t v);
 
+        int peek(vbyte_t* buf, size_t len);
+        vbyte_t peek_byte(void);
+        vword_t peek_word(void);
+
         template <typename T>
         T* map(size_t len)
         {

@@ -95,6 +95,27 @@ void StackFrame::push_word(vword_t v)
     this->push((vbyte_t*) &v, VWORD_SIZE);
 }
 
+int StackFrame::peek(vbyte_t* buf, size_t len)
+{
+    vword_t p = this->ptr();
+    this->context->read(p, len, buf);
+    return len;
+}
+
+vbyte_t StackFrame::peek_byte(void)
+{
+    vbyte_t v;
+    this->peek(&v, 1);
+    return v;
+}
+
+vword_t StackFrame::peek_word(void)
+{
+    vword_t v;
+    this->peek((vbyte_t*) &v, VWORD_SIZE);
+    return v;
+}
+
 void* StackFrame::map_void(size_t len)
 {
     //TODO
