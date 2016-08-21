@@ -15,7 +15,6 @@ struct page
     void* base;
 };
 
-// TODO
 class Context
 {
     public:

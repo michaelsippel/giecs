@@ -3,6 +3,9 @@
 #include <boost/preprocessor/repetition/repeat.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
 
+namespace giecs
+{
+
 template <int N> struct bittype_tag
 {
     typedef uintmax_t type;
@@ -23,6 +26,11 @@ class Bits
         Bits()
         {
             this->value = 0;
+        }
+
+        Bits(const Bits<N>& b)
+        {
+            this->value = b.value;
         }
 
         template <typename T>
@@ -48,4 +56,6 @@ class Bits
     typename bittype_tag<N>::type value :
         N;
 };
+
+} // namespace giecs
 
