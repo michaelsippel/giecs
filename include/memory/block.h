@@ -1,33 +1,27 @@
 
 #pragma once
 
+#include <cstddef>
+
 namespace giecs
 {
 namespace memory
 {
 
+class Context;
 class Accessor;
 
 class Block
 {
     public:
-        Block(size_t l)
-        {
-            this->length = l;
-            this->ptr = malloc(this->length);
-        }
+        Block(size_t l);
+        Block(const Block& b);
+        ~Block();
 
-        Block(const Block& b)
-        {
-            this->length = b.length;
-            this->ptr = b.ptr;
+        void resize(size_t l);
+        size_t getLength(void);
 
-        }
-
-        ~Block()
-        {
-            free(this->ptr);
-        }
+        Accessor getAccessor(Context* context);
 
     protected:
         size_t length;

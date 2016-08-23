@@ -54,14 +54,11 @@ int main(int argc, char** argv)
     typedef Bits<24> word;
 
     memory::Context* c1 = new memory::Context();
-
-    memory::TypeBlock<byte>* b = new memory::TypeBlock<byte>(0x1000);
     auto acc = memory::accessors::Linear<word, byte>(c1);
 
     acc[0] = 4;
     acc[4] = 3;
-
-    acc[0x1030] = 12;
+    acc[0x1030] = 255;
 
     byte a = acc[0x1030];
     printf("%d\n", (int)a);

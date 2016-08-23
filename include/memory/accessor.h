@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 #include <memory/context.h>
 #include <memory/block.h>
 
@@ -33,14 +35,14 @@ class Linear : public Accessor
         static const int page_size = 0x1000;
         static const int page_mask = 0xfff;
 
-        val_t& operator[] (const addr_t& addr) const
+        val_t& operator[] (const addr_t addr) const
         {
-            int blockid = (int)addr & ~page_mask;
-            TypeBlock<val_t>* block = (TypeBlock<val_t>*)this->context->getBlock(blockid);
+            int page_id = (int)addr & ~page_mask;
+            TypeBlock<val_t>* block = (TypeBlock<val_t>*)this->context->getBlock({page_id, page_id});
             if(block == NULL)
             {
                 block = new TypeBlock<val_t>(page_size);
-                this->context->addBlock(blockid, block);
+                this->context->addBlock(block, {page_id, page_id});
             }
             int i = (int)addr & page_mask;
             return (*block)[i];
@@ -60,5 +62,4 @@ class Linear : public Accessor
 } // namespace memory
 
 } // namespace giecs
-
 
