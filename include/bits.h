@@ -49,12 +49,11 @@ class Bits
         template <typename T>
         operator T () const
         {
-            return this->value;
+            return this->value & ((1 << N) - 1);
         }
 
     private:
-    typename bittype_tag<N>::type value :
-        N;
+        typename bittype_tag<N>::type value;
 };
 
 } // namespace giecs
