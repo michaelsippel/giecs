@@ -1,3 +1,14 @@
+sudo: required
+dist: trusty
+
 language: cpp
+compiler:
+  - gcc
+
+addons:
+  apt:
+    packages:
+      - libboost-all-dev
+
 script: make && make test
 
