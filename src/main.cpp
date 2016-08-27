@@ -56,6 +56,8 @@ int main(int argc, char** argv)
     memory::Context* c1 = new memory::Context();
     auto acc = memory::accessors::Linear<word, byte>(c1);
 
+    printf("0x%x, 0x%x\n", acc.page_size, acc.page_mask);
+
     acc[0] = 4;
     acc[4] = 3;
     acc[0x1030] = 255;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <boost/preprocessor/repetition/repeat.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
 
@@ -28,7 +29,7 @@ class Bits
             this->value = 0;
         }
 
-        Bits(const Bits<N>& b)
+        Bits(Bits<N> const& b)
         {
             this->value = b.value;
         }

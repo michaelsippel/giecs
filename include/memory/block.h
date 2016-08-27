@@ -9,7 +9,7 @@ namespace memory
 {
 
 class Context;
-class Accessor;
+//class Accessor;
 
 class Block
 {
@@ -21,13 +21,13 @@ class Block
         void resize(size_t l);
         size_t getLength(void);
 
-        Accessor getAccessor(Context* context);
+//        Accessor getAccessor(Context* context);
 
     protected:
         size_t length;
         void* ptr;
 
-        Accessor (*createAccesor)(Context* context);
+//        Accessor (*createAccesor)(Context* context);
 };
 
 template <typename T>
@@ -39,7 +39,7 @@ class TypeBlock : public Block
         {
         }
 
-        TypeBlock(const Block& b)
+        TypeBlock(Block const& b)
             : Block(b)
         {
         }
@@ -49,7 +49,7 @@ class TypeBlock : public Block
             return (this->length / sizeof(T));
         }
 
-        T& operator[] (const int& index) const
+        T& operator[] (int const& index) const
         {
             return ((T*)this->ptr)[index % this->numElements()];
         }
