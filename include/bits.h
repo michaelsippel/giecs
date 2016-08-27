@@ -15,10 +15,10 @@ template <int N> struct bittype_tag
 #define GEN_BITTYPE_TAG(z, n, data) \
 	template <> struct bittype_tag< BOOST_PP_TUPLE_ELEM(2, 0, data) + n > {typedef BOOST_PP_TUPLE_ELEM(2, 1, data) type;};
 
-BOOST_PP_REPEAT(8, GEN_BITTYPE_TAG, (0x01, uint8_t));
-BOOST_PP_REPEAT(8, GEN_BITTYPE_TAG, (0x09, uint16_t));
-BOOST_PP_REPEAT(16, GEN_BITTYPE_TAG, (0x11, uint32_t));
-BOOST_PP_REPEAT(32, GEN_BITTYPE_TAG, (0x21, uint64_t));
+BOOST_PP_REPEAT(8, GEN_BITTYPE_TAG, (0x01, uint8_t))
+BOOST_PP_REPEAT(8, GEN_BITTYPE_TAG, (0x09, uint16_t))
+BOOST_PP_REPEAT(16, GEN_BITTYPE_TAG, (0x11, uint32_t))
+BOOST_PP_REPEAT(32, GEN_BITTYPE_TAG, (0x21, uint64_t))
 
 template <int N>
 class Bits
@@ -41,17 +41,46 @@ class Bits
         }
 
         template <typename T>
-        Bits& operator=(T v)
-        {
-            this->value = v;
-            return *this;
-        }
-
-        template <typename T>
         operator T () const
         {
             return this->value & ((1 << N) - 1);
         }
+
+        Bits operator ~ () const
+        {
+            return Bits(~this->value);
+        }
+
+#define OPERATOR(op) \
+		template <typename T> \
+		Bits operator op (T const v) const \
+		{ \
+			return Bits(this->value op v); \
+		} \
+
+#define OPERATOR_EQ(op) \
+		template <typename T> \
+		Bits& operator op (T const v) \
+		{ \
+			this->value op v; \
+			return *this; \
+		} \
+
+        OPERATOR(&)
+        OPERATOR(|)
+        OPERATOR(^)
+        OPERATOR(<<)
+        OPERATOR(>>)
+
+        OPERATOR_EQ(=)
+        OPERATOR_EQ(&=)
+        OPERATOR_EQ(|=)
+        OPERATOR_EQ(^=)
+        OPERATOR_EQ(<<=)
+        OPERATOR_EQ(>>=)
+
+#undef OPERATOR
+#undef OPERATOR_EQ
 
     private:
         typename bittype_tag<N>::type value;
