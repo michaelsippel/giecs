@@ -29,6 +29,8 @@ class Context
             bool operator() (const BlockKey& key1, const BlockKey& key2) const;
         };
 
+        static size_t const page_size = 0x1000;
+
         typedef boost::unordered_multimap<BlockKey, Block*, boost::hash<BlockKey>, CheckOverlapBlocks> BlockMap;
 
         Context();

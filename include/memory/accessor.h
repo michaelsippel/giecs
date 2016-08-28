@@ -12,7 +12,7 @@ namespace giecs
 namespace memory
 {
 
-template <typename addr_t, typename val_t>
+template <typename addr_t, typename val_t, typename buf_t, typename index_t>
 class Accessor
 {
     public:
@@ -21,16 +21,33 @@ class Accessor
         {
         }
 
-        virtual val_t read(addr_t const addr) const = 0;
-        virtual val_t const& write(addr_t const addr, val_t const& val) const = 0;
+        virtual index_t read(addr_t const addr, index_t const len, buf_t buf) const = 0;
+        virtual index_t write(addr_t const addr, index_t const len, buf_t buf) const = 0;
+
+        val_t read(addr_t const addr) const
+        {
+            val_t val;
+            index_t l = index_t();
+            ++l;
+            this->read(addr, l, buf_t(&val));
+            return val;
+        }
+
+        val_t const& write(addr_t const addr, val_t const& val) const
+        {
+            index_t l = index_t();
+            ++l;
+            this->write(addr, l, buf_t(&val));
+            return val;
+        }
 
         class Proxy
         {
             public:
-                Accessor<addr_t, val_t> const* const parent;
+                Accessor<addr_t, val_t, buf_t, index_t> const* const parent;
                 addr_t const addr;
 
-                Proxy(Accessor<addr_t, val_t> const* const parent_, addr_t const addr_)
+                Proxy(Accessor<addr_t, val_t, buf_t, index_t> const* const parent_, addr_t const addr_)
                     : parent(parent_), addr(addr_)
                 {}
 
@@ -57,78 +74,74 @@ class Accessor
 namespace accessors
 {
 
-template <typename addr_t, typename val_t, int page_bit=12>
-class Linear : public Accessor<addr_t, val_t>
+template <typename addr_t, typename val_t, typename buf_t=val_t*, typename index_t=size_t>
+class Linear : public Accessor<addr_t, val_t, buf_t, index_t>
 {
     public:
-        using Accessor<addr_t, val_t>::Accessor;
-
-        static int const page_size = (1 << page_bit);
-        static int const page_mask = page_size - 1;
-
-        addr_t offset = 0;
-
-        size_t operate(addr_t const addr, size_t const len, std::function<void (val_t&)> const operation) const
+        Linear(Context* context_)
+            : Accessor<addr_t, val_t, buf_t, index_t>::Accessor(context_)
         {
-            if(! operation)
-                return -1;
+            this->offset = addr_t();
+        }
 
-            int page_id = ((int)addr + (int)offset) & ~page_mask;
-            int last_page_id = page_id + (len & ~page_mask);
+        Linear(Context* context_, addr_t offset_)
+            : Accessor<addr_t, val_t, buf_t, index_t>::Accessor(context_), offset(offset_)
+        {}
 
-            int i = (int)addr & page_mask;
-            int last_i = ((int) addr + len) & page_mask;
+        addr_t offset;
 
-            for(; page_id <= last_page_id; page_id++)
+        index_t operate(addr_t const addr, index_t const len, std::function<void (val_t&)> const operation) const
+        {
+            index_t l;
+
+            if(operation)
             {
-                TypeBlock<val_t>* block = (TypeBlock<val_t>*)this->context->getBlock({page_id, page_id});
-                if(block == NULL)
+                size_t block_size = this->context->page_size / sizeof(val_t);
+
+                int page_id = (int)(offset+addr) / block_size;
+                int last_page_id = page_id + ((int)len / block_size);
+
+                int i = (int)(offset+addr) % block_size;
+                int last_i = (i + (int)len) % block_size;
+
+                for(; page_id <= last_page_id; ++page_id)
                 {
-                    block = new TypeBlock<val_t>(page_size);
-                    this->context->addBlock(block, {page_id, page_id});
+                    TypeBlock<val_t>* block = (TypeBlock<val_t>*)this->context->getBlock({page_id, page_id});
+                    if(block == NULL)
+                    {
+                        block = new TypeBlock<val_t>(block_size);
+                        this->context->addBlock(block, {page_id, page_id});
+                    }
+
+                    int end = (page_id == last_page_id) ? last_i : block_size;
+                    for(; i < end; ++i, ++l)
+                        operation((*block)[i]);
+
+                    i = 0;
                 }
-
-                int end = (page_id == last_page_id) ? last_i : page_size;
-                for(; i < end;  i++)
-                    operation((*block)[i]);
-
-                i = 0;
             }
 
-            return i;
+            return l;
         }
 
-        size_t read(addr_t const addr, size_t const len, val_t* const buf) const
+        index_t read(addr_t const addr, index_t const len, buf_t buf) const
         {
-            int i = 0;
-            std::function<void (val_t&)> const operation = [&i, buf](val_t& v)
+            std::function<void (val_t&)> const operation = [&buf](val_t& v)
             {
-                buf[i++] = v;
+                *buf = v;
+                ++buf;
             };
             return this->operate(addr, len, operation);
         }
 
-        size_t write(addr_t const addr, size_t const len, val_t const* buf) const
+        index_t write(addr_t const addr, index_t const len, buf_t buf) const
         {
-            int i = 0;
-            std::function<void (val_t&)> const operation = [&i, buf](val_t& v)
+            std::function<void (val_t&)> const operation = [&buf](val_t& v)
             {
-                v = buf[i++];
+                v = *buf;
+                ++buf;
             };
             return this->operate(addr, len, operation);
-        }
-
-        val_t read(addr_t const addr) const
-        {
-            val_t val;
-            this->read(addr, 1, &val);
-            return val;
-        }
-
-        val_t const& write(addr_t const addr, val_t const& val) const
-        {
-            this->write(addr, 1, &val);
-            return val;
         }
 };
 
