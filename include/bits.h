@@ -46,6 +46,12 @@ class Bits
             return this->value & ((1 << N) - 1);
         }
 
+        template <typename T>
+        bool operator == (T const& v)
+        {
+            return ((T)*this == v);
+        }
+
         Bits operator ~ () const
         {
             return Bits(~this->value);

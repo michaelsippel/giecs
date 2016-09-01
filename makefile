@@ -30,14 +30,28 @@ CFLAGS = -std=c++11 $(INCLUDE)
 ASMFLAGS =
 LDFLAGS =
 
+LIB_SRCS = $(shell find ./src -name '*.cpp')
+TEST_SRCS = $(shell find ./test -name '*.cpp')
+REPL_SRCS = $(shell find ./repl -name '*.cpp')
+LIB_OBJS = $(addsuffix .$(TARGET).o,$(basename $(LIB_SRCS)))
+TEST_OBJS = $(addsuffix .$(TARGET).o,$(basename $(TEST_SRCS)))
+REPL_OBJS = $(addsuffix .$(TARGET).o,$(basename $(REPL_SRCS)))
 C_SRCS = $(shell find -name '*.cpp')
-A_SRCS = $(shell find -name '*.S')
 C_HDRS = $(shell find -name '*.h')
-SRCS = $(C_SRCS) $(A_SRCS)
-OBJS = $(addsuffix .$(TARGET).o,$(basename $(SRCS)))
 
-$(BIN): $(OBJS)
-	$(LD) $(LDFLAGS) -o $@ $^
+LIB = giecs.a
+
+
+$(BIN): $(REPL_OBJS) $(LIB)
+	$(LD) -o $@ $^ $(LDFLAGS)
+
+$(LIB): $(LIB_OBJS)
+	ar -rcs $@ $^
+
+unit_test: $(TEST_OBJS) $(LIB)
+	$(LD) -o $@ $^ -lboost_unit_test_framework
+	./$@
+	rm $@
 
 %.$(TARGET).o: %.cpp
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -48,10 +62,12 @@ $(BIN): $(OBJS)
 style: $(C_SRCS) $(C_HDRS)
 	astyle --style=allman --indent-classes --indent-switches $^
 
-test: $(BIN)
+test: unit_test $(BIN)
 	cd examples && ./test.lisp
 
 clean:
-	rm $(OBJS)
-	rm $(BIN)
+	rm $(LIB_OBJS)
+	rm $(TEST_OBJS)
+	rm $(REPL_OBJS)
+	rm $(LIB)
 
