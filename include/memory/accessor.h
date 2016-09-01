@@ -21,8 +21,8 @@ class Accessor
         {
         }
 
-        virtual index_t read(addr_t const addr, index_t const len, buf_t buf) const = 0;
-        virtual index_t write(addr_t const addr, index_t const len, buf_t buf) const = 0;
+        virtual index_t read(addr_t const addr, index_t const len, buf_t buf) const {};
+        virtual index_t write(addr_t const addr, index_t const len, buf_t buf) const {};
 
         val_t read(addr_t const addr) const
         {
