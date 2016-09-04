@@ -8,13 +8,18 @@ namespace giecs
 namespace memory
 {
 
-Block::Block(size_t l)
+ContextSync::ContextSync(Context const* const context_)
+    : context(context_)
 {
-    this->length = l;
+}
+
+Block::Block(size_t const l, std::function<ContextSync* (Context const* const)> const createSync_)
+    : length(l), createSync(createSync_)
+{
     this->ptr = malloc(this->length);
 }
 
-Block::Block(const Block& b)
+Block::Block(Block const& b)
 {
     this->length = b.length;
     this->ptr = b.ptr;
@@ -23,6 +28,11 @@ Block::Block(const Block& b)
 Block::~Block()
 {
     free(this->ptr);
+}
+
+ContextSync* Block::getSync(Context const* const context) const
+{
+    return this->createSync(context);
 }
 
 } // namespace memory

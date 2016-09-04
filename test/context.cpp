@@ -101,5 +101,50 @@ BOOST_AUTO_TEST_CASE(accessor)
     delete c1;
 }
 
+BOOST_AUTO_TEST_CASE(synchronization)
+{
+    memory::Context* c = new memory::Context();
+
+    auto acc1 = memory::accessors::Linear<int, uint8_t>(c);
+    auto acc2 = memory::accessors::Linear<int, uint16_t>(c);
+
+    static int const n = 4;
+
+    for(int i = 0; i < n; i++)
+    {
+        acc2[i] = 0;
+    }
+
+    uint8_t v8 = 0;
+    for(int i = 0; i < 2*n; i++)
+    {
+        ++v8;
+        acc1[i] = v8;
+    }
+
+    v8 = 0;
+    for(int i = 0; i < n; i++)
+    {
+        uint16_t v16 = 0;
+
+        ++v8;
+        BOOST_CHECK(acc1[i*2] == v8);
+        v16 = v8;
+
+        printf("%x ", v8);
+
+        ++v8;
+        BOOST_CHECK(acc1[i*2+1] == v8);
+        v16 |= v8 << 8;
+
+        uint16_t r16 = acc2[i];
+
+        printf("%x -> %x == %x\n", v8, v16, r16);
+        BOOST_CHECK(acc2[i] == v16);
+    }
+
+    delete c;
+}
+
 BOOST_AUTO_TEST_SUITE_END();
 

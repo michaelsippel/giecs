@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <boost/type_index.hpp>
 
 #include <memory/context.h>
 #include <memory/block.h>
@@ -13,16 +14,19 @@ namespace memory
 {
 
 template <typename addr_t, typename val_t, typename buf_t, typename index_t>
-class Accessor
+class Accessor : public ContextSync
 {
     public:
-        Accessor(Context* context_)
-            : context(context_)
+        Accessor(const Context* const context_)
+            : ContextSync(context_)
         {
         }
 
         virtual index_t read(addr_t const addr, index_t const len, buf_t buf) const {};
         virtual index_t write(addr_t const addr, index_t const len, buf_t buf) const {};
+
+        virtual void read_page(int const page_id, uint8_t* const buf) const {};
+        virtual void write_page(int const page_id, uint8_t const* const buf) const {};
 
         val_t read(addr_t const addr) const
         {
@@ -66,9 +70,6 @@ class Accessor
         {
             return Proxy(this, addr);
         }
-
-    protected:
-        Context* const context;
 };
 
 namespace accessors
@@ -78,19 +79,19 @@ template <typename addr_t, typename val_t, typename buf_t=val_t*, typename index
 class Linear : public Accessor<addr_t, val_t, buf_t, index_t>
 {
     public:
-        Linear(Context* context_)
+        Linear(const Context* const context_)
             : Accessor<addr_t, val_t, buf_t, index_t>::Accessor(context_)
         {
             this->offset = addr_t();
         }
 
-        Linear(Context* context_, addr_t offset_)
+        Linear(const Context* const context_, addr_t offset_)
             : Accessor<addr_t, val_t, buf_t, index_t>::Accessor(context_), offset(offset_)
         {}
 
         addr_t offset;
 
-        index_t operate(addr_t const addr, index_t const len, std::function<void (val_t&)> const operation) const
+        index_t operate(addr_t const addr, index_t const len, std::function<void (val_t&)> const operation, bool dirty) const
         {
             index_t l;
 
@@ -106,11 +107,16 @@ class Linear : public Accessor<addr_t, val_t, buf_t, index_t>
 
                 for(; page_id <= last_page_id; ++page_id)
                 {
-                    TypeBlock<val_t>* block = (TypeBlock<val_t>*)this->context->getBlock({page_id, page_id});
+                    BlockKey const key = {page_id, page_id, boost::typeindex::type_id< Linear<addr_t, val_t, buf_t, index_t> >()};
+                    TypeBlock<val_t>* block = (TypeBlock<val_t>*)this->context->getBlock(key);
                     if(block == NULL)
                     {
-                        block = new TypeBlock<val_t>(block_size);
-                        this->context->addBlock(block, {page_id, page_id});
+                        static auto const createSync = [](Context const* const c)
+                        {
+                            return new Linear<addr_t, val_t, buf_t, index_t>(c);
+                        };
+                        block = new TypeBlock<val_t>(block_size, createSync);
+                        this->context->addBlock(block, key);
                     }
 
                     int end = (page_id == last_page_id) ? last_i : block_size;
@@ -118,6 +124,9 @@ class Linear : public Accessor<addr_t, val_t, buf_t, index_t>
                         operation((*block)[i]);
 
                     i = 0;
+
+                    if(dirty)
+                        this->context->markPageDirty(page_id, block);
                 }
             }
 
@@ -131,7 +140,7 @@ class Linear : public Accessor<addr_t, val_t, buf_t, index_t>
                 *buf = v;
                 ++buf;
             };
-            return this->operate(addr, len, operation);
+            return this->operate(addr, len, operation, false);
         }
 
         index_t write(addr_t const addr, index_t const len, buf_t buf) const
@@ -141,7 +150,33 @@ class Linear : public Accessor<addr_t, val_t, buf_t, index_t>
                 v = *buf;
                 ++buf;
             };
-            return this->operate(addr, len, operation);
+            return this->operate(addr, len, operation, true);
+        }
+
+        void read_page(int const page_id, uint8_t* const buf) const
+        {
+            BlockKey const key = {page_id, page_id, boost::typeindex::type_id< Linear<addr_t, val_t, buf_t, index_t> >()};
+            TypeBlock<uint8_t>* block = (TypeBlock<uint8_t>*)this->context->getBlock(key);
+            if(block != NULL)
+            {
+                for(int i = 0; i < this->context->page_size; i++)
+                {
+                    buf[i] = (*block)[i];
+                }
+            }
+        }
+
+        void write_page(int const page_id, uint8_t const* const buf) const
+        {
+            BlockKey const key = {page_id, page_id, boost::typeindex::type_id< Linear<addr_t, val_t, buf_t, index_t> >()};
+            TypeBlock<uint8_t>* block = (TypeBlock<uint8_t>*)this->context->getBlock(key);
+            if(block != NULL)
+            {
+                for(int i = 0; i < this->context->page_size; i++)
+                {
+                    (*block)[i] = buf[i];
+                }
+            }
         }
 };
 

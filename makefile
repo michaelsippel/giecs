@@ -50,8 +50,7 @@ $(LIB): $(LIB_OBJS)
 
 unit_test: $(TEST_OBJS) $(LIB)
 	$(LD) -o $@ $^ -lboost_unit_test_framework
-	./$@
-	rm $@
+	./$@ && exit 0 || { rm $@; exit 1; }
 
 %.$(TARGET).o: %.cpp
 	$(CC) $(CFLAGS) -c -o $@ $<
