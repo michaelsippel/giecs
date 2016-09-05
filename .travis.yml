@@ -3,12 +3,26 @@ dist: trusty
 
 language: cpp
 compiler:
-  - gcc
+  - g++
 
-addons:
-  apt:
-    packages:
-      - libboost-all-dev
+cache:
+  apt: true
+  brew: true
+  directories:
+    - $HOME/.cache
 
-script: make && make test
+env:
+  global:
+    - BOOST_ROOT = $HOME/.cache/boost_1_61_0
+
+before_install:
+  - cd $HOME/.cache
+  - wget https://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.tar.gz
+  - tar xfz boost_1_61_0.tar.gz
+  - export CPLUS_INCLUDE_PATH=$BOOST_ROOT:$CPLUS_INCLUDE_PATH
+  - cd -
+
+install: make
+
+script: make test
 
