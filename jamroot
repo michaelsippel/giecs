@@ -1,0 +1,5 @@
+
+path-constant TOP : . ;
+
+alias giecs : lib ;
+

@@ -1,0 +1,6 @@
+
+lib giecs : [ glob-tree *.cpp ] : 
+	<include>../include
+	<cxxflags>-std=c++11
+	;
+

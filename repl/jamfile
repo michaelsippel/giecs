@@ -1,0 +1,7 @@
+
+exe repl : main.cpp :
+	<library>$(TOP)/lib//giecs/<link>static
+	<include>$(TOP)/include
+	<cxxflags>-std=c++11
+	;
+

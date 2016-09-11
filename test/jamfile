@@ -1,0 +1,9 @@
+
+unit-test memory_test : main.cpp context.cpp bits.cpp :
+	<library>$(TOP)/lib//giecs/<link>static
+	<library>/boost/test/<link>shared
+	<define>BOOST_TEST_DYN_LINK
+ 	<include>$(TOP)/include
+	<cxxflags>-std=c++11
+	;
+
