@@ -25,6 +25,7 @@
 #include <memory/context.h>
 #include <memory/block.h>
 #include <memory/accessor.h>
+#include <memory/accessors/stack.h>
 
 void readline(int fd, char* str)
 {
@@ -54,6 +55,18 @@ int main(int argc, char** argv)
 
     typedef Bits<6> byte;
     typedef Bits<24> word;
+
+    auto stack = memory::accessors::Stack<int, char>(c1);
+
+    stack << 'a';
+    stack << 'b';
+    stack << 'c';
+
+    for(int i=0; i<3; i++)
+    {
+        char c = stack[i];
+        printf("%c, %c\n", c, stack.pop());
+    }
 
     return 0;
     /*

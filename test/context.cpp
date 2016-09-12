@@ -3,6 +3,7 @@
 #include <bits.h>
 #include <memory/context.h>
 #include <memory/accessor.h>
+#include <memory/accessors/linear.h>
 
 using namespace giecs;
 
