@@ -92,5 +92,22 @@ class Bits
         typename bittype_tag<N>::type value;
 };
 
+template <typename T>
+inline size_t bitsize(void)
+{
+    return sizeof(T) * 8;
+}
+
+template <typename T>
+inline size_t bitsize(T)
+{
+    return bitsize<T>();
+}
+
+#define DEF_BITSIZE(z, N, data) \
+	template <> inline size_t bitsize< Bits<N> >(void) { return N; }
+
+BOOST_PP_REPEAT(64, DEF_BITSIZE,)
+
 } // namespace giecs
 
