@@ -9,46 +9,69 @@ namespace giecs
 namespace memory
 {
 
+template <size_t page_size, typename align_t>
 class Context;
+
+template <size_t page_size, typename align_t>
 class ContextSync
 {
     public:
-        ContextSync(const Context* const context_);
+        ContextSync(const Context<page_size, align_t>* const context_)
+            : context(context_)
+        {
+        }
 
-        virtual void read_page(int const page_id, uint8_t* const buf) const {};
-        virtual void write_page(int const page_id, uint8_t const* const buf) const {};
+        virtual void read_page(unsigned int const page_id, align_t* buf) const {};
+        virtual void write_page(unsigned int const page_id, align_t const* buf) const {};
 
     protected:
-        Context const* const context;
+        Context<page_size, align_t> const* const context;
 };
 
+template <size_t page_size, typename align_t>
 class Block
 {
     public:
-        Block(size_t const l, std::function<ContextSync* (Context const* const)> const createSync_);
-        Block(Block const& b);
-        ~Block();
+        Block(size_t const l, std::function<ContextSync<page_size, align_t> (Context<page_size, align_t> const* const)> const createSync_)
+            : length(l), createSync(createSync_)
+        {
+            this->ptr = malloc(this->length);
+        }
 
-        ContextSync* getSync(const Context* const context) const;
+        Block(Block const& b)
+        {
+            this->length = b.length;
+            this->ptr = b.ptr;
+        }
+
+        ~Block()
+        {
+            free(this->ptr);
+        }
+
+        ContextSync<page_size, align_t> getSync(const Context<page_size, align_t>* const context) const
+        {
+            return this->createSync(context);
+        }
 
     protected:
         size_t length;
         void* ptr;
 
-        std::function<ContextSync* (Context const* const)> const createSync;
+        std::function<ContextSync<page_size, align_t> (Context<page_size, align_t> const* const)> const createSync;
 };
 
-template <typename T>
-class TypeBlock : public Block
+template <size_t page_size, typename align_t, typename T>
+class TypeBlock : public Block<page_size, align_t>
 {
     public:
-        TypeBlock(size_t n, std::function<ContextSync* (Context const* const)> const createSync_)
-            : Block(sizeof(T) * n, createSync_)
+        TypeBlock(size_t n, std::function<ContextSync<page_size, align_t> (Context<page_size, align_t> const* const)> const createSync_)
+            : Block<page_size, align_t>(sizeof(T) * n, createSync_)
         {
         }
 
-        TypeBlock(Block const& b)
-            : Block(b)
+        TypeBlock(Block<page_size, align_t> const& b)
+            : Block<page_size, align_t>(b)
         {
         }
 

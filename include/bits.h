@@ -20,6 +20,8 @@ BOOST_PP_REPEAT(8, GEN_BITTYPE_TAG, (0x09, uint16_t))
 BOOST_PP_REPEAT(16, GEN_BITTYPE_TAG, (0x11, uint32_t))
 BOOST_PP_REPEAT(32, GEN_BITTYPE_TAG, (0x21, uint64_t))
 
+#undef GEN_BITTYPE_TAG
+
 template <int N>
 class Bits
 {
@@ -93,21 +95,23 @@ class Bits
 };
 
 template <typename T>
-inline size_t bitsize(void)
+constexpr size_t bitsize(void)
 {
     return sizeof(T) * 8;
 }
 
+#define DEF_BITSIZE(z, N, data) \
+	template <> constexpr size_t bitsize< Bits<N> >(void) { return N; }
+
+BOOST_PP_REPEAT(64, DEF_BITSIZE,)
+
+#undef DEF_BITSIZE
+
 template <typename T>
-inline size_t bitsize(T)
+constexpr size_t bitsize(T)
 {
     return bitsize<T>();
 }
-
-#define DEF_BITSIZE(z, N, data) \
-	template <> inline size_t bitsize< Bits<N> >(void) { return N; }
-
-BOOST_PP_REPEAT(64, DEF_BITSIZE,)
 
 } // namespace giecs
 

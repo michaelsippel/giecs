@@ -23,9 +23,8 @@
 
 #include <bits.h>
 #include <memory/context.h>
-#include <memory/block.h>
-#include <memory/accessor.h>
-#include <memory/accessors/stack.h>
+#include <memory/accessors/linear.h>
+//#include <memory/accessors/stack.h>
 
 void readline(int fd, char* str)
 {
@@ -45,29 +44,63 @@ void readline(int fd, char* str)
 }
 
 using namespace giecs;
+/*
+template <typename addr_t, typename val_t>
+class lcore
+{
+    public:
+        typedef memory::accessors::Stack<addr_t, val_t> Stack;
 
+        void printi(Stack& stack) const
+        {
+            printf("%d\n", (int)stack.pop());
+        }
+};
+*/
 int main(int argc, char** argv)
 {
     printf("Hello World!\n");
 
     // set up vm
-    memory::Context* c1 = new memory::Context();
-
     typedef Bits<6> byte;
     typedef Bits<24> word;
 
-    auto stack = memory::accessors::Stack<int, char>(c1);
+    auto c1 = new memory::Context<8, uint16_t>();
+    auto acc = memory::accessors::Linear<8, uint16_t, uint32_t, byte>(c1);
 
-    stack << 'a';
-    stack << 'b';
-    stack << 'c';
+    acc[0] = 10;
+    acc[1] = 20;
+    acc[2] = 16;
+    acc[3] = 40;
 
-    for(int i=0; i<3; i++)
+    uint16_t buf[8];
+    acc.read_page(0, buf);
+
+    for(int i=0; i < 8; i++)
+        printf("0x%x\n", (unsigned int)buf[i]);
+
+    acc.write_page(1, buf);
+    for(int i=0; i < 4; i++)
     {
-        char c = stack[i];
-        printf("%c, %c\n", c, stack.pop());
+        byte v = acc[21+i];
+        printf("%d\n", (int)v);
     }
 
+    /*
+        auto stack = memory::accessors::Stack<uint32_t, uint32_t>(c1);
+        auto core = lcore<uint32_t, uint32_t>();
+
+    //    stack.push(Bits<8>(123));
+        stack.push(uint32_t(2));
+        stack.push(uint16_t(3));
+        stack.push(uint8_t(4));
+
+
+        core.printi(stack);
+        core.printi(stack);
+        core.printi(stack);
+    //    core.printi(stack);
+    */
     return 0;
     /*
         // place stack at end of memory

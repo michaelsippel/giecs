@@ -10,20 +10,20 @@ namespace giecs
 namespace memory
 {
 
-template <typename addr_t, typename val_t, typename buf_t, typename index_t>
-class Accessor : public ContextSync
+template <size_t page_size, typename align_t, typename addr_t, typename val_t, typename buf_t, typename index_t>
+class Accessor : public ContextSync<page_size, align_t>
 {
     public:
-        Accessor(const Context* const context_)
-            : ContextSync(context_)
+        Accessor(const Context<page_size, align_t>* const context_)
+            : ContextSync<page_size, align_t>(context_)
         {
         }
 
         virtual index_t read(addr_t const addr, index_t const len, buf_t buf) const {};
         virtual index_t write(addr_t const addr, index_t const len, buf_t buf) const {};
 
-        virtual void read_page(int const page_id, uint8_t* const buf) const {};
-        virtual void write_page(int const page_id, uint8_t const* const buf) const {};
+        virtual void read_page(unsigned int const page_id, align_t* buf) const {};
+        virtual void write_page(unsigned int const page_id, align_t const* buf) const {};
 
         val_t read(addr_t const addr) const
         {
@@ -45,10 +45,10 @@ class Accessor : public ContextSync
         class Proxy
         {
             public:
-                Accessor<addr_t, val_t, buf_t, index_t> const* const parent;
+                Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t> const* const parent;
                 addr_t const addr;
 
-                Proxy(Accessor<addr_t, val_t, buf_t, index_t> const* const parent_, addr_t const addr_)
+                Proxy(Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t> const* const parent_, addr_t const addr_)
                     : parent(parent_), addr(addr_)
                 {}
 
