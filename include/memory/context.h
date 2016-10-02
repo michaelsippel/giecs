@@ -30,15 +30,17 @@ struct BlockKey
 
 size_t hash_value(const BlockKey& block);
 
+namespace accessors
+{
+template <size_t page_size, typename align_t, typename addr_t, typename val_t, typename buf_t, typename index_t>
+class Linear;
+template <size_t page_size, typename align_t, typename addr_t, typename val_t>
+class Stack;
+};
+
 template <size_t page_size, typename align_t>
 class Context
 {
-        /*	namespace accessors
-        	{
-        		template <>
-        		using Linear<>
-        	};
-        */
     public:
         struct CheckOverlapBlocks
         {
@@ -64,6 +66,18 @@ class Context
 
             delete this->blocks;
             delete this->masters;
+        }
+
+        template <typename addr_t, typename val_t, typename buf_t=val_t*, typename index_t=size_t>
+        inline accessors::Linear<page_size, align_t, addr_t, val_t, buf_t, index_t> createLinear() const
+        {
+            return accessors::Linear<page_size, align_t, addr_t, val_t, buf_t, index_t>(this);
+        }
+
+        template <typename addr_t, typename val_t>
+        inline accessors::Stack<page_size, align_t, addr_t, val_t> createStack() const
+        {
+            return accessors::Stack<page_size, align_t, addr_t, val_t>(this);
         }
 
         void addBlock(Block<page_size, align_t>* const block, BlockKey const key) const
@@ -112,6 +126,7 @@ class Context
             if(masterp != this->masters->end())
             {
                 Block<page_size, align_t>* const master = masterp->second;
+
                 if(master != req_block)
                 {
                     this->masters->erase(masterp);
@@ -121,19 +136,21 @@ class Context
                         auto const itp = this->blocks->equal_range({page_id});
                         align_t* page = (align_t*) malloc(page_size * sizeof(align_t));
 
-                        ContextSync<page_size, align_t> sync = master->getSync(this);
-                        sync.read_page(page_id, page);
+                        ContextSync<page_size, align_t>* sync = master->getSync(this);
+                        sync->read_page(page_id, page);
 
                         for(auto it = itp.first; it != itp.second; it++)
                         {
                             Block<page_size, align_t>* block = it->second;
                             if(block != master)
                             {
-                                ContextSync<page_size, align_t> sync = block->getSync(this);
-                                sync.write_page(page_id, page);
+                                ContextSync<page_size, align_t>* sync = block->getSync(this);
+                                sync->write_page(page_id, page);
+                                delete sync;
                             }
                         }
 
+                        delete sync;
                         free(page);
                     }
                 }

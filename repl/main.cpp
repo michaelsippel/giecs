@@ -24,7 +24,7 @@
 #include <bits.h>
 #include <memory/context.h>
 #include <memory/accessors/linear.h>
-//#include <memory/accessors/stack.h>
+#include <memory/accessors/stack.h>
 
 void readline(int fd, char* str)
 {
@@ -44,19 +44,19 @@ void readline(int fd, char* str)
 }
 
 using namespace giecs;
-/*
-template <typename addr_t, typename val_t>
+
+template <size_t page_size, typename align_t, typename addr_t, typename val_t>
 class lcore
 {
     public:
-        typedef memory::accessors::Stack<addr_t, val_t> Stack;
+        typedef memory::accessors::Stack<page_size, align_t, addr_t, val_t> Stack;
 
         void printi(Stack& stack) const
         {
             printf("%d\n", (int)stack.pop());
         }
 };
-*/
+
 int main(int argc, char** argv)
 {
     printf("Hello World!\n");
@@ -65,42 +65,21 @@ int main(int argc, char** argv)
     typedef Bits<6> byte;
     typedef Bits<24> word;
 
-    auto c1 = new memory::Context<8, uint16_t>();
-    auto acc = memory::accessors::Linear<8, uint16_t, uint32_t, byte>(c1);
+    auto c1 = new memory::Context<2, uint32_t>();
 
-    acc[0] = 10;
-    acc[1] = 20;
-    acc[2] = 16;
-    acc[3] = 40;
+    auto stack = c1->createStack<uint32_t, uint32_t>();
+    auto core = lcore<2, uint32_t, uint32_t, uint32_t>();
 
-    uint16_t buf[8];
-    acc.read_page(0, buf);
+    stack << Bits<6>(54);
+    stack << uint16_t(2);
+    stack << uint32_t(3);
+    stack << uint8_t(4);
 
-    for(int i=0; i < 8; i++)
-        printf("0x%x\n", (unsigned int)buf[i]);
+    core.printi(stack);
+    core.printi(stack);
+    core.printi(stack);
+    core.printi(stack);
 
-    acc.write_page(1, buf);
-    for(int i=0; i < 4; i++)
-    {
-        byte v = acc[21+i];
-        printf("%d\n", (int)v);
-    }
-
-    /*
-        auto stack = memory::accessors::Stack<uint32_t, uint32_t>(c1);
-        auto core = lcore<uint32_t, uint32_t>();
-
-    //    stack.push(Bits<8>(123));
-        stack.push(uint32_t(2));
-        stack.push(uint16_t(3));
-        stack.push(uint8_t(4));
-
-
-        core.printi(stack);
-        core.printi(stack);
-        core.printi(stack);
-    //    core.printi(stack);
-    */
     return 0;
     /*
         // place stack at end of memory

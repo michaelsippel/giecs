@@ -14,35 +14,34 @@ namespace memory
 namespace accessors
 {
 
-template <typename addr_t, typename val_t>
-class Stack : public Linear<addr_t, val_t>
+template <size_t page_size, typename align_t, typename addr_t, typename val_t>
+class Stack : public Linear<page_size, align_t, addr_t, val_t>
 {
-        template <typename, typename> friend class Stack;
+        template <size_t, typename, typename, typename> friend class Stack;
 
     public:
-        Stack(Context const* const context_)
-            : Linear<addr_t, val_t>::Linear(context_)
+        Stack(Context<page_size, align_t> const* const context_)
+            : Linear<page_size, align_t, addr_t, val_t>::Linear(context_)
         {
             this->pos = 0;
         }
 
-        Stack(Context const* const context_, addr_t offset_)
-            : Linear<addr_t, val_t>::Linear(context_, offset_)
+        Stack(Context<page_size, align_t> const* const context_, addr_t offset_)
+            : Linear<page_size, align_t, addr_t, val_t>::Linear(context_, offset_)
         {
             this->pos = 0;
         }
 
         template <typename val2_t>
-        Stack(Stack<addr_t, val2_t> const& s)
-            : Linear<addr_t, val_t>::Linear(s)
+        Stack(Stack<page_size, align_t, addr_t, val2_t> const& s)
+            : Linear<page_size, align_t, addr_t, val_t>::Linear(s)
         {
-            this->pos = 1 + (s.pos * bitsize<val2_t>() - 1) / bitsize<val_t>();
+            this->pos = (s.pos * bitsize<val2_t>()) / bitsize<val_t>();
         }
 
         void move(int const off)
         {
             this->pos += off;
-            printf("move %d\n", off);
         }
 
         void setFrame(void)
@@ -66,7 +65,7 @@ class Stack : public Linear<addr_t, val_t>
         template <typename val2_t>
         void push(int const n, val2_t* v)
         {
-            auto s = Stack<addr_t, val2_t>(*this);
+            auto s = Stack<page_size, align_t, addr_t, val2_t>(*this);
             s.push(n, v);
 
             this->move(1 + (n*bitsize<val2_t>() - 1)/bitsize<val_t>());
@@ -75,7 +74,7 @@ class Stack : public Linear<addr_t, val_t>
         template <typename val2_t>
         void pop(int const n, val2_t* v)
         {
-            auto s = Stack<addr_t, val2_t>(*this);
+            auto s = Stack<page_size, align_t, addr_t, val2_t>(*this);
             s.pop(n, v);
 
             this->move(-1 - (n*bitsize<val2_t>() - 1)/bitsize<val_t>());
@@ -99,26 +98,26 @@ class Stack : public Linear<addr_t, val_t>
         int pos;
 };
 
-template <typename addr_t, typename val_t, typename val2_t=val_t>
-void operator >> (val2_t v, Stack<addr_t, val_t>& s)
+template <size_t page_size, typename align_t, typename addr_t, typename val_t, typename val2_t=val_t>
+void operator >> (val2_t v, Stack<page_size, align_t, addr_t, val_t>& s)
 {
     s.push(v);
 }
 
-template <typename addr_t, typename val_t, typename val2_t=val_t>
-void operator << (Stack<addr_t, val_t>& s, val2_t v)
+template <size_t page_size, typename align_t, typename addr_t, typename val_t, typename val2_t=val_t>
+void operator << (Stack<page_size, align_t, addr_t, val_t>& s, val2_t v)
 {
     s.push(v);
 }
 
-template <typename addr_t, typename val_t, typename val2_t=val_t>
-void operator >> (Stack<addr_t, val_t>& s, val2_t& v)
+template <size_t page_size, typename align_t, typename addr_t, typename val_t, typename val2_t=val_t>
+void operator >> (Stack<page_size, align_t, addr_t, val_t>& s, val2_t& v)
 {
     v = s.pop();
 }
 
-template <typename addr_t, typename val_t, typename val2_t=val_t>
-void operator << (val2_t& v, Stack<addr_t, val_t>& s)
+template <size_t page_size, typename align_t, typename addr_t, typename val_t, typename val2_t=val_t>
+void operator << (val2_t& v, Stack<page_size, align_t, addr_t, val_t>& s)
 {
     v = s.pop();
 }

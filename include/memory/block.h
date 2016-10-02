@@ -32,7 +32,7 @@ template <size_t page_size, typename align_t>
 class Block
 {
     public:
-        Block(size_t const l, std::function<ContextSync<page_size, align_t> (Context<page_size, align_t> const* const)> const createSync_)
+        Block(size_t const l, std::function<ContextSync<page_size, align_t>* (Context<page_size, align_t> const* const)> const createSync_)
             : length(l), createSync(createSync_)
         {
             this->ptr = malloc(this->length);
@@ -49,7 +49,7 @@ class Block
             free(this->ptr);
         }
 
-        ContextSync<page_size, align_t> getSync(const Context<page_size, align_t>* const context) const
+        ContextSync<page_size, align_t>* getSync(const Context<page_size, align_t>* const context) const
         {
             return this->createSync(context);
         }
@@ -58,14 +58,14 @@ class Block
         size_t length;
         void* ptr;
 
-        std::function<ContextSync<page_size, align_t> (Context<page_size, align_t> const* const)> const createSync;
+        std::function<ContextSync<page_size, align_t>* (Context<page_size, align_t> const* const)> const createSync;
 };
 
 template <size_t page_size, typename align_t, typename T>
 class TypeBlock : public Block<page_size, align_t>
 {
     public:
-        TypeBlock(size_t n, std::function<ContextSync<page_size, align_t> (Context<page_size, align_t> const* const)> const createSync_)
+        TypeBlock(size_t n, std::function<ContextSync<page_size, align_t>* (Context<page_size, align_t> const* const)> const createSync_)
             : Block<page_size, align_t>(sizeof(T) * n, createSync_)
         {
         }

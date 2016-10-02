@@ -20,6 +20,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
         template <size_t, typename, typename, typename, typename, typename> friend class Linear;
 
     private:
+        // one block is one page
         static size_t const block_size = (page_size * bitsize<align_t>()) / bitsize<val_t>();
 
     public:
@@ -37,7 +38,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
         Linear(Linear<page_size, align_t, addr2_t, val2_t, buf2_t, index2_t> const& l)
             : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(l.context)
         {
-            this->offset = 1 + ((addr_t) l.offset * bitsize<val2_t>() - 1) / bitsize<val_t>();
+            this->offset = ((addr_t) l.offset * bitsize<val2_t>()) / bitsize<val_t>();
         }
 
         addr_t offset;
@@ -48,11 +49,11 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
 
             if(operation)
             {
-                unsigned int block_id = (int)(offset+addr) / block_size;
-                unsigned int last_block_id = block_id + ((int)len / block_size);
+                unsigned int block_id = int(offset+addr) / block_size;
+                unsigned int last_block_id = block_id + (int(len) / block_size);
 
-                unsigned int i = (int)(offset+addr) % block_size;
-                unsigned int last_i = (i + (int)len) % block_size;
+                unsigned int i = int(offset+addr) % block_size;
+                unsigned int last_i = i + (int(len-1) % block_size);
 
                 for(; block_id <= last_block_id; ++block_id)
                 {
@@ -62,14 +63,14 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
                     {
                         static auto const createSync = [](Context<page_size, align_t> const* const c)
                         {
-                            return Linear<page_size, align_t, addr_t, val_t, buf_t, index_t>(c);
+                            return new Linear<page_size, align_t, addr_t, val_t, buf_t, index_t>(c);
                         };
                         block = new TypeBlock<page_size, align_t, val_t>(block_size, createSync);
                         this->context->addBlock(block, key);
                     }
 
-                    unsigned int end = (block_id == last_block_id) ? last_i : block_size;
-                    for(; i < end; ++i, ++l)
+                    unsigned int end = (block_id == last_block_id) ? last_i : block_size-1;
+                    for(; i <= end; ++i, ++l)
                         operation((*block)[i]);
 
                     i = 0;
@@ -108,11 +109,11 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
             TypeBlock<page_size, align_t, val_t>* block = (TypeBlock<page_size, align_t, val_t>*)this->context->getBlock(key);
             if(block != NULL)
             {
-                int bitoff = 0; // position in align_t
+                size_t bitoff = 0; // position in align_t
                 *buf = align_t();
                 for(int i = 0; i < block_size; i++)
                 {
-                    *buf |= (align_t) ((unsigned int)(*block)[i] << bitoff);
+                    *buf |= (align_t) size_t((*block)[i]) << bitoff;
                     bitoff += bitsize<val_t>();
 
                     while(bitoff >= bitsize<align_t>())
@@ -120,9 +121,12 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
                         *(++buf) = align_t();
                         bitoff -= bitsize<align_t>();
 
-                        unsigned int rest = bitsize<val_t>() - bitoff;
+                        int rest = bitsize<val_t>() - bitoff;
                         if(rest > 0)
-                            *buf |= (align_t) ((unsigned int)(*block)[i] >> rest) & ((1 << rest)-1);
+                        {
+                            size_t const mask = (size_t(1) << rest) - 1;
+                            *buf |= (align_t) (size_t((*block)[i]) >> rest) & mask;
+                        }
                     }
                 }
             }
@@ -136,27 +140,31 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
             {
                 static auto const createSync = [](Context<page_size, align_t> const* const c)
                 {
-                    return Linear<page_size, align_t, addr_t, val_t, buf_t, index_t>(c);
+                    return new Linear<page_size, align_t, addr_t, val_t, buf_t, index_t>(c);
                 };
                 block = new TypeBlock<page_size, align_t, val_t>(block_size, createSync);
                 this->context->addBlock(block, key);
             }
 
-            int bitoff = 0; // position in align_t
+            size_t bitoff = 0; // position in align_t
             for(int i = 0; i < block_size; i++)
             {
-                unsigned int s = (((unsigned int)*buf) >> bitoff);
+                size_t s = size_t(*buf) >> bitoff;
                 bitoff += bitsize<val_t>();
-                (*block)[i] = s & ((1 << bitoff)-1);
+                size_t mask = (size_t(1) << bitoff) - 1;
+                (*block)[i] = s & mask;
 
                 while(bitoff >= bitsize<align_t>())
                 {
                     ++buf;
                     bitoff -= bitsize<align_t>();
 
-                    unsigned int rest = bitsize<val_t>() - bitoff;
+                    int rest = bitsize<val_t>() - bitoff;
                     if(rest > 0)
-                        (*block)[i] |= (((unsigned int)*buf) << rest) & ((1 << bitsize<val_t>())-1);
+                    {
+                        static size_t const mask = (size_t(1) << bitsize<val_t>()) - 1;
+                        (*block)[i] |= (size_t(*buf) << rest) & mask;
+                    }
                 }
             }
         }
