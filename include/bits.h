@@ -151,24 +151,22 @@ namespace memory
  */
 
 template <size_t page_size, int N_align, int N_val>
-void read_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, int off, int bitoff, Bits<N_align>* buf)
+void read_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, int i, int const end, Bits<N_align>* buf, int off, int bitoff)
 {
-    int i = 0;
     if(off < 0)
     {
         i -= (off * N_align + bitoff) / N_val;
         off = 0;
     }
 
-    size_t  block_size = 4;
-    while(off < page_size && i <= block_size)
+    while(off < page_size && i <= end)
     {
         Bits<N_align> a = Bits<N_align>();
 
         if(bitoff > 0 && i > 0)
             a = Bits<N_align>(block[i-1] >> (N_val - bitoff));
 
-        while(bitoff < N_align && i < block_size)
+        while(bitoff < N_align && i < end)
         {
             if(bitoff < 0)
                 a = Bits<N_align>(block[i++] >> (-bitoff));
@@ -182,24 +180,22 @@ void read_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, i
 }
 
 template <size_t page_size, int N_align, int N_val>
-void write_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, int off, int bitoff, Bits<N_align> const* buf)
+void write_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, int i, int const end, Bits<N_align> const* buf, int off, int bitoff)
 {
-    int i = 0;
     if(off < 0)
     {
         i -= (off * N_align + bitoff) / N_val;
         off = 0;
     }
 
-    size_t block_size = 4;
-    while(off < page_size && i <= block_size)
+    while(off < page_size && i <= end)
     {
         Bits<N_align> a = buf[off++];
 
         if(bitoff > 0 && i > 0)
             block[i-1] |= Bits<N_val>(a) << (N_val - bitoff);
 
-        while(bitoff < N_align && i < block_size)
+        while(bitoff < N_align && i < end)
         {
             if(bitoff < 0)
                 block[i++] |= Bits<N_val>(a) << (-bitoff);

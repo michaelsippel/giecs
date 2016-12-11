@@ -21,27 +21,48 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
 
     private:
         // one block is one page
-        static size_t const block_size = (page_size * bitsize<align_t>()) / bitsize<val_t>();
+        static index_t const block_size = (page_size * bitsize<align_t>()) / bitsize<val_t>();
 
     public:
+#define TYPEID boost::typeindex::type_id< Linear<page_size, align_t, addr_t, val_t, buf_t, index_t> >()
+
         Linear(Context<page_size, align_t> const* const context_)
-            : Accessor<page_size, align_t,addr_t, val_t, buf_t, index_t>::Accessor(context_)
+            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(context_,
         {
-            this->offset = addr_t();
+            TYPEID, size_t()
+        })
+        {
+            this->offset = index_t();
         }
 
-        Linear(Context<page_size, align_t> const* const context_, addr_t offset_)
-            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(context_), offset(offset_)
+        Linear(Context<page_size, align_t> const* const context_, index_t offset_)
+            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(context_,
+        {
+            TYPEID, size_t(offset_)
+        }), offset(offset_)
         {}
 
         template <typename addr2_t, typename val2_t, typename buf2_t, typename index2_t>
         Linear(Linear<page_size, align_t, addr2_t, val2_t, buf2_t, index2_t> const& l)
-            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(l.context)
+            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(l.context,
         {
-            this->offset = ((addr_t) l.offset * bitsize<val2_t>()) / bitsize<val_t>();
+            TYPEID, size_t(l.offset)
+        }), offset(l.offset)
+        {
         }
 
-        addr_t offset;
+        template <typename addr2_t, typename val2_t, typename buf2_t, typename index2_t>
+        Linear(Linear<page_size, align_t, addr2_t, val2_t, buf2_t, index2_t> const& l, index_t off)
+            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(l.context,
+        {
+            TYPEID, size_t()
+        }), offset(l.offset)
+        {
+            this->offset += (uint(off) * bitsize<val2_t>()) / bitsize<align_t>();
+            this->accessor_id.flags = size_t(this->offset);
+        }
+
+#undef TYPEID
 
         index_t operate(addr_t const addr, index_t const len, std::function<void (val_t&)> const operation, bool dirty) const
         {
@@ -49,34 +70,28 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
 
             if(operation)
             {
-                unsigned int block_id = int(offset+addr) / block_size;
-                unsigned int last_block_id = block_id + (int(len) / block_size);
+                unsigned int page_id = (this->offset + (uint(addr) * bitsize<val_t>()) / bitsize<align_t>()) / page_size;
+                unsigned int block_id = uint(addr) / block_size;
+                unsigned int last_block_id = (uint(addr)+len) / block_size;
 
-                unsigned int i = int(offset+addr) % block_size;
-                unsigned int last_i = i + (int(len-1) % block_size);
+                index_t i = index_t(addr) % block_size;
+                index_t last_i = (index_t(addr)+len) % block_size;
 
-                for(; block_id <= last_block_id; ++block_id)
+                if(last_i == index_t())
                 {
-                    BlockKey const key = {block_id, block_id, boost::typeindex::type_id< Linear<page_size, align_t, addr_t, val_t, buf_t, index_t> >()};
-                    TypeBlock<page_size, align_t, val_t>* block = (TypeBlock<page_size, align_t, val_t>*)this->context->getBlock(key);
-                    if(block == NULL)
-                    {
-                        static auto const createSync = [](Context<page_size, align_t> const* const c)
-                        {
-                            return new Linear<page_size, align_t, addr_t, val_t, buf_t, index_t>(c);
-                        };
-                        block = new TypeBlock<page_size, align_t, val_t>(block_size, createSync);
-                        this->context->addBlock(block, key);
-                    }
+                    last_i = block_size;
+                    --last_block_id;
+                }
 
-                    unsigned int end = (block_id == last_block_id) ? last_i : block_size-1;
-                    for(; i <= end; ++i, ++l)
+                for(; block_id <= last_block_id; ++block_id, ++page_id) // that's not correct is 1 block != 1 page
+                {
+                    TypeBlock<page_size, align_t, val_t>* block = this->getBlock(page_id, block_id, dirty);
+
+                    index_t end = (block_id == last_block_id) ? last_i : block_size;
+                    for(; i < end; ++i, ++l)
                         operation((*block)[i]);
 
                     i = 0;
-
-                    if(dirty)
-                        this->context->markPageDirty(block_id, block);
                 }
             }
 
@@ -103,70 +118,58 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
             return this->operate(addr, len, operation, true);
         }
 
-        void read_page(unsigned int const page_id, align_t* buf) const
+        using typename ContextSync<page_size, align_t>::BlockRef;
+
+        void read_page_block(BlockRef const b, align_t* buf) const
         {
-            BlockKey const key = {page_id, page_id, boost::typeindex::type_id< Linear<page_size, align_t, addr_t, val_t, buf_t, index_t> >()};
-            TypeBlock<page_size, align_t, val_t>* block = (TypeBlock<page_size, align_t, val_t>*)this->context->getBlock(key);
-            if(block != NULL)
-            {
-                size_t bitoff = 0; // position in align_t
-                *buf = align_t();
-                for(int i = 0; i < block_size; i++)
-                {
-                    *buf |= (align_t) size_t((*block)[i]) << bitoff;
-                    bitoff += bitsize<val_t>();
+            unsigned int const page_id = b.first.page_id;
+            unsigned int const block_id = b.first.block_id;
+            Block<page_size, align_t> const* const block = b.second;
 
-                    while(bitoff >= bitsize<align_t>())
-                    {
-                        *(++buf) = align_t();
-                        bitoff -= bitsize<align_t>();
+            // hm.. counting bits is stupid
+            int bitoff = block_id * block_size * bitsize<val_t>() - (page_id * page_size - this->offset) * bitsize<align_t>();
+            int off = bitoff / bitsize<align_t>();
+            bitoff %= bitsize<align_t>();
 
-                        int rest = bitsize<val_t>() - bitoff;
-                        if(rest > 0)
-                        {
-                            size_t const mask = (size_t(1) << rest) - 1;
-                            *buf |= (align_t) (size_t((*block)[i]) >> rest) & mask;
-                        }
-                    }
-                }
-            }
+            block->read(0, block_size, buf, off, bitoff);
         }
 
-        void write_page(unsigned int const page_id, align_t const* buf) const
+        void write_page_block(BlockRef const b, align_t const* buf) const
         {
-            BlockKey const key = {page_id, page_id, boost::typeindex::type_id< Linear<page_size, align_t, addr_t, val_t, buf_t, index_t> >()};
+            unsigned int const page_id = b.first.page_id;
+            unsigned int const block_id = b.first.block_id;
+            Block<page_size, align_t> const* const block = b.second;
+
+            // same here
+            int bitoff = block_id * block_size * bitsize<val_t>() - (page_id * page_size - this->offset) * bitsize<align_t>();
+            int off = bitoff / bitsize<align_t>();
+            bitoff %= bitsize<align_t>();
+
+            block->write(0, block_size, buf, off, bitoff);
+        }
+
+    private:
+        // offset in size of align_t
+        int offset; // TODO: makes copy/move cheap? only page_id's and sync offsets have to be recalculated
+
+        TypeBlock<page_size, align_t, val_t>* getBlock(unsigned int page_id, unsigned int block_id, bool dirty) const
+        {
+            BlockKey const key = {page_id, block_id, this->accessor_id};
             TypeBlock<page_size, align_t, val_t>* block = (TypeBlock<page_size, align_t, val_t>*)this->context->getBlock(key);
             if(block == NULL)
             {
-                static auto const createSync = [](Context<page_size, align_t> const* const c)
+                index_t const off = this->offset;
+                auto const createSync = [off](Context<page_size, align_t> const* const c)
                 {
-                    return new Linear<page_size, align_t, addr_t, val_t, buf_t, index_t>(c);
+                    return new Linear<page_size, align_t, addr_t, val_t, buf_t, index_t>(c, off);
                 };
                 block = new TypeBlock<page_size, align_t, val_t>(block_size, createSync);
                 this->context->addBlock(block, key);
             }
+            if(dirty)
+                this->context->markPageDirty(key, block);
 
-            size_t bitoff = 0; // position in align_t
-            for(int i = 0; i < block_size; i++)
-            {
-                size_t s = size_t(*buf) >> bitoff;
-                bitoff += bitsize<val_t>();
-                size_t mask = (size_t(1) << bitoff) - 1;
-                (*block)[i] = s & mask;
-
-                while(bitoff >= bitsize<align_t>())
-                {
-                    ++buf;
-                    bitoff -= bitsize<align_t>();
-
-                    int rest = bitsize<val_t>() - bitoff;
-                    if(rest > 0)
-                    {
-                        static size_t const mask = (size_t(1) << bitsize<val_t>()) - 1;
-                        (*block)[i] |= (size_t(*buf) << rest) & mask;
-                    }
-                }
-            }
+            return block;
         }
 };
 

@@ -8,23 +8,22 @@
 #include <linux/limits.h>
 #include <libgen.h>
 
-#include <ll.h>
-#include <context.h>
-#include <stackframe.h>
+//#include <ll.h>
+//#include <context.h>
+//#include <stackframe.h>
 
-#include <lisp/reader.h>
-#include <lisp/parser.h>
-#include <lisp/ll.h>
+//#include <lisp/reader.h>
+//#include <lisp/parser.h>
+//#include <lisp/ll.h>
 
-#include <brainfuck/parser.h>
-#include <brainfuck/ll.h>
+//#include <brainfuck/parser.h>
+//#include <brainfuck/ll.h>
 #include <math.h>
-
 
 #include <bits.h>
 #include <memory/context.h>
 #include <memory/accessors/linear.h>
-#include <memory/accessors/stack.h>
+//#include <memory/accessors/stack.h>
 
 void readline(int fd, char* str)
 {
@@ -44,7 +43,7 @@ void readline(int fd, char* str)
 }
 
 using namespace giecs;
-
+/*
 template <size_t page_size, typename align_t, typename addr_t, typename val_t>
 class lcore
 {
@@ -56,29 +55,30 @@ class lcore
             printf("%d\n", (int)stack.pop());
         }
 };
-
+*/
 int main(int argc, char** argv)
 {
     printf("Hello World!\n");
 
     // set up vm
-    typedef Bits<6> byte;
-    typedef Bits<24> word;
+    typedef Bits<8> byte;
+    typedef Bits<16> word;
 
-    auto c1 = new memory::Context<2, uint32_t>();
+    auto c1 = new memory::Context<4, word>();
+    auto a = c1->createLinear<word, byte>();
 
-    auto stack = c1->createStack<uint32_t, uint32_t>();
-    auto core = lcore<2, uint32_t, uint32_t, uint32_t>();
+    for(int i=0; i < 16; i++)
+        a[i] = byte(10+i);
 
-    stack << Bits<6>(54);
-    stack << uint16_t(2);
-    stack << uint32_t(3);
-    stack << uint8_t(4);
+    word page[4];
+    for(int i=0; i<4; i++)
+    {
+        printf("read PAGE %d\n", i);
+        a.read_page(i, page);
 
-    core.printi(stack);
-    core.printi(stack);
-    core.printi(stack);
-    core.printi(stack);
+        for(int j=0; j<4; j++)
+            printf("%d[%d] = 0x%04x\n", i,j, (int)page[j]);
+    }
 
     return 0;
     /*

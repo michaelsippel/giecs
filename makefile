@@ -26,7 +26,7 @@ LD = x86_64-w64-mingw32-g++
 BIN = vm_win64.exe
 endif
 
-CFLAGS = -std=c++11 $(INCLUDE)
+CFLAGS = -g -std=c++11 $(INCLUDE)
 ASMFLAGS =
 LDFLAGS =
 

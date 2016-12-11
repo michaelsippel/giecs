@@ -34,20 +34,14 @@ class Stack : public Linear<page_size, align_t, addr_t, val_t>
 
         template <typename val2_t>
         Stack(Stack<page_size, align_t, addr_t, val2_t> const& s)
-            : Linear<page_size, align_t, addr_t, val_t>::Linear(s)
+            : Linear<page_size, align_t, addr_t, val_t>::Linear(s, s.pos)
         {
-            this->pos = (s.pos * bitsize<val2_t>()) / bitsize<val_t>();
+            this->pos = 0;
         }
 
         void move(int const off)
         {
             this->pos += off;
-        }
-
-        void setFrame(void)
-        {
-            this->offset += this->pos;
-            this->pos = 0;
         }
 
         void push(int const n, val_t* v)

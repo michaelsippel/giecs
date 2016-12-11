@@ -14,16 +14,13 @@ template <size_t page_size, typename align_t, typename addr_t, typename val_t, t
 class Accessor : public ContextSync<page_size, align_t>
 {
     public:
-        Accessor(const Context<page_size, align_t>* const context_)
-            : ContextSync<page_size, align_t>(context_)
+        Accessor(Context<page_size, align_t> const* const context_, AccessorId const accessor_id_)
+            : ContextSync<page_size, align_t>(context_, accessor_id_)
         {
         }
 
-        virtual index_t read(addr_t const addr, index_t const len, buf_t buf) const {};
-        virtual index_t write(addr_t const addr, index_t const len, buf_t buf) const {};
-
-        virtual void read_page(unsigned int const page_id, align_t* buf) const {};
-        virtual void write_page(unsigned int const page_id, align_t const* buf) const {};
+        virtual index_t read(addr_t const addr, index_t const len, buf_t buf) const {}
+        virtual index_t write(addr_t const addr, index_t const len, buf_t buf) const {}
 
         val_t read(addr_t const addr) const
         {
