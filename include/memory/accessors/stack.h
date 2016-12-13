@@ -34,7 +34,7 @@ class Stack : public Linear<page_size, align_t, addr_t, val_t>
 
         template <typename val2_t>
         Stack(Stack<page_size, align_t, addr_t, val2_t> const& s)
-            : Linear<page_size, align_t, addr_t, val_t>::Linear(s, s.pos)
+            : Linear<page_size, align_t, addr_t, val_t>::Linear(s, 1+(s.pos*bitsize<val2_t>()-1)/bitsize<align_t>())
         {
             this->pos = 0;
         }
@@ -62,7 +62,8 @@ class Stack : public Linear<page_size, align_t, addr_t, val_t>
             auto s = Stack<page_size, align_t, addr_t, val2_t>(*this);
             s.push(n, v);
 
-            this->move(1 + (n*bitsize<val2_t>() - 1)/bitsize<val_t>());
+            size_t bitoff = (s.getOffset() - this->getOffset())*bitsize<align_t>() - this->pos*bitsize<val_t>() + n*bitsize<val2_t>();
+            this->move(1 + (bitoff-1)/bitsize<val_t>());
         }
 
         template <typename val2_t>
@@ -71,7 +72,8 @@ class Stack : public Linear<page_size, align_t, addr_t, val_t>
             auto s = Stack<page_size, align_t, addr_t, val2_t>(*this);
             s.pop(n, v);
 
-            this->move(-1 - (n*bitsize<val2_t>() - 1)/bitsize<val_t>());
+            size_t bitoff = (s.getOffset() - this->getOffset())*bitsize<align_t>() - this->pos*bitsize<val_t>() + n*bitsize<val2_t>();
+            this->move(-1 - (bitoff-1)/bitsize<val_t>());
         }
 
         template <typename val2_t=val_t>

@@ -25,44 +25,37 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
 
     public:
 #define TYPEID boost::typeindex::type_id< Linear<page_size, align_t, addr_t, val_t, buf_t, index_t> >()
+#define ID(flags) {TYPEID, size_t( flags )}
 
         Linear(Context<page_size, align_t> const* const context_)
-            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(context_,
-        {
-            TYPEID, size_t()
-        })
+            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(context_, ID(0))
         {
             this->offset = index_t();
         }
 
         Linear(Context<page_size, align_t> const* const context_, index_t offset_)
-            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(context_,
-        {
-            TYPEID, size_t(offset_)
-        }), offset(offset_)
+            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(context_, ID(offset_)), offset(offset_)
         {}
 
         template <typename addr2_t, typename val2_t, typename buf2_t, typename index2_t>
         Linear(Linear<page_size, align_t, addr2_t, val2_t, buf2_t, index2_t> const& l)
-            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(l.context,
-        {
-            TYPEID, size_t(l.offset)
-        }), offset(l.offset)
-        {
-        }
+            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(l.context, ID(l.offset)), offset(l.offset)
+        {}
 
         template <typename addr2_t, typename val2_t, typename buf2_t, typename index2_t>
-        Linear(Linear<page_size, align_t, addr2_t, val2_t, buf2_t, index2_t> const& l, index_t off)
-            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(l.context,
+        Linear(Linear<page_size, align_t, addr2_t, val2_t, buf2_t, index2_t> const& l, int off)
+            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(l.context, ID(l.offset+off)), offset(l.offset+off)
         {
-            TYPEID, size_t()
-        }), offset(l.offset)
-        {
-            this->offset += (uint(off) * bitsize<val2_t>()) / bitsize<align_t>();
-            this->accessor_id.flags = size_t(this->offset);
+            printf("offset %d\n", this->offset);
         }
 
 #undef TYPEID
+#undef ID
+
+        int getOffset(void)
+        {
+            return offset;
+        }
 
         index_t operate(addr_t const addr, index_t const len, std::function<void (val_t&)> const operation, bool dirty) const
         {
