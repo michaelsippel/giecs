@@ -67,8 +67,10 @@ class Context
 
         void addBlock(Block<page_size, align_t>* const block, BlockKey const key) const
         {
-            this->blocks->insert(std::make_pair(key, block));
-            this->syncPage(key.page_id, key);
+            this->syncPage(key);
+            auto const val = std::make_pair(key, block);
+            this->blocks->insert(val);
+            this->writePageFirst(val); // initialize, even if no master block is avaiable
         }
 
         void addBlock(Block<page_size, align_t>* const block, std::vector<BlockKey> const& keys) const
@@ -77,15 +79,15 @@ class Context
                 this->addBlock(block, k);
         }
 
-        std::vector< std::pair< BlockKey, Block<page_size, align_t>* > > getPageRange(BlockKey const key) const
+        std::vector< std::pair< BlockKey const, Block<page_size, align_t>* const> > getPageRange(BlockKey const key) const
         {
-            std::vector< std::pair<BlockKey, Block<page_size, align_t>* > > vec;
+            std::vector< std::pair<BlockKey const, Block<page_size, align_t>* const> > vec;
 
             BOOST_FOREACH(auto b, this->blocks->equal_range(key))
             {
                 if(key.accessor_id == b.first.accessor_id)
                 {
-                    this->syncPage(key.page_id, b.first);
+//                    this->syncPage(b.first);
                     vec.push_back(b);
                 }
             }
@@ -104,7 +106,7 @@ class Context
             {
                 if(key == it->first)
                 {
-                    this->syncPage(key.page_id, it->first);
+                    this->syncPage(it->first);
                     return it->second;
                 }
             }
@@ -127,33 +129,60 @@ class Context
         BlockMap* blocks;
         MasterMap* masters;
 
-        void syncPage(unsigned int const page_id, BlockKey const req_block) const
+        // TODO: optimize
+        void writePageFirst(std::pair< BlockKey const, Block<page_size, align_t>* const > const ref) const
         {
+            unsigned int const page_id = ref.first.page_id;
+
+            if(this->blocks->count({page_id}) > 1)
+            {
+                align_t page[page_size];
+                memset(page, 0, page_size * sizeof(align_t));
+
+                // take all different accessors.. dumb
+                auto const itp = this->blocks->equal_range({page_id});
+                for(auto it = itp.first; it != itp.second; ++it)
+                {
+                    if(!(it->first.accessor_id == ref.first.accessor_id))
+                    {
+                        ContextSync<page_size, align_t>* const msync = it->second->getSync(this);
+                        msync->read_page(page_id, page);
+                        delete msync;
+                    }
+                }
+
+                ContextSync<page_size, align_t>* const sync = ref.second->getSync(this);
+                sync->write_page(page_id, page, std::make_pair(0, page_size*bitsize<align_t>()));
+                delete sync;
+            }
+        }
+
+        void syncPage(BlockKey const req_block) const
+        {
+            unsigned int const page_id = req_block.page_id;
             auto const masterp = this->masters->find({page_id});
             if(masterp != this->masters->end())
             {
+                this->masters->erase(masterp);
                 BlockKey const masterkey = masterp->first;
-                Block<page_size, align_t>* const master = masterp->second;
-
                 if(! (masterkey.accessor_id == req_block.accessor_id))
                 {
-                    this->masters->erase(masterp);
 
+                    unsigned int const page_id = masterkey.page_id;
                     if(this->blocks->count({page_id}) > 1)
                     {
+                        ContextSync<page_size, align_t>* const sync = masterp->second->getSync(this);
+
                         auto const itp = this->blocks->equal_range({page_id});
                         align_t page[page_size];
-
-                        ContextSync<page_size, align_t>* sync = master->getSync(this);
                         sync->read_page(page_id, page);
 
                         for(auto it = itp.first; it != itp.second; it++)
                         {
-                            Block<page_size, align_t>* block = it->second;
-                            if(block != master)
+                            if(! (it->first.accessor_id == masterp->first.accessor_id))
                             {
-                                ContextSync<page_size, align_t>* sync = block->getSync(this);
-                                sync->write_page_block(*it, page);
+                                ContextSync<page_size, align_t>* const sync = it->second->getSync(this);
+                                sync->write_page_block(*it, page, masterkey.page_range);
                                 delete sync;
                             }
                         }

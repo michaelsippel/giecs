@@ -23,7 +23,7 @@
 #include <bits.h>
 #include <memory/context.h>
 #include <memory/accessors/linear.h>
-//#include <memory/accessors/stack.h>
+#include <memory/accessors/stack.h>
 
 void readline(int fd, char* str)
 {
@@ -43,7 +43,7 @@ void readline(int fd, char* str)
 }
 
 using namespace giecs;
-/*
+
 template <size_t page_size, typename align_t, typename addr_t, typename val_t>
 class lcore
 {
@@ -55,7 +55,7 @@ class lcore
             printf("%d\n", (int)stack.pop());
         }
 };
-*/
+
 int main(int argc, char** argv)
 {
     printf("Hello World!\n");
@@ -64,21 +64,29 @@ int main(int argc, char** argv)
     typedef Bits<8> byte;
     typedef Bits<16> word;
 
-    auto c1 = new memory::Context<4, word>();
-    auto a = c1->createLinear<word, byte>();
+    auto c1 = new memory::Context<8, byte>();
+    auto stack = c1->createStack<byte, byte>();
 
-    for(int i=0; i < 16; i++)
-        a[i] = byte(10+i);
+    stack << Bits<9>(0x1ff);
+    stack << Bits<4>(13);
+    stack << Bits<7>(42);
+    stack << Bits<15>(0x0aff);
+    stack << Bits<6>(57);
+    stack << Bits<8>(123);
+    stack << Bits<8>(127);
+    stack << Bits<6>(29);
 
-    word page[4];
-    for(int i=0; i<4; i++)
-    {
-        printf("read PAGE %d\n", i);
-        a.read_page(i, page);
-
-        for(int j=0; j<4; j++)
-            printf("%d[%d] = 0x%04x\n", i,j, (int)page[j]);
-    }
+    lcore<8, byte, byte, byte> core;
+    core.printi(stack);
+    core.printi(stack);
+    core.printi(stack);
+    core.printi(stack);
+    core.printi(stack);
+    core.printi(stack);
+    core.printi(stack);
+    core.printi(stack);
+    core.printi(stack);
+    core.printi(stack);
 
     return 0;
     /*

@@ -180,7 +180,7 @@ void read_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, i
 }
 
 template <size_t page_size, int N_align, int N_val>
-void write_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, int i, int const end, Bits<N_align> const* buf, int off, int bitoff)
+void write_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, int i, int const end, Bits<N_align> const* buf, int off, int bitoff, std::pair<int, int> range)
 {
     if(off < 0)
     {
@@ -188,20 +188,27 @@ void write_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, 
         off = 0;
     }
 
+    size_t tbitoff = bitoff;
     while(off < page_size && i <= end)
     {
         Bits<N_align> a = buf[off++];
 
-        if(bitoff > 0 && i > 0)
+        if(bitoff > 0 && i > 0 && tbitoff >= range.first && tbitoff < range.second)
             block[i-1] |= Bits<N_val>(a) << (N_val - bitoff);
 
         while(bitoff < N_align && i < end)
         {
-            if(bitoff < 0)
-                block[i++] |= Bits<N_val>(a) << (-bitoff);
-            else
-                block[i++] |= Bits<N_val>(a >> bitoff);
+            if(tbitoff >= range.first && tbitoff < range.second)
+            {
+                if(bitoff < 0)
+                    block[i] |= Bits<N_val>(a) << (-bitoff);
+                else
+                    block[i] |= Bits<N_val>(a >> bitoff);
+            }
+
+            ++i;
             bitoff += N_val;
+            tbitoff += N_val;
         }
         bitoff -= N_align;
     }

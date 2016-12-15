@@ -36,6 +36,8 @@ struct BlockKey
     unsigned int block_id;
     AccessorId accessor_id;
 
+    std::pair<int, int> page_range;
+
     bool operator==(BlockKey const& b) const
     {
         return (this->page_id == b.page_id &&
@@ -53,28 +55,29 @@ size_t hash_value(BlockKey const& block)
 template <size_t page_size, typename align_t>
 class ContextSync
 {
+        friend class Context<page_size, align_t>;
+
     public:
         ContextSync(Context<page_size, align_t> const* const context_, AccessorId const accessor_id_)
             : context(context_), accessor_id(accessor_id_)
         {
         }
 
-        typedef std::pair< BlockKey, Block<page_size, align_t>* > BlockRef;
+        typedef std::pair< BlockKey const, Block<page_size, align_t>* const > BlockRef;
 
         virtual void read_page_block(BlockRef const b, align_t* buf) const {}
-        virtual void write_page_block(BlockRef const b, align_t const* buf) const {}
+        virtual void write_page_block(BlockRef const b, align_t const* buf, std::pair<int,int> range) const {}
 
         inline void read_page(unsigned int const page_id, align_t* buf) const
         {
-            memset(buf, 0, sizeof(align_t)*page_size);
             for(BlockRef b : this->context->getPageRange({page_id, 0, this->accessor_id}))
                 this->read_page_block(b, buf);
         }
 
-        inline void write_page(unsigned int const page_id, align_t const* buf) const
+        inline void write_page(unsigned int const page_id, align_t const* buf, std::pair<int, int> range) const
         {
             for(BlockRef b : this->context->getPageRange({page_id, 0, this->accessor_id}))
-                this->write_page_block(b, buf);
+                this->write_page_block(b, buf, range);
         }
 
     protected:
@@ -104,7 +107,7 @@ class Block
         }
 
         virtual void read(int i, size_t const end, align_t* buf, int off, int bitoff) const {}
-        virtual void write(int i, size_t const end, align_t const* buf, int off, int bitoff) const {}
+        virtual void write(int i, size_t const end, align_t const* buf, int off, int bitoff, std::pair<int, int> range) const {}
 
         ContextSync<page_size, align_t>* getSync(Context<page_size, align_t> const* const context) const
         {
@@ -137,9 +140,9 @@ class TypeBlock : public Block<page_size, align_t>
             read_block(*this, i, end, buf, off, bitoff);
         }
 
-        void write(int i, size_t const end, align_t const* buf, int off, int bitoff) const
+        void write(int i, size_t const end, align_t const* buf, int off, int bitoff, std::pair<int, int> range) const
         {
-            write_block(*this, i, end, buf, off, bitoff);
+            write_block(*this, i, end, buf, off, bitoff, range);
         }
 
         inline int numElements(void) const

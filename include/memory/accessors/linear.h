@@ -46,7 +46,6 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
         Linear(Linear<page_size, align_t, addr2_t, val2_t, buf2_t, index2_t> const& l, int off)
             : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(l.context, ID(l.offset+off)), offset(l.offset+off)
         {
-            printf("offset %d\n", this->offset);
         }
 
 #undef TYPEID
@@ -127,7 +126,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
             block->read(0, block_size, buf, off, bitoff);
         }
 
-        void write_page_block(BlockRef const b, align_t const* buf) const
+        void write_page_block(BlockRef const b, align_t const* buf, std::pair<int,int> range) const
         {
             unsigned int const page_id = b.first.page_id;
             unsigned int const block_id = b.first.block_id;
@@ -138,7 +137,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
             int off = bitoff / bitsize<align_t>();
             bitoff %= bitsize<align_t>();
 
-            block->write(0, block_size, buf, off, bitoff);
+            block->write(0, block_size, buf, off, bitoff, range);
         }
 
     private:
@@ -147,7 +146,10 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
 
         TypeBlock<page_size, align_t, val_t>* getBlock(unsigned int page_id, unsigned int block_id, bool dirty) const
         {
-            BlockKey const key = {page_id, block_id, this->accessor_id};
+            int bitoff = block_id * block_size * bitsize<val_t>() + (this->offset -page_id * page_size) * bitsize<align_t>();
+
+            std::pair<int, int> range(bitoff, bitoff+block_size*bitsize<align_t>());
+            BlockKey const key = {page_id, block_id, this->accessor_id, range};
             TypeBlock<page_size, align_t, val_t>* block = (TypeBlock<page_size, align_t, val_t>*)this->context->getBlock(key);
             if(block == NULL)
             {
