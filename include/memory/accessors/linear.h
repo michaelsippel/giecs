@@ -21,7 +21,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
 
     private:
         // one block is one page
-        static index_t const block_size = (page_size * bitsize<align_t>()) / bitsize<val_t>();
+        static size_t const block_size = (page_size * bitsize<align_t>()) / bitsize<val_t>();
 
     public:
 #define TYPEID boost::typeindex::type_id< Linear<page_size, align_t, addr_t, val_t, buf_t, index_t> >()
@@ -66,8 +66,8 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
                 unsigned int block_id = uint(addr) / block_size;
                 unsigned int last_block_id = (uint(addr)+len) / block_size;
 
-                index_t i = index_t(addr) % block_size;
-                index_t last_i = (index_t(addr)+len) % block_size;
+                index_t i = index_t(uint(addr) % block_size);
+                index_t last_i = index_t(uint(addr+len) % block_size);
 
                 if(last_i == index_t())
                 {
@@ -79,7 +79,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
                 {
                     TypeBlock<page_size, align_t, val_t>* block = this->getBlock(page_id, block_id, dirty);
 
-                    index_t end = (block_id == last_block_id) ? last_i : block_size;
+                    index_t end = (block_id == last_block_id) ? last_i : index_t(block_size);
                     for(; i < end; ++i, ++l)
                         operation((*block)[i]);
 

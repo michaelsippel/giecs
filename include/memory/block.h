@@ -46,7 +46,7 @@ struct BlockKey
     }
 };
 
-size_t hash_value(BlockKey const& block)
+inline size_t hash_value(BlockKey const& block)
 {
     boost::hash<unsigned int> hasher;
     return hasher(block.page_id);

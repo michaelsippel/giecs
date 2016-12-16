@@ -65,7 +65,7 @@ int main(int argc, char** argv)
     typedef Bits<16> word;
 
     auto c1 = new memory::Context<8, byte>();
-    auto stack = c1->createStack<byte, byte>();
+    auto stack = c1->createStack<int, byte>();
 
     stack << Bits<9>(0x1ff);
     stack << Bits<4>(13);
@@ -76,7 +76,7 @@ int main(int argc, char** argv)
     stack << Bits<8>(127);
     stack << Bits<6>(29);
 
-    lcore<8, byte, byte, byte> core;
+    lcore<8, byte, int, byte> core;
     core.printi(stack);
     core.printi(stack);
     core.printi(stack);
