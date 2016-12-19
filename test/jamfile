@@ -2,7 +2,7 @@
 using testing ;
 
 unit-test memory_test : main.cpp context.cpp bits.cpp :
-	<library>$(TOP)/lib//giecs/<link>static
+	<library>/giecs/<link>static
 	<library>/boost//unit_test_framework/<link>shared
 	<define>BOOST_TEST_DYN_LINK
 	;

@@ -1,9 +1,7 @@
 
-path-constant TOP : . ;
-
 import os ;
 path-constant BOOST_ROOT : [ os.environ BOOST_ROOT ] ;
 use-project /boost : $(BOOST_ROOT) ;
 
-alias giecs : lib ;
+use-project /giecs : giecs ;
 

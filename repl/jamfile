@@ -1,5 +1,5 @@
 
 exe repl : main.cpp :
-	<library>$(TOP)/lib//giecs/<link>static
+	<library>/giecs/<link>static
 	;
 
