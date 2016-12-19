@@ -1,9 +1,9 @@
 #include <boost/test/unit_test.hpp>
 
-#include <bits.h>
-#include <memory/context.h>
-#include <memory/accessor.h>
-#include <memory/accessors/linear.h>
+#include <giecs/bits.h>
+#include <giecs/memory/context.h>
+#include <giecs/memory/accessor.h>
+#include <giecs/memory/accessors/linear.h>
 
 using namespace giecs;
 

@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-#include <context.h>
-#include <lisp/parser.h>
+#include <giecs/context.h>
+#include <giecs/lisp/parser.h>
 
 /*
  * low-level lisp parse (no self evaluation, no macros)

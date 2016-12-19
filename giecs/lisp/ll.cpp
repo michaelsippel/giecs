@@ -1,13 +1,13 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <logger.h>
-#include <context.h>
+#include <giecs/logger.h>
+#include <giecs/context.h>
 
-#include <ll.h>
+#include <giecs/ll.h>
 
-#include <lisp/ll.h>
-#include <lisp/parser.h>
+#include <giecs/lisp/ll.h>
+#include <giecs/lisp/parser.h>
 
 Logger* lisp_logger;
 Logger* lisp_parser_logger;

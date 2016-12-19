@@ -2,7 +2,7 @@
 #include <boost/mpl/list.hpp>
 #include <cstdint>
 
-#include <bits.h>
+#include <giecs/bits.h>
 
 using namespace giecs;
 

@@ -28,7 +28,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <time.h>
-#include "list.h"
+#include "giecs/list.h"
 
 #ifndef _NOSTR_
 extern const char* linfo;

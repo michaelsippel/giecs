@@ -6,11 +6,11 @@
 #include <linux/limits.h>
 #include <libgen.h>
 
-#include <context.h>
-#include <lisp/reader.h>
-#include <lisp/parser.h>
-#include <ll.h>
-#include <syscalls.h>
+#include <giecs/context.h>
+#include <giecs/lisp/reader.h>
+#include <giecs/lisp/parser.h>
+#include <giecs/ll.h>
+#include <giecs/syscalls.h>
 
 void ll_load(StackFrame& stack)
 {

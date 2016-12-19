@@ -4,8 +4,8 @@
 #include <functional>
 #include <boost/type_index.hpp>
 
-#include <memory/accessor.h>
-#include <bits.h>
+#include <giecs/memory/accessor.h>
+#include <giecs/bits.h>
 
 namespace giecs
 {

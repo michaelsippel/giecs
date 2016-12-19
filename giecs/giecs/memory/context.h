@@ -8,7 +8,7 @@
 #include <boost/foreach.hpp>
 #include <boost/unordered_map.hpp>
 
-#include <memory/block.h>
+#include <giecs/memory/block.h>
 
 namespace giecs
 {

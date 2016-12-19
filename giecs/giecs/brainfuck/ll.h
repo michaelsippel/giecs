@@ -1,7 +1,7 @@
 #ifndef _brainfuck_ll_h_
 #define _brainfuck_ll_h_
 
-#include <context.h>
+#include <giecs/context.h>
 
 // brainfuck
 vword_t ll_bf_case(Context* context, vword_t p);

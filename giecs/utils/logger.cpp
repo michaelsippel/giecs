@@ -27,9 +27,9 @@
 #include <stdarg.h>
 #include <unistd.h>
 
-#include "list.h"
+#include "giecs/list.h"
 #define _NOSTR_
-#include "logger.h"
+#include "giecs/logger.h"
 
 
 const char* linfo = "\033[1;49;37mINFO";

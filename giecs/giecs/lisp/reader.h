@@ -1,8 +1,8 @@
 #ifndef _reader_h_
 #define _reader_h_
 
-#include <list.h>
-#include <context.h>
+#include <giecs/list.h>
+#include <giecs/context.h>
 
 enum snode_type
 {

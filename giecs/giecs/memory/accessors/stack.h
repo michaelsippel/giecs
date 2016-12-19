@@ -1,8 +1,8 @@
 
 #pragma once
 
-#include <memory/accessor.h>
-#include <memory/accessors/linear.h>
+#include <giecs/memory/accessor.h>
+#include <giecs/memory/accessors/linear.h>
 
 #include <functional>
 #include <boost/type_index.hpp>

@@ -1,7 +1,7 @@
 
-#include <context.h>
-#include <stackframe.h>
-#include <logger.h>
+#include <giecs/context.h>
+#include <giecs/stackframe.h>
+#include <giecs/logger.h>
 
 Logger* StackFrame::logger = new Logger("StackFrame");
 

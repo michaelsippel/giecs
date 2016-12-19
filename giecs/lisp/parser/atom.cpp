@@ -1,9 +1,9 @@
 #include <string.h>
 
-#include <logger.h>
-#include <context.h>
-#include <lisp/reader.h>
-#include <lisp/parser.h>
+#include <giecs/logger.h>
+#include <giecs/context.h>
+#include <giecs/lisp/reader.h>
+#include <giecs/lisp/parser.h>
 
 extern Logger* lisp_parser_logger;
 extern Logger* lisp_atom_logger;

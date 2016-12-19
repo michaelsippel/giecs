@@ -2,11 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <context.h>
-#include <stackframe.h>
+#include <giecs/context.h>
+#include <giecs/stackframe.h>
 
-#include <lisp/parser.h>
-#include <ll.h>
+#include <giecs/lisp/parser.h>
+#include <giecs/ll.h>
 
 void ll_eval(StackFrame& stack)
 {

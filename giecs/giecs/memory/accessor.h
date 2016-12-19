@@ -2,8 +2,9 @@
 #pragma once
 
 #include <cstddef>
-#include <memory/context.h>
-#include <memory/block.h>
+
+#include <giecs/memory/context.h>
+#include <giecs/memory/block.h>
 
 namespace giecs
 {

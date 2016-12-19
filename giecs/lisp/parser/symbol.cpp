@@ -1,9 +1,9 @@
 #include <stddef.h>
 #include <string.h>
-#include <list.h>
+#include <giecs/list.h>
 
-#include <context.h>
-#include <lisp/parser.h>
+#include <giecs/context.h>
+#include <giecs/lisp/parser.h>
 
 Namespace::Namespace(Namespace* parent_)
     : parent(parent_)

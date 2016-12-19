@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <list.h>
-#include <lisp/reader.h>
+#include <giecs/list.h>
+#include <giecs/lisp/reader.h>
 
 SNode::SNode(enum snode_type type_)
     : type(type_)

@@ -1,7 +1,7 @@
 #include <string.h>
 
-#include <logger.h>
-#include <lisp/reader.h>
+#include <giecs/logger.h>
+#include <giecs/lisp/reader.h>
 
 void SNode::read_list(char* start, char* end)
 {

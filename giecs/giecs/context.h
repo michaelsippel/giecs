@@ -4,10 +4,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <stackframe.h>
+#include <giecs/stackframe.h>
 
-#include <logger.h>
-#include <itype.h>
+#include <giecs/logger.h>
+#include <giecs/itype.h>
 
 struct page
 {

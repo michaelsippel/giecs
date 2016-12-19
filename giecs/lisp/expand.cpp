@@ -1,8 +1,8 @@
 
-#include <context.h>
-#include <ll.h>
-#include <lisp/ll.h>
-#include <lisp/parser.h>
+#include <giecs/context.h>
+#include <giecs/ll.h>
+#include <giecs/lisp/ll.h>
+#include <giecs/lisp/parser.h>
 
 extern Namespace* default_namespace;
 

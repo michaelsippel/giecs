@@ -2,8 +2,8 @@
 #ifndef _stackframe_h_
 #define _stackframe_h_
 
-#include <logger.h>
-#include <itype.h>
+#include <giecs/logger.h>
+#include <giecs/itype.h>
 
 class Context;
 

@@ -1,10 +1,10 @@
 #include <unistd.h>
 #include <string.h>
 
-#include <ll.h>
-#include <context.h>
-#include <lisp/parser.h>
-#include <brainfuck/parser.h>
+#include <giecs/ll.h>
+#include <giecs/context.h>
+#include <giecs/lisp/parser.h>
+#include <giecs/brainfuck/parser.h>
 /*
 vword_t ll_bf_case(Context* context, vword_t p)
 {
