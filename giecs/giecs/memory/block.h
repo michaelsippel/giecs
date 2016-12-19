@@ -4,62 +4,155 @@
 #include <cstddef>
 #include <functional>
 
+#include <boost/type_index.hpp>
+#include <boost/functional/hash.hpp>
+
 namespace giecs
 {
 namespace memory
 {
 
+template <size_t page_size, typename align_t>
 class Context;
-class ContextSync
+
+template <size_t page_size, typename align_t>
+class Block;
+
+struct AccessorId
 {
-    public:
-        ContextSync(const Context* const context_);
+    boost::typeindex::type_index type;
+    size_t flags;
 
-        virtual void read_page(int const page_id, uint8_t* const buf) const {};
-        virtual void write_page(int const page_id, uint8_t const* const buf) const {};
-
-    protected:
-        Context const* const context;
+    bool operator==(AccessorId const& i) const
+    {
+        return (this->type == i.type &&
+                this->flags == i.flags);
+    }
 };
 
+struct BlockKey
+{
+    unsigned int page_id;
+    unsigned int block_id;
+    AccessorId accessor_id;
+
+    std::pair<int, int> page_range;
+
+    bool operator==(BlockKey const& b) const
+    {
+        return (this->page_id == b.page_id &&
+                this->block_id == b.block_id &&
+                this->accessor_id == b.accessor_id);
+    }
+};
+
+inline size_t hash_value(BlockKey const& block)
+{
+    boost::hash<unsigned int> hasher;
+    return hasher(block.page_id);
+}
+
+template <size_t page_size, typename align_t>
+class ContextSync
+{
+        friend class Context<page_size, align_t>;
+
+    public:
+        ContextSync(Context<page_size, align_t> const* const context_, AccessorId const accessor_id_)
+            : context(context_), accessor_id(accessor_id_)
+        {
+        }
+
+        typedef std::pair< BlockKey const, Block<page_size, align_t>* const > BlockRef;
+
+        virtual void read_page_block(BlockRef const b, align_t* buf) const {}
+        virtual void write_page_block(BlockRef const b, align_t const* buf, std::pair<int,int> range) const {}
+
+        inline void read_page(unsigned int const page_id, align_t* buf) const
+        {
+            for(BlockRef b : this->context->getPageRange({page_id, 0, this->accessor_id}))
+                this->read_page_block(b, buf);
+        }
+
+        inline void write_page(unsigned int const page_id, align_t const* buf, std::pair<int, int> range) const
+        {
+            for(BlockRef b : this->context->getPageRange({page_id, 0, this->accessor_id}))
+                this->write_page_block(b, buf, range);
+        }
+
+    protected:
+        Context<page_size, align_t> const* const context;
+        AccessorId accessor_id;
+};
+
+template <size_t page_size, typename align_t>
 class Block
 {
     public:
-        Block(size_t const l, std::function<ContextSync* (Context const* const)> const createSync_);
-        Block(Block const& b);
-        ~Block();
+        Block(size_t const l, std::function<ContextSync<page_size, align_t>* (Context<page_size, align_t> const* const)> const createSync_)
+            : length(l), createSync(createSync_)
+        {
+            this->ptr = malloc(this->length);
+        }
 
-        ContextSync* getSync(const Context* const context) const;
+        Block(Block const& b)
+        {
+            this->length = b.length;
+            this->ptr = b.ptr;
+        }
+
+        ~Block()
+        {
+            free(this->ptr);
+        }
+
+        virtual void read(int i, size_t const end, align_t* buf, int off, int bitoff) const {}
+        virtual void write(int i, size_t const end, align_t const* buf, int off, int bitoff, std::pair<int, int> range) const {}
+
+        ContextSync<page_size, align_t>* getSync(Context<page_size, align_t> const* const context) const
+        {
+            return this->createSync(context);
+        }
 
     protected:
         size_t length;
         void* ptr;
 
-        std::function<ContextSync* (Context const* const)> const createSync;
+        std::function<ContextSync<page_size, align_t>* (Context<page_size, align_t> const* const)> const createSync;
 };
 
-template <typename T>
-class TypeBlock : public Block
+template <size_t page_size, typename align_t, typename val_t>
+class TypeBlock : public Block<page_size, align_t>
 {
     public:
-        TypeBlock(size_t n, std::function<ContextSync* (Context const* const)> const createSync_)
-            : Block(sizeof(T) * n, createSync_)
+        TypeBlock(size_t n, std::function<ContextSync<page_size, align_t>* (Context<page_size, align_t> const* const)> const createSync_)
+            : Block<page_size, align_t>(sizeof(val_t) * n, createSync_)
         {
         }
 
-        TypeBlock(Block const& b)
-            : Block(b)
+        TypeBlock(Block<page_size, align_t> const& b)
+            : Block<page_size, align_t>(b)
         {
         }
 
-        int numElements(void) const
+        void read(int i, size_t const end, align_t* buf, int off, int bitoff) const
         {
-            return (this->length / sizeof(T));
+            read_block(*this, i, end, buf, off, bitoff);
         }
 
-        T& operator[] (int const& index) const
+        void write(int i, size_t const end, align_t const* buf, int off, int bitoff, std::pair<int, int> range) const
         {
-            return ((T*)this->ptr)[index % this->numElements()];
+            write_block(*this, i, end, buf, off, bitoff, range);
+        }
+
+        inline int numElements(void) const
+        {
+            return (this->length / sizeof(val_t));
+        }
+
+        val_t& operator[] (int const& index) const
+        {
+            return ((val_t*)this->ptr)[index % this->numElements()];
         }
 };
 

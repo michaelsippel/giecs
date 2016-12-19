@@ -8,23 +8,22 @@
 #include <linux/limits.h>
 #include <libgen.h>
 
-#include <ll.h>
-#include <context.h>
-#include <stackframe.h>
+//#include <ll.h>
+//#include <context.h>
+//#include <stackframe.h>
 
-#include <lisp/reader.h>
-#include <lisp/parser.h>
-#include <lisp/ll.h>
+//#include <lisp/reader.h>
+//#include <lisp/parser.h>
+//#include <lisp/ll.h>
 
-#include <brainfuck/parser.h>
-#include <brainfuck/ll.h>
+//#include <brainfuck/parser.h>
+//#include <brainfuck/ll.h>
 #include <math.h>
-
 
 #include <bits.h>
 #include <memory/context.h>
-#include <memory/block.h>
-#include <memory/accessor.h>
+#include <memory/accessors/linear.h>
+#include <memory/accessors/stack.h>
 
 void readline(int fd, char* str)
 {
@@ -45,15 +44,49 @@ void readline(int fd, char* str)
 
 using namespace giecs;
 
+template <size_t page_size, typename align_t, typename addr_t, typename val_t>
+class lcore
+{
+    public:
+        typedef memory::accessors::Stack<page_size, align_t, addr_t, val_t> Stack;
+
+        void printi(Stack& stack) const
+        {
+            printf("%d\n", (int)stack.pop());
+        }
+};
+
 int main(int argc, char** argv)
 {
     printf("Hello World!\n");
 
     // set up vm
-    memory::Context* c1 = new memory::Context();
+    typedef Bits<8> byte;
+    typedef Bits<16> word;
 
-    typedef Bits<6> byte;
-    typedef Bits<24> word;
+    auto c1 = new memory::Context<8, byte>();
+    auto stack = c1->createStack<int, byte>();
+
+    stack << Bits<9>(0x1ff);
+    stack << Bits<4>(13);
+    stack << Bits<7>(42);
+    stack << Bits<15>(0x0aff);
+    stack << Bits<6>(57);
+    stack << Bits<8>(123);
+    stack << Bits<8>(127);
+    stack << Bits<6>(29);
+
+    lcore<8, byte, int, byte> core;
+    core.printi(stack);
+    core.printi(stack);
+    core.printi(stack);
+    core.printi(stack);
+    core.printi(stack);
+    core.printi(stack);
+    core.printi(stack);
+    core.printi(stack);
+    core.printi(stack);
+    core.printi(stack);
 
     return 0;
     /*
