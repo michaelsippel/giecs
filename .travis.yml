@@ -27,7 +27,6 @@ before_install:
   - ./bootstrap.sh
   - ./b2 install --prefix=$BOOST_BUILD_PATH --cxxflaags="-std=c++11"
   - export PATH=$PATH:$BOOST_BUILD_PATH/bin
-  - "echo \"project user-config ;\nuse-project boost : $BOOST_BUILD_PATH ;\n\" > $HOME/user-config.jam"
   - cd -
 
 install:
