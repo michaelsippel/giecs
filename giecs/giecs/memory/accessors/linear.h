@@ -27,13 +27,13 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
 #define TYPEID boost::typeindex::type_id< Linear<page_size, align_t, addr_t, val_t, buf_t, index_t> >()
 #define ID(flags) {TYPEID, size_t( flags )}
 
-        Linear(Context<page_size, align_t> const* const context_)
+        Linear(Context<page_size, align_t> const& context_)
             : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(context_, ID(0))
         {
             this->offset = index_t();
         }
 
-        Linear(Context<page_size, align_t> const* const context_, index_t offset_)
+        Linear(Context<page_size, align_t> const& context_, index_t offset_)
             : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(context_, ID(offset_)), offset(offset_)
         {}
 
@@ -90,7 +90,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
             return l;
         }
 
-        index_t read(addr_t const addr, index_t const len, buf_t buf) const
+        index_t read(addr_t const addr, index_t const len, buf_t buf) const final
         {
             std::function<void (val_t&)> const operation = [&buf](val_t& v)
             {
@@ -100,7 +100,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
             return this->operate(addr, len, operation, false);
         }
 
-        index_t write(addr_t const addr, index_t const len, buf_t buf) const
+        index_t write(addr_t const addr, index_t const len, buf_t buf) const final
         {
             std::function<void (val_t&)> const operation = [&buf](val_t& v)
             {
@@ -112,7 +112,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
 
         using typename ContextSync<page_size, align_t>::BlockRef;
 
-        void read_page_block(BlockRef const b, align_t* buf) const
+        void read_page_block(BlockRef const b, std::array<align_t, page_size>& buf) const final
         {
             unsigned int const page_id = b.first.page_id;
             unsigned int const block_id = b.first.block_id;
@@ -126,7 +126,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
             block->read(0, block_size, buf, off, bitoff);
         }
 
-        void write_page_block(BlockRef const b, align_t const* buf, std::pair<int,int> range) const
+        void write_page_block(BlockRef const b, std::array<align_t, page_size> const& buf, std::pair<int,int> range) const final
         {
             unsigned int const page_id = b.first.page_id;
             unsigned int const block_id = b.first.block_id;
@@ -150,19 +150,19 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
 
             std::pair<int, int> range(bitoff, bitoff+block_size*bitsize<align_t>());
             BlockKey const key = {page_id, block_id, this->accessor_id, range};
-            TypeBlock<page_size, align_t, val_t>* block = (TypeBlock<page_size, align_t, val_t>*)this->context->getBlock(key);
+            TypeBlock<page_size, align_t, val_t>* block = (TypeBlock<page_size, align_t, val_t>*)this->context.getBlock(key);
             if(block == NULL)
             {
                 index_t const off = this->offset;
-                auto const createSync = [off](Context<page_size, align_t> const* const c)
+                auto const createSync = [off](Context<page_size, align_t> const& c)
                 {
                     return new Linear<page_size, align_t, addr_t, val_t, buf_t, index_t>(c, off);
                 };
                 block = new TypeBlock<page_size, align_t, val_t>(block_size, createSync);
-                this->context->addBlock(block, key);
+                this->context.addBlock(block, key);
             }
             if(dirty)
-                this->context->markPageDirty(key, block);
+                this->context.markPageDirty(key, block);
 
             return block;
         }

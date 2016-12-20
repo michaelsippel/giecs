@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <boost/preprocessor/repetition/repeat.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
@@ -151,7 +152,7 @@ namespace memory
  */
 
 template <size_t page_size, int N_align, int N_val>
-void read_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, int i, int const end, Bits<N_align>* buf, int off, int bitoff)
+void read_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, int i, int const end, std::array<Bits<N_align>, page_size>& buf, int off, int bitoff)
 {
     if(off < 0)
     {
@@ -159,7 +160,7 @@ void read_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, i
         off = 0;
     }
 
-    while(off < page_size && i <= end)
+    while(off < (int)page_size && i <= end)
     {
         Bits<N_align> a = Bits<N_align>();
 
@@ -180,7 +181,7 @@ void read_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, i
 }
 
 template <size_t page_size, int N_align, int N_val>
-void write_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, int i, int const end, Bits<N_align> const* buf, int off, int bitoff, std::pair<int, int> range)
+void write_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, int i, int const end, std::array<Bits<N_align>, page_size> const& buf, int off, int bitoff, std::pair<int, int> range)
 {
     if(off < 0)
     {
@@ -188,8 +189,8 @@ void write_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, 
         off = 0;
     }
 
-    size_t tbitoff = bitoff;
-    while(off < page_size && i <= end)
+    int tbitoff = bitoff;
+    while(off < (int)page_size && i <= end)
     {
         Bits<N_align> a = buf[off++];
 

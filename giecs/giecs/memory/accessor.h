@@ -15,13 +15,13 @@ template <size_t page_size, typename align_t, typename addr_t, typename val_t, t
 class Accessor : public ContextSync<page_size, align_t>
 {
     public:
-        Accessor(Context<page_size, align_t> const* const context_, AccessorId const accessor_id_)
+        Accessor(Context<page_size, align_t> const& context_, AccessorId const accessor_id_)
             : ContextSync<page_size, align_t>(context_, accessor_id_)
         {
         }
 
-        virtual index_t read(addr_t const addr, index_t const len, buf_t buf) const {}
-        virtual index_t write(addr_t const addr, index_t const len, buf_t buf) const {}
+        virtual index_t read(addr_t const addr, index_t const len, buf_t buf) const {return index_t();}
+        virtual index_t write(addr_t const addr, index_t const len, buf_t buf) const {return index_t();}
 
         val_t read(addr_t const addr) const
         {
@@ -43,27 +43,27 @@ class Accessor : public ContextSync<page_size, align_t>
         class Proxy
         {
             public:
-                Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t> const* const parent;
+                Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t> const& parent;
                 addr_t const addr;
 
-                Proxy(Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t> const* const parent_, addr_t const addr_)
+                Proxy(Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t> const& parent_, addr_t const addr_)
                     : parent(parent_), addr(addr_)
                 {}
 
                 operator val_t () const
                 {
-                    return this->parent->read(addr);
+                    return this->parent.read(addr);
                 }
 
                 val_t const& operator= (val_t const& val) const
                 {
-                    return this->parent->write(addr, val);
+                    return this->parent.write(addr, val);
                 }
         };
 
         Proxy operator[] (addr_t const addr) const
         {
-            return Proxy(this, addr);
+            return Proxy(*this, addr);
         }
 };
 

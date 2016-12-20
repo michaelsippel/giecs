@@ -20,13 +20,13 @@ class Stack : public Linear<page_size, align_t, addr_t, val_t, val_t*, int>
         template <size_t, typename, typename, typename> friend class Stack;
 
     public:
-        Stack(Context<page_size, align_t> const* const context_)
+        Stack(Context<page_size, align_t> const& context_)
             : Linear<page_size, align_t, addr_t, val_t, val_t*, int>::Linear(context_)
         {
             this->pos = 0;
         }
 
-        Stack(Context<page_size, align_t> const* const context_, addr_t offset_)
+        Stack(Context<page_size, align_t> const& context_, addr_t offset_)
             : Linear<page_size, align_t, addr_t, val_t, val_t*, int>::Linear(context_, offset_)
         {
             this->pos = 0;

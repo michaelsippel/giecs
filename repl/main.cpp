@@ -64,8 +64,8 @@ int main(int argc, char** argv)
     typedef Bits<8> byte;
     typedef Bits<16> word;
 
-    auto c1 = new memory::Context<8, byte>();
-    auto stack = c1->createStack<int, byte>();
+    auto c1 = memory::Context<8, byte>();
+    auto stack = c1.createStack<int, byte>();
 
     stack << Bits<9>(0x1ff);
     stack << Bits<4>(13);

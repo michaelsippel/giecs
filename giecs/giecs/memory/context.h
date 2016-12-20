@@ -49,20 +49,20 @@ class Context
             for(auto const p : *this->blocks)
                 delete p.second;
 
-            delete this->blocks;
-            delete this->masters;
+			delete this->blocks;
+			delete this->masters;
         }
 
         template <typename addr_t, typename val_t, typename buf_t=val_t*, typename index_t=size_t>
         inline accessors::Linear<page_size, align_t, addr_t, val_t, buf_t, index_t> createLinear() const
         {
-            return accessors::Linear<page_size, align_t, addr_t, val_t, buf_t, index_t>(this);
+            return accessors::Linear<page_size, align_t, addr_t, val_t, buf_t, index_t>(*this);
         }
 
         template <typename addr_t, typename val_t>
         inline accessors::Stack<page_size, align_t, addr_t, val_t> createStack() const
         {
-            return accessors::Stack<page_size, align_t, addr_t, val_t>(this);
+            return accessors::Stack<page_size, align_t, addr_t, val_t>(*this);
         }
 
         void addBlock(Block<page_size, align_t>* const block, BlockKey const key) const
@@ -101,13 +101,12 @@ class Context
 //	if(p != this->blocks->end())
 
             // overloading find doesn't work..
-            auto const p = this->blocks->equal_range(key);
-            for(auto it = p.first; it != p.second; ++it)
+            BOOST_FOREACH(auto b, this->blocks->equal_range(key))
             {
-                if(key == it->first)
+                if(key == b.first)
                 {
-                    this->syncPage(it->first);
-                    return it->second;
+                    this->syncPage(b.first);
+                    return b.second;
                 }
             }
 
@@ -136,22 +135,20 @@ class Context
 
             if(this->blocks->count({page_id}) > 1)
             {
-                align_t page[page_size];
-                memset(page, 0, page_size * sizeof(align_t));
+                std::array<align_t, page_size> page;
 
                 // take all different accessors.. dumb
-                auto const itp = this->blocks->equal_range({page_id});
-                for(auto it = itp.first; it != itp.second; ++it)
+                BOOST_FOREACH(auto it, this->blocks->equal_range({page_id}))
                 {
-                    if(!(it->first.accessor_id == ref.first.accessor_id))
+                    if(!(it.first.accessor_id == ref.first.accessor_id))
                     {
-                        ContextSync<page_size, align_t>* const msync = it->second->getSync(this);
+                        ContextSync<page_size, align_t>* const msync = it.second->getSync(*this);
                         msync->read_page(page_id, page);
                         delete msync;
                     }
                 }
 
-                ContextSync<page_size, align_t>* const sync = ref.second->getSync(this);
+                ContextSync<page_size, align_t>* const sync = ref.second->getSync(*this);
                 sync->write_page(page_id, page, std::make_pair(0, page_size*bitsize<align_t>()));
                 delete sync;
             }
@@ -171,18 +168,18 @@ class Context
                     unsigned int const page_id = masterkey.page_id;
                     if(this->blocks->count({page_id}) > 1)
                     {
-                        ContextSync<page_size, align_t>* const sync = masterp->second->getSync(this);
+                        ContextSync<page_size, align_t>* const sync = masterp->second->getSync(*this);
 
                         auto const itp = this->blocks->equal_range({page_id});
-                        align_t page[page_size];
+                        std::array<align_t, page_size> page;
                         sync->read_page(page_id, page);
 
-                        for(auto it = itp.first; it != itp.second; it++)
+						BOOST_FOREACH(auto it, itp)
                         {
-                            if(! (it->first.accessor_id == masterp->first.accessor_id))
+                            if(! (it.first.accessor_id == masterp->first.accessor_id))
                             {
-                                ContextSync<page_size, align_t>* const sync = it->second->getSync(this);
-                                sync->write_page_block(*it, page, masterkey.page_range);
+                                ContextSync<page_size, align_t>* const sync = it.second->getSync(*this);
+                                sync->write_page_block(it, page, masterkey.page_range);
                                 delete sync;
                             }
                         }
