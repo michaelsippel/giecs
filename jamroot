@@ -3,5 +3,12 @@ import os ;
 path-constant BOOST_ROOT : [ os.environ BOOST_ROOT ] ;
 use-project /boost : $(BOOST_ROOT) ;
 
+actions style
+{
+	astyle --style=allman --indent-classes --indent-switches $(>)
+}
+
+make style : [ glob-tree *.cpp ] [ glob-tree *.h ] : @style ;
+
 use-project /giecs : giecs ;
 

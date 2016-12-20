@@ -49,8 +49,8 @@ class Context
             for(auto const p : *this->blocks)
                 delete p.second;
 
-			delete this->blocks;
-			delete this->masters;
+            delete this->blocks;
+            delete this->masters;
         }
 
         template <typename addr_t, typename val_t, typename buf_t=val_t*, typename index_t=size_t>
@@ -174,7 +174,7 @@ class Context
                         std::array<align_t, page_size> page;
                         sync->read_page(page_id, page);
 
-						BOOST_FOREACH(auto it, itp)
+                        BOOST_FOREACH(auto it, itp)
                         {
                             if(! (it.first.accessor_id == masterp->first.accessor_id))
                             {

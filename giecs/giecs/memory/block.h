@@ -64,7 +64,7 @@ class ContextSync
         {
         }
 
-		virtual ~ContextSync() {}
+        virtual ~ContextSync() {}
 
         typedef std::pair< BlockKey const, Block<page_size, align_t>* const > BlockRef;
 

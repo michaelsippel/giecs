@@ -30,7 +30,7 @@ before_install:
   - cd -
 
 install:
-  - b2
+  - b2 giecs
 
 script:
   - b2 test
