@@ -16,18 +16,19 @@ env:
     - BOOST_ROOT: $HOME/.cache/boost_1_61_0
 
 before_install:
-  # download boost
-  - cd $HOME/.cache
-  - wget https://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.tar.gz
-  - tar xfz boost_1_61_0.tar.gz
-  - cd -
-
-  # install Boost.Build
-  - cd $BOOST_ROOT/tools/build
-  - ./bootstrap.sh
-  - ./b2 install --prefix=$BOOST_BUILD_PATH --cxxflaags="-std=c++11"
   - export PATH=$PATH:$BOOST_BUILD_PATH/bin
-  - cd -
+  - BOOST_FOUND=$(which b2 >/dev/null && { echo 0; } || { echo 1; })
+  - if [ $BOOST_FOUND -ne 0 ]; then
+      cd $HOME/.cache &&
+      wget https://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.tar.gz &&
+      tar xfz boost_1_61_0.tar.gz &&
+      rm boost_1_61_0.tar.gz &&
+      cd - &&
+      cd $BOOST_ROOT/tools/build &&
+      ./bootstrap.sh &&
+      ./b2 install --prefix=$BOOST_BUILD_PATH --cxxflaags=-std=c++11 &&
+      cd -;
+    fi
 
 install:
   - b2 giecs
