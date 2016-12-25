@@ -42,19 +42,31 @@ class Bits
         template <typename T>
         Bits(T v = 0)
         {
-            this->value = v;
+            this->value = *reinterpret_cast<typename bittype_tag<N>::type*>(&v);
         }
 
         template <typename T>
         operator T () const
         {
-            return this->value & ((1 << N) - 1);
+            typename bittype_tag<N>::type a = this->value & ((1 << N) - 1);
+            T r = *reinterpret_cast<T*>(&a);
+            return r;
+        }
+
+        operator Bits& () const
+        {
+            return *this;
         }
 
         template <typename T>
-        bool operator == (T const& v)
+        bool operator == (T const& v) const
         {
-            return ((T)*this == v);
+            return (T(*this) == v);
+        }
+
+        bool operator == (Bits const& v) const
+        {
+            return (size_t(*this) == size_t(v));
         }
 
         Bits operator ~ () const
@@ -102,7 +114,7 @@ class Bits
 #undef OPERATOR
 #undef OPERATOR_EQ
 
-    private:
+    protected:
         typename bittype_tag<N>::type value;
 };
 
