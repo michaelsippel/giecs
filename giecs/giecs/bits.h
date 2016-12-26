@@ -42,13 +42,13 @@ class Bits
         template <typename T>
         Bits(T v = 0)
         {
-            this->value = *reinterpret_cast<typename bittype_tag<N>::type*>(&v);
+            this->value = *reinterpret_cast<size_t*>(&v);
         }
 
         template <typename T>
         operator T () const
         {
-            typename bittype_tag<N>::type a = this->value & ((1 << N) - 1);
+            size_t a = this->value & ((1 << N) - 1);
             T r = *reinterpret_cast<T*>(&a);
             return r;
         }
@@ -60,11 +60,6 @@ class Bits
 
         template <typename T>
         bool operator == (T const& v) const
-        {
-            return (T(*this) == v);
-        }
-
-        bool operator == (Bits const& v) const
         {
             return (size_t(*this) == size_t(v));
         }
@@ -135,6 +130,12 @@ template <typename T>
 constexpr size_t bitsize(T)
 {
     return bitsize<T>();
+}
+
+template <int N>
+size_t hash_value(Bits<N> const& a)
+{
+    return size_t(a);
 }
 
 namespace memory

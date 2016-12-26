@@ -21,9 +21,11 @@
 #include <math.h>
 
 #include <giecs/bits.h>
+#include <giecs/types.h>
 #include <giecs/memory/context.h>
 #include <giecs/memory/accessors/linear.h>
 #include <giecs/memory/accessors/stack.h>
+#include <giecs/core.h>
 
 void readline(int fd, char* str)
 {
@@ -44,49 +46,49 @@ void readline(int fd, char* str)
 
 using namespace giecs;
 
-template <size_t page_size, typename align_t, typename addr_t, typename val_t>
-class lcore
-{
-    public:
-        typedef memory::accessors::Stack<page_size, align_t, addr_t, val_t> Stack;
+typedef Bits<8> byte;
+typedef Bits<32> word;
+typedef Int<32> iword;
 
-        void printi(Stack& stack) const
-        {
-            printf("%d\n", (int)stack.pop());
-        }
-};
+typedef memory::accessors::Stack<1024, byte, iword, word> Stack;
+
+void addi(Stack& stack)
+{
+    iword a = stack.pop<word>();
+    iword b = stack.pop<word>();
+    iword c = a + b;
+    stack.push<word>(c);
+}
+
+void printi(Stack& stack)
+{
+    iword a = stack.pop<word>();
+    printf("%d\n", (int)a);
+}
 
 int main(int argc, char** argv)
 {
     printf("Hello World!\n");
 
     // set up vm
-    typedef Bits<8> byte;
-    typedef Bits<16> word;
+    auto c1 = memory::Context<1024, byte>();
+    auto core = Core<1024, byte, iword, word>();
+    core.addOperation(1, printi);
+    core.addOperation(2, addi);
 
-    auto c1 = memory::Context<8, byte>();
-    auto stack = c1.createStack<int, byte>();
+    Stack stack = c1.createStack<iword, word>();
 
-    stack << Bits<9>(0x1ff);
-    stack << Bits<4>(13);
-    stack << Bits<7>(42);
-    stack << Bits<15>(0x0aff);
-    stack << Bits<6>(57);
-    stack << Bits<8>(123);
-    stack << Bits<8>(127);
-    stack << Bits<6>(29);
+    stack << word(2);
+    stack << word(5);
 
-    lcore<8, byte, int, byte> core;
-    core.printi(stack);
-    core.printi(stack);
-    core.printi(stack);
-    core.printi(stack);
-    core.printi(stack);
-    core.printi(stack);
-    core.printi(stack);
-    core.printi(stack);
-    core.printi(stack);
-    core.printi(stack);
+    stack[5] = 2;
+    stack[6] = 10;
+    stack[7] = 2;
+
+    core.eval(stack);
+
+    stack << word(1);
+    core.eval(stack);
 
     return 0;
     /*

@@ -84,7 +84,6 @@ BOOST_AUTO_TEST_CASE(accessor)
 
     auto acc = c1->createLinear<Index, byte, Array, Index>();
 
-    Array buf = Array(malloc(0x1000));
     Index len = Index(0,4);
 
     int a = 0;
@@ -93,8 +92,6 @@ BOOST_AUTO_TEST_CASE(accessor)
         ++a;
         acc[i] = a;
     }
-
-//    Index l = acc.write(Index(), len, buf);
 
     a = 0;
     for(Index i = Index(); i < len; ++i)

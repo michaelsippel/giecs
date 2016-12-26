@@ -95,6 +95,9 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
             return l;
         }
 
+        using Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::read;
+        using Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::write;
+
         index_t read(addr_t const addr, index_t const len, buf_t buf) const final
         {
             std::function<void (val_t&)> const operation = [&buf](val_t& v)
