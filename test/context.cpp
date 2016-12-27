@@ -5,9 +5,9 @@
 #include <giecs/memory/accessor.h>
 #include <giecs/memory/accessors/linear.h>
 
-using namespace giecs;
-
 BOOST_AUTO_TEST_SUITE(context);
+
+using namespace giecs;
 
 BOOST_AUTO_TEST_CASE(accessor)
 {

@@ -46,50 +46,19 @@ void readline(int fd, char* str)
 
 using namespace giecs;
 
-typedef Bits<8> byte;
-typedef Bits<32> word;
-typedef Int<32> iword;
-
-typedef memory::accessors::Stack<1024, byte, iword, word> Stack;
-
-void addi(Stack& stack)
-{
-    iword a = stack.pop<word>();
-    iword b = stack.pop<word>();
-    iword c = a + b;
-    stack.push<word>(c);
-}
-
-void printi(Stack& stack)
-{
-    iword a = stack.pop<word>();
-    printf("%d\n", (int)a);
-}
-
 int main(int argc, char** argv)
 {
     printf("Hello World!\n");
 
+    size_t const page_size = 4096;
+    size_t const word_width = 32;
+
+    typedef Bits<8> byte;
+    typedef Bits<word_width> word;
+    typedef Int<word_width> iword;
+    auto c1 = memory::Context<page_size, byte>();
+
     // set up vm
-    auto c1 = memory::Context<1024, byte>();
-    auto core = Core<1024, byte, iword, word>();
-    core.addOperation(1, printi);
-    core.addOperation(2, addi);
-
-    Stack stack = c1.createStack<iword, word>();
-
-    stack << word(2);
-    stack << word(5);
-
-    stack[5] = 2;
-    stack[6] = 10;
-    stack[7] = 2;
-
-    core.eval(stack);
-
-    stack << word(1);
-    core.eval(stack);
-
     return 0;
     /*
         // place stack at end of memory
