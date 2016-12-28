@@ -15,7 +15,7 @@ env:
     - BOOST_BUILD_PATH: $HOME/.cache/boost_build
     - BOOST_ROOT: $HOME/.cache/boost_1_61_0
 
-before_install:
+install:
   - export PATH=$PATH:$BOOST_BUILD_PATH/bin
   - BOOST_FOUND=$(which b2 >/dev/null && { echo 0; } || { echo 1; })
   - if [ $BOOST_FOUND -ne 0 ]; then
@@ -29,9 +29,6 @@ before_install:
       ./b2 install --prefix=$BOOST_BUILD_PATH --cxxflaags=-std=c++11 &&
       cd -;
     fi
-
-install:
-  - b2 giecs
 
 script:
   - b2 test

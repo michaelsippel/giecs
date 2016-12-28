@@ -5,7 +5,7 @@
 #include <giecs/context.h>
 #include <giecs/stackframe.h>
 
-#include <giecs/lisp/parser.h>
+#include <lisp/parser.h>
 #include <giecs/ll.h>
 
 void ll_eval(StackFrame& stack)

@@ -7,8 +7,8 @@
 #include <libgen.h>
 
 #include <giecs/context.h>
-#include <giecs/lisp/reader.h>
-#include <giecs/lisp/parser.h>
+#include <lisp/reader.h>
+#include <lisp/parser.h>
 #include <giecs/ll.h>
 #include <giecs/syscalls.h>
 

@@ -50,6 +50,7 @@ int main(int argc, char** argv)
 {
     printf("Hello World!\n");
 
+    // set up vm
     size_t const page_size = 4096;
     size_t const word_width = 32;
 
@@ -58,8 +59,6 @@ int main(int argc, char** argv)
     typedef Int<word_width> iword;
     auto c1 = memory::Context<page_size, byte>();
 
-    // set up vm
-    return 0;
     /*
         // place stack at end of memory
         StackFrame stack = StackFrame(context, context->upper_limit());
