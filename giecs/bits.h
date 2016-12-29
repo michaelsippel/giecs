@@ -164,9 +164,13 @@ namespace memory
  *  block_id = -1
  */
 
-template <size_t page_size, int N_align, int N_val>
-void read_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, int i, int const end, std::array<Bits<N_align>, page_size>& buf, int off, int bitoff)
+template <size_t page_size, typename align_t, typename val_t>
+void read_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const end, std::array<align_t, page_size>& buf, int off, int bitoff)
 {
+    constexpr int N_align = bitsize<align_t>();
+    constexpr int N_val = bitsize<val_t>();
+    TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const block(b);
+
     if(off < 0)
     {
         i -= (off * N_align + bitoff) / N_val;
@@ -193,9 +197,13 @@ void read_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, i
     }
 }
 
-template <size_t page_size, int N_align, int N_val>
-void write_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, int i, int const end, std::array<Bits<N_align>, page_size> const& buf, int off, int bitoff, std::pair<int, int> range)
+template <size_t page_size, typename align_t, typename val_t>
+void write_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const end, std::array<align_t, page_size> const& buf, int off, int bitoff, std::pair<int, int> range)
 {
+    constexpr int N_align = bitsize<align_t>();
+    constexpr int N_val = bitsize<val_t>();
+    TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const block(b);
+
     if(off < 0)
     {
         i -= (off * N_align + bitoff) / N_val;
