@@ -169,7 +169,7 @@ void read_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const 
 {
     constexpr int N_align = bitsize<align_t>();
     constexpr int N_val = bitsize<val_t>();
-    TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const block(b);
+    TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block(b);
 
     if(off < 0)
     {
@@ -202,7 +202,7 @@ void write_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const
 {
     constexpr int N_align = bitsize<align_t>();
     constexpr int N_val = bitsize<val_t>();
-    TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const block(b);
+    TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block(b);
 
     if(off < 0)
     {

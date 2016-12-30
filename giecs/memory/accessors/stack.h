@@ -44,7 +44,7 @@ class Stack : public Linear<page_size, align_t, addr_t, val_t, val_t*, int>
             this->pos += off;
         }
 
-        void pushn(int const n, val_t* v)
+        void push(int const n, val_t* v)
         {
             this->write(this->pos, n, v);
             this->move(n);

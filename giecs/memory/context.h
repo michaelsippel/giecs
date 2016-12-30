@@ -37,7 +37,7 @@ class Context
             }
         };
 
-        typedef boost::shared_ptr<Block<page_size, align_t>> BlockPtr;
+        typedef boost::shared_ptr<Block<page_size, align_t> const> BlockPtr;
         typedef boost::unordered_multimap<BlockKey, BlockPtr, boost::hash<BlockKey>, CheckOverlapBlocks> BlockMap;
         typedef boost::unordered_map<BlockKey, BlockPtr, boost::hash<BlockKey>, CheckOverlapBlocks > MasterMap;
 
@@ -49,10 +49,6 @@ class Context
 
         ~Context()
         {
-            // delete all references
-            this->blocks->clear();
-            this->masters->clear();
-
             delete this->blocks;
             delete this->masters;
         }
@@ -77,7 +73,7 @@ class Context
             this->writePageFirst(val); // initialize, even if no master block is avaiable
         }
 
-        void addBlock(Block<page_size, align_t>* const block, std::vector<BlockKey> const& keys) const
+        void addBlock(BlockPtr const block, std::vector<BlockKey> const& keys) const
         {
             for(auto const k : keys)
                 this->addBlock(block, k);
@@ -119,7 +115,7 @@ class Context
 
         void markPageDirty(BlockKey const key) const
         {
-            Block<page_size, align_t>* const block = this->getBlock(key);
+            BlockPtr const block = this->getBlock(key);
             this->markPageDirty(key, block);
         }
 
@@ -168,7 +164,6 @@ class Context
                 BlockKey const masterkey = masterp->first;
                 if(! (masterkey.accessor_id == req_block.accessor_id))
                 {
-
                     unsigned int const page_id = masterkey.page_id;
                     if(this->blocks->count({page_id}) > 1)
                     {

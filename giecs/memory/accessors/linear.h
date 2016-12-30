@@ -26,7 +26,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
 
         using typename ContextSync<page_size, align_t>::BlockPtr;
         using typename ContextSync<page_size, align_t>::BlockRef;
-        typedef boost::shared_ptr<TypeBlock<page_size, align_t, val_t>> TypeBlockPtr;
+        typedef boost::shared_ptr<TypeBlock<page_size, align_t, val_t> const> TypeBlockPtr;
 
     public:
 #define TYPEID boost::typeindex::type_id< Linear<page_size, align_t, addr_t, val_t, buf_t, index_t> >()
@@ -156,7 +156,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
 
             std::pair<int, int> range(bitoff, bitoff+block_size*bitsize<align_t>());
             BlockKey const key = {page_id, block_id, this->accessor_id, range};
-            TypeBlockPtr block = boost::static_pointer_cast<TypeBlock<page_size, align_t, val_t>>(this->context.getBlock(key));
+            TypeBlockPtr block = boost::static_pointer_cast<TypeBlock<page_size, align_t, val_t> const>(this->context.getBlock(key));
             if(block == NULL)
             {
                 index_t const off = this->offset;
