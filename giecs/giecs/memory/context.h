@@ -7,6 +7,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <giecs/memory/block.h>
 
@@ -35,8 +36,9 @@ class Context
             }
         };
 
-        typedef boost::unordered_multimap<BlockKey, Block<page_size, align_t>*, boost::hash<BlockKey>, CheckOverlapBlocks> BlockMap;
-        typedef boost::unordered_map<BlockKey, Block<page_size, align_t>*, boost::hash<BlockKey>, CheckOverlapBlocks > MasterMap;
+        typedef boost::shared_ptr<Block<page_size, align_t>> BlockPtr;
+        typedef boost::unordered_multimap<BlockKey, BlockPtr, boost::hash<BlockKey>, CheckOverlapBlocks> BlockMap;
+        typedef boost::unordered_map<BlockKey, BlockPtr, boost::hash<BlockKey>, CheckOverlapBlocks > MasterMap;
 
         Context()
         {
@@ -46,8 +48,9 @@ class Context
 
         ~Context()
         {
-            for(auto const p : *this->blocks)
-                delete p.second;
+            // delete all references
+            this->blocks->clear();
+            this->masters->clear();
 
             delete this->blocks;
             delete this->masters;
@@ -65,7 +68,7 @@ class Context
             return accessors::Stack<page_size, align_t, addr_t, val_t>(*this);
         }
 
-        void addBlock(Block<page_size, align_t>* const block, BlockKey const key) const
+        void addBlock(BlockPtr const block, BlockKey const key) const
         {
             this->syncPage(key);
             auto const val = std::make_pair(key, block);
@@ -79,9 +82,9 @@ class Context
                 this->addBlock(block, k);
         }
 
-        std::vector< std::pair< BlockKey const, Block<page_size, align_t>* const> > getPageRange(BlockKey const key) const
+        std::vector< std::pair< BlockKey const, BlockPtr const> > getPageRange(BlockKey const key) const
         {
-            std::vector< std::pair<BlockKey const, Block<page_size, align_t>* const> > vec;
+            std::vector< std::pair<BlockKey const, BlockPtr const> > vec;
 
             BOOST_FOREACH(auto b, this->blocks->equal_range(key))
             {
@@ -95,7 +98,7 @@ class Context
             return vec;
         }
 
-        Block<page_size, align_t>* getBlock(BlockKey const key) const
+        BlockPtr getBlock(BlockKey const key) const
         {
 //    auto const p = this->blocks->find(key, BlockMap::hasher(), std::equal_to<BlockKey>());
 //	if(p != this->blocks->end())
@@ -113,13 +116,13 @@ class Context
             return NULL;
         }
 
-        void markPageDirty(BlockKey const key)
+        void markPageDirty(BlockKey const key) const
         {
             Block<page_size, align_t>* const block = this->getBlock(key);
             this->markPageDirty(key, block);
         }
 
-        void markPageDirty(BlockKey const key, Block<page_size, align_t>* const block) const
+        void markPageDirty(BlockKey const key, BlockPtr const block) const
         {
             this->masters->insert(std::make_pair(key, block));
         }
@@ -129,7 +132,7 @@ class Context
         MasterMap* masters;
 
         // TODO: optimize
-        void writePageFirst(std::pair< BlockKey const, Block<page_size, align_t>* const > const ref) const
+        void writePageFirst(std::pair< BlockKey const, BlockPtr const > const ref) const
         {
             unsigned int const page_id = ref.first.page_id;
 

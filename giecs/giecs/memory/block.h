@@ -66,7 +66,9 @@ class ContextSync
 
         virtual ~ContextSync() {}
 
-        typedef std::pair< BlockKey const, Block<page_size, align_t>* const > BlockRef;
+
+        typedef boost::shared_ptr<Block<page_size, align_t>> BlockPtr;
+        typedef std::pair< BlockKey const, BlockPtr const > BlockRef;
 
         virtual void read_page_block(BlockRef const b, std::array<align_t, page_size>& buf) const {}
         virtual void write_page_block(BlockRef const b, std::array<align_t, page_size> const& buf, std::pair<int,int> range) const {}
@@ -138,12 +140,12 @@ class TypeBlock : public Block<page_size, align_t>
         {
         }
 
-        void read(int i, size_t const end, std::array<align_t, page_size>& buf, int off, int bitoff) const
+        void read(int i, size_t const end, std::array<align_t, page_size>& buf, int off, int bitoff) const final
         {
             read_block(*this, i, end, buf, off, bitoff);
         }
 
-        void write(int i, size_t const end, std::array<align_t, page_size> const& buf, int off, int bitoff, std::pair<int, int> range) const
+        void write(int i, size_t const end, std::array<align_t, page_size> const& buf, int off, int bitoff, std::pair<int, int> range) const final
         {
             write_block(*this, i, end, buf, off, bitoff, range);
         }
