@@ -6,13 +6,12 @@
 #include <linux/limits.h>
 #include <libgen.h>
 
-#include <giecs/context.h>
-#include <lisp/reader.h>
-#include <lisp/parser.h>
+//#include <lisp/reader.h>
+//#include <lisp/parser.h>
 #include <giecs/ll.h>
 #include <giecs/syscalls.h>
-
-void ll_load(StackFrame& stack)
+/*
+LLFN(load)
 {
     vword_t ptr = stack.pop_word();
 
@@ -53,7 +52,7 @@ void ll_load(StackFrame& stack)
     close(cwd);
 }
 
-void ll_syscall(StackFrame& stack)
+LLFN(syscall)
 {
     vword_t regs_in[6];
     stack.pop((vbyte_t*) &regs_in, 6*VWORD_SIZE);
@@ -130,123 +129,4 @@ void ll_syscall(StackFrame& stack)
         }
     }
 }
-
-void ll_addi(StackFrame& stack)
-{
-    vword_t v1 = stack.pop_word();
-    vword_t v2 = stack.pop_word();
-
-    vword_t ret = v1 + v2;
-    stack.push_word(ret);
-}
-
-void ll_muli(StackFrame& stack)
-{
-    vword_t v1 = stack.pop_word();
-    vword_t v2 = stack.pop_word();
-
-    vword_t ret = v1 * v2;
-    stack.push_word(ret);
-}
-
-void ll_subi(StackFrame& stack)
-{
-    vword_t v1 = stack.pop_word();
-    vword_t v2 = stack.pop_word();
-
-    vword_t ret = v1 - v2;
-    stack.push_word(ret);
-}
-
-void ll_divi(StackFrame& stack)
-{
-    vword_t v1 = stack.pop_word();
-    vword_t v2 = stack.pop_word();
-
-    vword_t ret = v1 / v2;
-    stack.push_word(ret);
-}
-
-void ll_printi(StackFrame& stack)
-{
-    vword_t v = stack.pop_word();
-    printf("%d\n", v);
-}
-
-void ll_printb(StackFrame& stack)
-{
-    vbyte_t val = stack.pop_byte();
-    printf("%s\n", val ? "true" : "false");
-}
-
-static vword_t rel_base = 0x0;
-
-void ll_setrelative(StackFrame& stack)
-{
-    vword_t ob = rel_base;
-    rel_base = stack.ptr() + VWORD_SIZE;
-
-    ll_eval(stack);
-
-    rel_base = ob;
-}
-
-void ll_pop(StackFrame& stack)
-{
-    vword_t poplen = stack.pop_word();
-
-    printf("pop %d bytes\n", poplen);
-
-    size_t len = stack.ptr() + VWORD_SIZE; // We assume the next call has no arguments on stack
-    ll_eval(stack);
-    len -= stack.ptr();
-
-    printf("returned len %d\n", len);
-
-    stack.context->copy(stack.ptr()+poplen, stack.ptr(), len);
-    stack.move(-poplen);
-}
-
-void ll_resw(StackFrame& stack)
-{
-    vword_t ptr = stack.pop_word();
-    if((int)ptr < 1)
-        ptr = rel_base - ptr;
-
-    vword_t v = stack.context->read_word(ptr);
-    stack.push_word(v);
-}
-
-void ll_setw(StackFrame& stack)
-{
-    vword_t ptr = stack.pop_word();
-    if((int)ptr < 1)
-        ptr = rel_base - ptr;
-
-    vword_t v = stack.pop_word();
-    stack.context->write_word(ptr, v);
-}
-
-void ll_resb(StackFrame& stack)
-{
-    vword_t ptr = stack.pop_word();
-
-    vbyte_t v;
-    stack.context->read(ptr, 1, &v);
-
-    stack.push_byte(v);
-}
-
-void ll_setb(StackFrame& stack)
-{
-    vword_t ptr = stack.pop_word();
-    vbyte_t v = stack.pop_byte();
-
-    stack.context->write(ptr, 1, &v);
-}
-
-void ll_nop(StackFrame& stack)
-{
-    return;
-}
-
+*/
