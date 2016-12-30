@@ -44,7 +44,7 @@ class Stack : public Linear<page_size, align_t, addr_t, val_t, val_t*, int>
             this->pos += off;
         }
 
-        void push(int const n, val_t* v)
+        void pushn(int const n, val_t* v)
         {
             this->write(this->pos, n, v);
             this->move(n);
@@ -85,7 +85,7 @@ class Stack : public Linear<page_size, align_t, addr_t, val_t, val_t*, int>
         template <typename val2_t=val_t>
         val2_t pop(void)
         {
-            val_t v;
+            val2_t v;
             this->pop(1, &v);
             return v;
         }
@@ -97,25 +97,25 @@ class Stack : public Linear<page_size, align_t, addr_t, val_t, val_t*, int>
 template <size_t page_size, typename align_t, typename addr_t, typename val_t, typename val2_t=val_t>
 void operator >> (val2_t v, Stack<page_size, align_t, addr_t, val_t>& s)
 {
-    s.push(v);
+    s.template push<val2_t>(v);
 }
 
 template <size_t page_size, typename align_t, typename addr_t, typename val_t, typename val2_t=val_t>
 void operator << (Stack<page_size, align_t, addr_t, val_t>& s, val2_t v)
 {
-    s.push(v);
+    s.template push<val2_t>(v);
 }
 
 template <size_t page_size, typename align_t, typename addr_t, typename val_t, typename val2_t=val_t>
 void operator >> (Stack<page_size, align_t, addr_t, val_t>& s, val2_t& v)
 {
-    v = s.pop();
+    v = s.template pop<val2_t>();
 }
 
 template <size_t page_size, typename align_t, typename addr_t, typename val_t, typename val2_t=val_t>
 void operator << (val2_t& v, Stack<page_size, align_t, addr_t, val_t>& s)
 {
-    v = s.pop();
+    v = s.template pop<val2_t>();
 }
 
 }; // namespace accessors
