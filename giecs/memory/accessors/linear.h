@@ -67,26 +67,28 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
 
             if(operation)
             {
-                unsigned int page_id = (this->offset + (uint(addr) * bitsize<val_t>()) / bitsize<align_t>()) / page_size;
-                unsigned int block_id = uint(addr) / block_size;
-                unsigned int last_block_id = (uint(addr)+len) / block_size;
+                int const start = int(addr);
+                int const end = int(addr+len);
 
-                index_t i = index_t(uint(addr) % block_size);
-                index_t last_i = index_t(uint(addr+len) % block_size);
+                unsigned int page_id = (this->offset * bitsize<align_t>() + start * bitsize<val_t>()) / bitsize<align_t>() / page_size;
+                unsigned int block_id = start / block_size;
+                unsigned int nblocks = 1+(end-start)/block_size;
+
+                index_t i = index_t(start % block_size);
+                index_t last_i = index_t(end % block_size);
 
                 if(last_i == index_t())
-                {
                     last_i = block_size;
-                    --last_block_id;
-                }
 
-                for(; block_id <= last_block_id; ++block_id, ++page_id) // that's not correct is 1 block != 1 page
+                for(int n=1; n <= nblocks; ++n)
                 {
-                    TypeBlockPtr block = this->getBlock(page_id, block_id, dirty);
-
-                    index_t end = (block_id == last_block_id) ? last_i : index_t(block_size);
+                    TypeBlockPtr block = this->getBlock(page_id++, block_id++, dirty);
+                    index_t end = (n == nblocks) ? last_i : index_t(block_size);
                     for(; i < end; ++i, ++l)
-                        operation((*block)[i]);
+                    {
+                        val_t& v = (*block)[i];
+                        operation(v);
+                    }
 
                     i = 0;
                 }

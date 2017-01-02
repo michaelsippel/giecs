@@ -10,7 +10,8 @@
 namespace giecs
 {
 
-template <int N> struct bittype_tag
+template <int N>
+struct bittype_tag
 {
     typedef uintmax_t type;
 };
@@ -34,22 +35,28 @@ class Bits
             this->value = 0;
         }
 
-        Bits(Bits<N> const& b)
+        template <int N2>
+        Bits(Bits<N2> const& b)
         {
-            this->value = b.value;
+            this->value = b.getValue();
         }
 
         template <typename T>
         Bits(T v = 0)
         {
-            this->value = *reinterpret_cast<size_t*>(&v);
+            this->value = reinterpret_cast<typename bittype_tag<N>::type&>(v);
+        }
+
+        inline typename bittype_tag<N>::type getValue(void) const
+        {
+            return (this->value & int((1 << N) - 1));
         }
 
         template <typename T>
         operator T () const
         {
-            size_t a = this->value & ((1 << N) - 1);
-            T r = *reinterpret_cast<T*>(&a);
+            uintmax_t a = this->getValue();
+            T r = reinterpret_cast<T&>(a);
             return r;
         }
 
@@ -61,24 +68,24 @@ class Bits
         template <typename T>
         bool operator == (T const& v) const
         {
-            return (size_t(*this) == size_t(v));
+            return (uintmax_t(this->getValue()) == uintmax_t(v));
         }
 
         Bits operator ~ () const
         {
-            return Bits(~this->value);
+            return Bits(~this->getValue());
         }
 
 #define OPERATOR(op) \
 		template <typename T> \
 		Bits operator op (T const v) const \
 		{ \
-			return Bits(this->value op v); \
+			return Bits(this->getValue() op v); \
 		} \
 		Bits operator op (Bits const v) const \
 		{ \
-			return Bits(this->value op v.value); \
-		} \
+			return Bits(this->getValue() op v.getValue()); \
+		}
 
 #define OPERATOR_EQ(op) \
 		template <typename T> \
@@ -91,7 +98,7 @@ class Bits
 		{ \
 			this->value op v.value; \
 			return *this; \
-		} \
+		}
 
         OPERATOR(&)
         OPERATOR(|)
@@ -169,7 +176,7 @@ void read_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const 
 {
     constexpr int N_align = bitsize<align_t>();
     constexpr int N_val = bitsize<val_t>();
-    TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block(b);
+    TypeBlock<page_size, align_t, Bits<N_val>> const& block = reinterpret_cast<TypeBlock<page_size, align_t, Bits<N_val>> const&>(b);
 
     if(off < 0)
     {
@@ -177,7 +184,7 @@ void read_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const 
         off = 0;
     }
 
-    while(off < (int)page_size && i <= end)
+    while(off < int(page_size) && i <= end)
     {
         Bits<N_align> a = Bits<N_align>();
 
@@ -193,7 +200,7 @@ void read_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const 
             bitoff += N_val;
         }
         bitoff -= N_align;
-        buf[off++] |= a;
+        buf[off++] |= align_t(a);
     }
 }
 
@@ -202,7 +209,7 @@ void write_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const
 {
     constexpr int N_align = bitsize<align_t>();
     constexpr int N_val = bitsize<val_t>();
-    TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block(b);
+    TypeBlock<page_size, align_t, Bits<N_val>> const& block = reinterpret_cast<TypeBlock<page_size, align_t, Bits<N_val>> const&>(b);
 
     if(off < 0)
     {
@@ -211,21 +218,21 @@ void write_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const
     }
 
     int tbitoff = bitoff;
-    while(off < (int)page_size && i <= end)
+    while(off < int(page_size) && i <= end)
     {
-        Bits<N_align> a = buf[off++];
+        Bits<N_align> a(buf[off++]);
 
-        if(bitoff > 0 && i > 0 && tbitoff >= range.first && tbitoff < range.second)
-            block[i-1] |= Bits<N_val>(a) << (N_val - bitoff);
+        if(bitoff > 0 && i > 0 && tbitoff >= range.first && tbitoff <= range.second)
+            block[i-1] |= Bits<N_val>(a) << bitoff;
 
         while(bitoff < N_align && i < end)
         {
             if(tbitoff >= range.first && tbitoff < range.second)
             {
                 if(bitoff < 0)
-                    block[i] |= Bits<N_val>(a) << (-bitoff);
+                    block[i] |= Bits<N_val>(a >> (-bitoff));
                 else
-                    block[i] |= Bits<N_val>(a >> bitoff);
+                    block[i] |= Bits<N_val>(a) << bitoff;
             }
 
             ++i;

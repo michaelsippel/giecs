@@ -136,6 +136,7 @@ class Context
             if(this->blocks->count({page_id}) > 1)
             {
                 std::array<align_t, page_size> page;
+                memset(&page, 0, page_size*sizeof(align_t));
 
                 // take all different accessors.. dumb
                 BOOST_FOREACH(auto it, this->blocks->equal_range({page_id}))
@@ -171,6 +172,7 @@ class Context
 
                         auto const itp = this->blocks->equal_range({page_id});
                         std::array<align_t, page_size> page;
+                        memset(&page, 0, page_size*sizeof(align_t));
                         sync->read_page(page_id, page);
 
                         BOOST_FOREACH(auto it, itp)

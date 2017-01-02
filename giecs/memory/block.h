@@ -96,13 +96,7 @@ class Block
         Block(size_t const l, std::function<ContextSync<page_size, align_t>* (Context<page_size, align_t> const&)> createSync_)
             : length(l), createSync(createSync_)
         {
-            this->ptr = malloc(this->length);
-        }
-
-        Block(Block const& b)
-        {
-            this->length = b.length;
-            this->ptr = b.ptr;
+            this->ptr = calloc(this->length, 1);
         }
 
         virtual ~Block()
@@ -131,11 +125,6 @@ class TypeBlock : public Block<page_size, align_t>
     public:
         TypeBlock(size_t n, std::function<ContextSync<page_size, align_t>* (Context<page_size, align_t> const&)> createSync_)
             : Block<page_size, align_t>(sizeof(val_t) * n, createSync_)
-        {
-        }
-
-        TypeBlock(Block<page_size, align_t> const& b)
-            : Block<page_size, align_t>(b)
         {
         }
 
