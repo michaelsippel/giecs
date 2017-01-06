@@ -154,9 +154,9 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
 
         TypeBlockPtr getBlock(unsigned int page_id, unsigned int block_id, bool dirty) const
         {
-            int bitoff = block_id * block_size * bitsize<val_t>() + (this->offset -page_id * page_size) * bitsize<align_t>();
+            int bitoff = block_id * block_size * bitsize<val_t>() + (this->offset - page_id * page_size) * bitsize<align_t>();
 
-            std::pair<int, int> range(bitoff, bitoff+block_size*bitsize<align_t>());
+            std::pair<int, int> range(bitoff, bitoff+block_size*bitsize<val_t>());
             BlockKey const key = {page_id, block_id, this->accessor_id, range};
             TypeBlockPtr block = boost::static_pointer_cast<TypeBlock<page_size, align_t, val_t> const>(this->context.getBlock(key));
             if(block == NULL)
