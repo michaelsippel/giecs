@@ -13,7 +13,7 @@ template <typename cast_t>
 struct Arithmetic
 {
 
-#define A_OP(name, op) \
+#define OP(name, op) \
 	LLFN( name ) \
     { \
         val_t a = stack.pop(); \
@@ -22,10 +22,29 @@ struct Arithmetic
 		stack.push(val_t(r)); \
     }
 
-    A_OP(add, +)
-    A_OP(sub, -)
-    A_OP(mul, *)
-    A_OP(div, /)
+    OP(add, +)
+    OP(sub, -)
+    OP(mul, *)
+    OP(div, /)
+#undef OP
+
+#define COMP(name, op) \
+	LLFN( name ) \
+    { \
+        val_t a = stack.pop(); \
+		val_t b = stack.pop(); \
+		bool r = cast_t(a) op cast_t(b); \
+		stack.push(val_t(r)); \
+    }
+
+    COMP(eq, ==)
+    COMP(neq, !=)
+    COMP(gt, >)
+    COMP(lt, <)
+    COMP(get, >=)
+    COMP(let, <=)
+#undef COMP
+
 };
 
 } // namespace ll

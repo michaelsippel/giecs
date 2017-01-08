@@ -103,7 +103,7 @@ struct System
         {
             if(buf[i] != NULL)
             {
-                stack.write(regs_in[i+1], sizes[i], buf[i]);
+                stack.write(addr_t(regs_in[i+1]), sizes[i], buf[i]);
                 free(buf[i]);
             }
         }
