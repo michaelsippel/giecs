@@ -1,7 +1,6 @@
 
 #pragma once
 
-#include <giecs/core.h>
 #include <giecs/memory/accessors/stack.h>
 
 namespace giecs

@@ -25,6 +25,7 @@
 #include <giecs/memory/context.h>
 #include <giecs/memory/accessors/linear.h>
 #include <giecs/memory/accessors/stack.h>
+#include <giecs/ll/io.h>
 #include <giecs/core.h>
 
 void readline(int fd, char* str)
@@ -48,16 +49,33 @@ using namespace giecs;
 
 int main(int argc, char** argv)
 {
-    printf("Hello World!\n");
-
     // set up vm
-    size_t const page_size = 4096;
+    size_t const page_size = 1024;
     size_t const word_width = 32;
 
     typedef Bits<8> byte;
     typedef Bits<word_width> word;
     typedef Int<word_width> iword;
-    auto c1 = memory::Context<page_size, byte>();
+    auto context = memory::Context<page_size, byte>();
+
+    auto core = Core<page_size, byte, iword>();
+
+    core.addOperation<byte>(1, ll::CIO<char>::print);
+    core.addOperation<word>(2, ll::CIO<int>::print);
+
+    auto stack = context.createStack<iword, byte>();
+    byte* str = (byte*) "\n!dlroW olleH";
+    stack.push(14, str);
+    for(int i = 0; i < 14; ++i)
+    {
+        stack << word(1);
+        core.eval(stack);
+    }
+
+    stack << word(123);
+    stack << word(2);
+    core.eval(stack);
+    printf("\n");
 
     /*
         // place stack at end of memory

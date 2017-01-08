@@ -13,11 +13,11 @@ namespace giecs
 template <typename T2> \
 Bits<N> operator op (T2 const v) const \
 { \
-	return Bits<N>(T(this->value) op T(v)); \
+	return Bits<N>(T(this->getValue()) op T(v)); \
 } \
 Bits<N> operator op (Bits<N> const v) const \
 { \
-	return Bits<N>(T(this->value) op T(v.value)); \
+	return Bits<N>(T(this->getValue()) op T(v.getValue())); \
 }
 
 #define OPERATOR_EQ(op, T) \
@@ -29,7 +29,7 @@ Bits<N>& operator op (T2 const v) \
 } \
 Bits<N>& operator op (Bits<N> const v) \
 { \
-	this->value op T(v.value); \
+	this->value op T(v.getValue()); \
 	return *this; \
 }
 

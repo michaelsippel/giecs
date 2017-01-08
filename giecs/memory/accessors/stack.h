@@ -90,7 +90,6 @@ class Stack : public Linear<page_size, align_t, addr_t, val_t, val_t*, int>
             return v;
         }
 
-    protected:
         int pos;
 };
 

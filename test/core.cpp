@@ -26,7 +26,7 @@ void addi(Stack& stack)
 BOOST_AUTO_TEST_CASE(eval)
 {
     auto c1 = memory::Context<8, byte>();
-    auto core = Core<8, byte, iword, word>();
+    auto core = Core<8, byte, iword>();
     core.addOperation(1, addi);
 
     Stack stack = c1.createStack<iword, word>();
