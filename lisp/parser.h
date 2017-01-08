@@ -2,7 +2,7 @@
 #define _parser_h_
 
 #include <giecs/context.h>
-#include <giecs/lisp/reader.h>
+#include <lisp/reader.h>
 
 class Namespace;
 

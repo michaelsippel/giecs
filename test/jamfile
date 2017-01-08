@@ -1,7 +1,7 @@
 
 using testing ;
 
-unit-test memory_test : main.cpp context.cpp bits.cpp :
+unit-test test : [ glob-tree *.cpp ] :
 	<library>/giecs/<link>static
 	<library>/boost//unit_test_framework/<link>shared
 	<define>BOOST_TEST_DYN_LINK

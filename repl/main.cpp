@@ -21,9 +21,14 @@
 #include <math.h>
 
 #include <giecs/bits.h>
+#include <giecs/types.h>
 #include <giecs/memory/context.h>
 #include <giecs/memory/accessors/linear.h>
 #include <giecs/memory/accessors/stack.h>
+#include <giecs/ll/arithmetic.h>
+#include <giecs/ll/io.h>
+#include <giecs/ll/system.h>
+#include <giecs/core.h>
 
 void readline(int fd, char* str)
 {
@@ -44,51 +49,53 @@ void readline(int fd, char* str)
 
 using namespace giecs;
 
-template <size_t page_size, typename align_t, typename addr_t, typename val_t>
-class lcore
-{
-    public:
-        typedef memory::accessors::Stack<page_size, align_t, addr_t, val_t> Stack;
-
-        void printi(Stack& stack) const
-        {
-            printf("%d\n", (int)stack.pop());
-        }
-};
-
 int main(int argc, char** argv)
 {
-    printf("Hello World!\n");
-
     // set up vm
+    size_t const page_size = 1024;
+    size_t const word_width = 32;
+
     typedef Bits<8> byte;
-    typedef Bits<16> word;
+    typedef Bits<word_width> word;
+    typedef Int<word_width> iword;
+    auto context = memory::Context<page_size, byte>();
 
-    auto c1 = memory::Context<8, byte>();
-    auto stack = c1.createStack<int, byte>();
+    auto core = Core<page_size, byte, iword>();
+    core.addOperation<word>(0, ll::System::syscall);
+    core.addOperation<byte>(1, ll::ConsoleIO<char>::print);
+    core.addOperation<word>(2, ll::ConsoleIO<int>::print);
+    core.addOperation<word>(3, ll::Arithmetic<int>::add);
+    core.addOperation<word>(4, ll::Arithmetic<int>::sub);
+    core.addOperation<word>(5, ll::Arithmetic<int>::mul);
+    core.addOperation<word>(6, ll::Arithmetic<int>::div);
 
-    stack << Bits<9>(0x1ff);
-    stack << Bits<4>(13);
-    stack << Bits<7>(42);
-    stack << Bits<15>(0x0aff);
-    stack << Bits<6>(57);
-    stack << Bits<8>(123);
-    stack << Bits<8>(127);
-    stack << Bits<6>(29);
+    auto stack = context.createStack<iword, byte>();
+    stack.push(14, (byte*) "Hello World!\n");
+    for(int i = 0; i < 14; ++i)
+    {
+        stack << word(1);
+        core.eval(stack);
+    }
 
-    lcore<8, byte, int, byte> core;
-    core.printi(stack);
-    core.printi(stack);
-    core.printi(stack);
-    core.printi(stack);
-    core.printi(stack);
-    core.printi(stack);
-    core.printi(stack);
-    core.printi(stack);
-    core.printi(stack);
-    core.printi(stack);
+    stack << word(10);
+    stack << word(5);
+    stack << word(3);
+    core.eval(stack);
 
-    return 0;
+    stack << word(2);
+    core.eval(stack);
+    printf("\n");
+
+    stack.write(word(4*(111+6)), 15, (byte*) "from Syscall!\n");
+    stack << word(0);
+    stack << word(0);
+    stack << word(15); // len
+    stack << word(111); // addr
+    stack << word(1); // fd
+    stack << word(0x04); // write
+    stack << word(0);
+    core.eval(stack);
+
     /*
         // place stack at end of memory
         StackFrame stack = StackFrame(context, context->upper_limit());

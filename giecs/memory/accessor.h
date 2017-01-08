@@ -33,16 +33,14 @@ class Accessor : public ContextSync<page_size, align_t>
         {
             val_t val;
             index_t l = index_t();
-            ++l;
-            this->read(addr, l, buf_t(&val));
+            this->read(addr, ++l, buf_t(&val));
             return val;
         }
 
         val_t const& write(addr_t const addr, val_t const& val) const
         {
             index_t l = index_t();
-            ++l;
-            this->write(addr, l, buf_t(&val));
+            this->write(addr, ++l, buf_t(&val));
             return val;
         }
 

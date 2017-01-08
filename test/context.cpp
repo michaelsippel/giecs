@@ -5,9 +5,9 @@
 #include <giecs/memory/accessor.h>
 #include <giecs/memory/accessors/linear.h>
 
-using namespace giecs;
-
 BOOST_AUTO_TEST_SUITE(context);
+
+using namespace giecs;
 
 BOOST_AUTO_TEST_CASE(accessor)
 {
@@ -84,7 +84,6 @@ BOOST_AUTO_TEST_CASE(accessor)
 
     auto acc = c1->createLinear<Index, byte, Array, Index>();
 
-    Array buf = Array(malloc(0x1000));
     Index len = Index(0,4);
 
     int a = 0;
@@ -93,8 +92,6 @@ BOOST_AUTO_TEST_CASE(accessor)
         ++a;
         acc[i] = a;
     }
-
-//    Index l = acc.write(Index(), len, buf);
 
     a = 0;
     for(Index i = Index(); i < len; ++i)
@@ -106,20 +103,15 @@ BOOST_AUTO_TEST_CASE(accessor)
 
     delete c1;
 }
-/*
+
 BOOST_AUTO_TEST_CASE(synchronization)
 {
-    memory::Context* c = new memory::Context();
+    auto c1 = memory::Context<8, uint8_t>();
 
-    auto acc1 = memory::accessors::Linear<int, uint8_t>(c);
-    auto acc2 = memory::accessors::Linear<int, uint16_t>(c);
+    auto acc1 = c1.createLinear<int, uint8_t>();
+    auto acc2 = c1.createLinear<int, uint16_t>();
 
     static int const n = 4;
-
-    for(int i = 0; i < n; i++)
-    {
-        acc2[i] = 0;
-    }
 
     uint8_t v8 = 0;
     for(int i = 0; i < 2*n; i++)
@@ -134,23 +126,22 @@ BOOST_AUTO_TEST_CASE(synchronization)
         uint16_t v16 = 0;
 
         ++v8;
-        BOOST_CHECK(acc1[i*2] == v8);
+        uint8_t r8 = acc1[i*2];
+        BOOST_CHECK(r8 == v8);
         v16 = v8;
 
         printf("%x ", v8);
 
         ++v8;
-        BOOST_CHECK(acc1[i*2+1] == v8);
+        r8 = acc1[i*2+1];
+        BOOST_CHECK(r8 == v8);
         v16 |= v8 << 8;
 
         uint16_t r16 = acc2[i];
-
         printf("%x -> %x == %x\n", v8, v16, r16);
-        BOOST_CHECK(acc2[i] == v16);
+        BOOST_CHECK(r16 == v16);
     }
-
-    delete c;
 }
-*/
+
 BOOST_AUTO_TEST_SUITE_END();
 

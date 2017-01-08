@@ -66,8 +66,7 @@ class ContextSync
 
         virtual ~ContextSync() {}
 
-
-        typedef boost::shared_ptr<Block<page_size, align_t>> BlockPtr;
+        typedef boost::shared_ptr<Block<page_size, align_t> const> BlockPtr;
         typedef std::pair< BlockKey const, BlockPtr const > BlockRef;
 
         virtual void read_page_block(BlockRef const b, std::array<align_t, page_size>& buf) const {}
@@ -97,13 +96,7 @@ class Block
         Block(size_t const l, std::function<ContextSync<page_size, align_t>* (Context<page_size, align_t> const&)> createSync_)
             : length(l), createSync(createSync_)
         {
-            this->ptr = malloc(this->length);
-        }
-
-        Block(Block const& b)
-        {
-            this->length = b.length;
-            this->ptr = b.ptr;
+            this->ptr = calloc(this->length, 1);
         }
 
         virtual ~Block()
@@ -114,7 +107,7 @@ class Block
         virtual void read(int i, size_t const end, std::array<align_t, page_size>& buf, int off, int bitoff) const {}
         virtual void write(int i, size_t const end, std::array<align_t, page_size> const& buf, int off, int bitoff, std::pair<int, int> range) const {}
 
-        ContextSync<page_size, align_t>* getSync(Context<page_size, align_t> const& context) const
+        inline ContextSync<page_size, align_t>* getSync(Context<page_size, align_t> const& context) const
         {
             return this->createSync(context);
         }
@@ -132,11 +125,6 @@ class TypeBlock : public Block<page_size, align_t>
     public:
         TypeBlock(size_t n, std::function<ContextSync<page_size, align_t>* (Context<page_size, align_t> const&)> createSync_)
             : Block<page_size, align_t>(sizeof(val_t) * n, createSync_)
-        {
-        }
-
-        TypeBlock(Block<page_size, align_t> const& b)
-            : Block<page_size, align_t>(b)
         {
         }
 

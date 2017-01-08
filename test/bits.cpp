@@ -4,9 +4,9 @@
 
 #include <giecs/bits.h>
 
-using namespace giecs;
-
 BOOST_AUTO_TEST_SUITE(bits);
+
+using namespace giecs;
 
 BOOST_AUTO_TEST_CASE(length)
 {

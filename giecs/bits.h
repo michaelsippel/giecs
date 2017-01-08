@@ -10,7 +10,8 @@
 namespace giecs
 {
 
-template <int N> struct bittype_tag
+template <int N>
+struct bittype_tag
 {
     typedef uintmax_t type;
 };
@@ -34,44 +35,57 @@ class Bits
             this->value = 0;
         }
 
-        Bits(Bits<N> const& b)
+        template <int N2>
+        Bits(Bits<N2> const& b)
         {
-            this->value = b.value;
+            this->value = b.getValue();
         }
 
         template <typename T>
         Bits(T v = 0)
         {
-            this->value = v;
+            this->value = reinterpret_cast<typename bittype_tag<N>::type&>(v);
+        }
+
+        inline typename bittype_tag<N>::type getValue(void) const
+        {
+            return (this->value & int((1 << N) - 1));
         }
 
         template <typename T>
         operator T () const
         {
-            return this->value & ((1 << N) - 1);
+            uintmax_t a = this->getValue();
+            T r = reinterpret_cast<T&>(a);
+            return r;
+        }
+
+        operator Bits& () const
+        {
+            return *this;
         }
 
         template <typename T>
-        bool operator == (T const& v)
+        bool operator == (T const& v) const
         {
-            return ((T)*this == v);
+            return (uintmax_t(this->getValue()) == uintmax_t(v));
         }
 
         Bits operator ~ () const
         {
-            return Bits(~this->value);
+            return Bits(~this->getValue());
         }
 
 #define OPERATOR(op) \
 		template <typename T> \
 		Bits operator op (T const v) const \
 		{ \
-			return Bits(this->value op v); \
+			return Bits(this->getValue() op v); \
 		} \
 		Bits operator op (Bits const v) const \
 		{ \
-			return Bits(this->value op v.value); \
-		} \
+			return Bits(this->getValue() op v.getValue()); \
+		}
 
 #define OPERATOR_EQ(op) \
 		template <typename T> \
@@ -84,7 +98,7 @@ class Bits
 		{ \
 			this->value op v.value; \
 			return *this; \
-		} \
+		}
 
         OPERATOR(&)
         OPERATOR(|)
@@ -102,7 +116,7 @@ class Bits
 #undef OPERATOR
 #undef OPERATOR_EQ
 
-    private:
+    protected:
         typename bittype_tag<N>::type value;
 };
 
@@ -123,6 +137,12 @@ template <typename T>
 constexpr size_t bitsize(T)
 {
     return bitsize<T>();
+}
+
+template <int N>
+size_t hash_value(Bits<N> const& a)
+{
+    return size_t(a);
 }
 
 namespace memory
@@ -151,16 +171,22 @@ namespace memory
  *  block_id = -1
  */
 
-template <size_t page_size, int N_align, int N_val>
-void read_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, int i, int const end, std::array<Bits<N_align>, page_size>& buf, int off, int bitoff)
+template <size_t page_size, typename align_t, typename val_t>
+void read_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const end, std::array<align_t, page_size>& buf, int off, int bitoff)
 {
+    constexpr int N_align = bitsize<align_t>();
+    constexpr int N_val = bitsize<val_t>();
+    TypeBlock<page_size, align_t, Bits<N_val>> const& block = reinterpret_cast<TypeBlock<page_size, align_t, Bits<N_val>> const&>(b);
+
     if(off < 0)
     {
-        i -= (off * N_align + bitoff) / N_val;
+        int z = off * N_align + bitoff;
+        i -= z / N_val;
+        bitoff += z % N_val;
         off = 0;
     }
 
-    while(off < (int)page_size && i <= end)
+    while(off < int(page_size) && i <= end)
     {
         Bits<N_align> a = Bits<N_align>();
 
@@ -170,48 +196,69 @@ void read_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, i
         while(bitoff < N_align && i < end)
         {
             if(bitoff < 0)
-                a = Bits<N_align>(block[i++] >> (-bitoff));
+                a = Bits<N_align>(block[i] >> (-bitoff));
             else
-                a |= Bits<N_align>(block[i++]) << bitoff;
+                a |= Bits<N_align>(block[i]) << bitoff;
+
+            i++;
             bitoff += N_val;
         }
         bitoff -= N_align;
-        buf[off++] |= a;
+        buf[off++] |= align_t(a);
     }
 }
 
-template <size_t page_size, int N_align, int N_val>
-void write_block(TypeBlock<page_size, Bits<N_align>, Bits<N_val>> const& block, int i, int const end, std::array<Bits<N_align>, page_size> const& buf, int off, int bitoff, std::pair<int, int> range)
+template <size_t page_size, typename align_t, typename val_t>
+void write_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const end, std::array<align_t, page_size> const& buf, int off, int bitoff, std::pair<int, int> range)
 {
+    constexpr int N_align = bitsize<align_t>();
+    constexpr int N_val = bitsize<val_t>();
+    TypeBlock<page_size, align_t, Bits<N_val>> const& block = reinterpret_cast<TypeBlock<page_size, align_t, Bits<N_val>> const&>(b);
+
+    int tbitoff = off * N_align + bitoff;
+
     if(off < 0)
     {
-        i -= (off * N_align + bitoff) / N_val;
+        i -= tbitoff / N_val;
+        bitoff += tbitoff % N_val;
         off = 0;
+        tbitoff = -bitoff;
     }
 
-    int tbitoff = bitoff;
-    while(off < (int)page_size && i <= end)
-    {
-        Bits<N_align> a = buf[off++];
+    Bits<N_val> mask = -1;
+    if(N_val > N_align)
+        mask = (1 << N_align)-1;
 
+    while(off < int(page_size) && i <= end)
+    {
+        Bits<N_align> a(buf[off++]);
         if(bitoff > 0 && i > 0 && tbitoff >= range.first && tbitoff < range.second)
-            block[i-1] |= Bits<N_val>(a) << (N_val - bitoff);
+        {
+            block[i-1] &= ~(mask << (N_val-bitoff) );
+            block[i-1] |= Bits<N_val>(a) << (N_val-bitoff);
+        }
 
         while(bitoff < N_align && i < end)
         {
             if(tbitoff >= range.first && tbitoff < range.second)
             {
                 if(bitoff < 0)
-                    block[i] |= Bits<N_val>(a) << (-bitoff);
+                {
+                    block[i] &= ~(mask >> (-bitoff));
+                    block[i] |= Bits<N_val>(a >> (-bitoff));
+                }
                 else
-                    block[i] |= Bits<N_val>(a >> bitoff);
+                {
+                    block[i] &= ~( mask << bitoff );
+                    block[i] |= Bits<N_val>(a) << bitoff;
+                }
             }
 
             ++i;
             bitoff += N_val;
-            tbitoff += N_val;
         }
         bitoff -= N_align;
+        tbitoff += N_align;
     }
 }
 
