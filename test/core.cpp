@@ -33,8 +33,8 @@ BOOST_AUTO_TEST_CASE(eval)
 
     // function to add 10 to parameter
     stack[333] = 2;   // length = 2 words
-    stack[334] = 10;  // 10
-    stack[335] = 1;   // addr of addi
+    stack[334] = 1;   // addr of addi
+    stack[335] = 10;  // 10
 
     for(iword a = 0; a < 10000; ++a)
     {

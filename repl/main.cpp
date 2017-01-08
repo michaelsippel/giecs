@@ -25,7 +25,9 @@
 #include <giecs/memory/context.h>
 #include <giecs/memory/accessors/linear.h>
 #include <giecs/memory/accessors/stack.h>
+#include <giecs/ll/arithmetic.h>
 #include <giecs/ll/io.h>
+#include <giecs/ll/system.h>
 #include <giecs/core.h>
 
 void readline(int fd, char* str)
@@ -59,23 +61,40 @@ int main(int argc, char** argv)
     auto context = memory::Context<page_size, byte>();
 
     auto core = Core<page_size, byte, iword>();
-
-    core.addOperation<byte>(1, ll::CIO<char>::print);
-    core.addOperation<word>(2, ll::CIO<int>::print);
+    core.addOperation<word>(0, ll::System::syscall);
+    core.addOperation<byte>(1, ll::ConsoleIO<char>::print);
+    core.addOperation<word>(2, ll::ConsoleIO<int>::print);
+    core.addOperation<word>(3, ll::Arithmetic<int>::add);
+    core.addOperation<word>(4, ll::Arithmetic<int>::sub);
+    core.addOperation<word>(5, ll::Arithmetic<int>::mul);
+    core.addOperation<word>(6, ll::Arithmetic<int>::div);
 
     auto stack = context.createStack<iword, byte>();
-    byte* str = (byte*) "\n!dlroW olleH";
-    stack.push(14, str);
+    stack.push(14, (byte*) "Hello World!\n");
     for(int i = 0; i < 14; ++i)
     {
         stack << word(1);
         core.eval(stack);
     }
 
-    stack << word(123);
+    stack << word(10);
+    stack << word(5);
+    stack << word(3);
+    core.eval(stack);
+
     stack << word(2);
     core.eval(stack);
     printf("\n");
+
+    stack.write(word(4*(111+6)), 15, (byte*) "from Syscall!\n");
+    stack << word(0);
+    stack << word(0);
+    stack << word(15); // len
+    stack << word(111); // addr
+    stack << word(1); // fd
+    stack << word(0x04); // write
+    stack << word(0);
+    core.eval(stack);
 
     /*
         // place stack at end of memory

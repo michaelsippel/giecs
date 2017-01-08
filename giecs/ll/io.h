@@ -11,7 +11,7 @@ namespace ll
 {
 
 template <typename cast_t>
-struct CIO
+struct ConsoleIO
 {
     LLFN(print)
     {
@@ -27,7 +27,7 @@ struct CIO
     }
 };
 
-}; // namespace ll
+} // namespace ll
 
-}; // namespace giecs
+} // namespace giecs
 
