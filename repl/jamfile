@@ -1,5 +1,5 @@
 
-exe repl : main.cpp :
+exe repl : main.cpp linenoise/linenoise.c : 
 	<library>/giecs/<link>static
 	;
 
