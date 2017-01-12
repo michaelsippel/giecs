@@ -117,9 +117,9 @@ void operator << (val2_t& v, Stack<page_size, align_t, addr_t, val_t>& s)
     v = s.template pop<val2_t>();
 }
 
-}; // namespace accessors
+} // namespace accessors
 
-}; // namespace memory
+} // namespace memory
 
-}; // namespace giecs
+} // namespace giecs
 

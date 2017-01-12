@@ -14,12 +14,12 @@ struct Arithmetic
 {
 
 #define OP(name, op) \
-	LLFN( name ) \
+    LLFN( name ) \
     { \
         val_t a = stack.pop(); \
-		val_t b = stack.pop(); \
-		cast_t r = cast_t(a) op cast_t(b); \
-		stack.push(val_t(r)); \
+        val_t b = stack.pop(); \
+        cast_t r = cast_t(a) op cast_t(b); \
+        stack.push(val_t(r)); \
     }
 
     OP(add, +)
@@ -29,12 +29,12 @@ struct Arithmetic
 #undef OP
 
 #define COMP(name, op) \
-	LLFN( name ) \
+    LLFN( name ) \
     { \
         val_t a = stack.pop(); \
-		val_t b = stack.pop(); \
-		bool r = cast_t(a) op cast_t(b); \
-		stack.push(val_t(r)); \
+        val_t b = stack.pop(); \
+        bool r = cast_t(a) op cast_t(b); \
+        stack.push(val_t(r)); \
     }
 
     COMP(eq, ==)

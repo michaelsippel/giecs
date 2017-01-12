@@ -77,28 +77,28 @@ class Bits
         }
 
 #define OPERATOR(op) \
-		template <typename T> \
-		Bits operator op (T const v) const \
-		{ \
-			return Bits(this->getValue() op v); \
-		} \
-		Bits operator op (Bits const v) const \
-		{ \
-			return Bits(this->getValue() op v.getValue()); \
-		}
+        template <typename T> \
+        Bits operator op (T const v) const \
+        { \
+            return Bits(this->getValue() op v); \
+        } \
+        Bits operator op (Bits const v) const \
+        { \
+            return Bits(this->getValue() op v.getValue()); \
+        }
 
 #define OPERATOR_EQ(op) \
-		template <typename T> \
-		Bits& operator op (T const v) \
-		{ \
-			this->value op v; \
-			return *this; \
-		} \
-		Bits& operator op (Bits const v) \
-		{ \
-			this->value op v.value; \
-			return *this; \
-		}
+        template <typename T> \
+        Bits& operator op (T const v) \
+        { \
+            this->value op v; \
+            return *this; \
+        } \
+        Bits& operator op (Bits const v) \
+        { \
+            this->value op v.value; \
+            return *this; \
+        }
 
         OPERATOR(&)
         OPERATOR(|)
@@ -127,7 +127,7 @@ constexpr size_t bitsize(void)
 }
 
 #define DEF_BITSIZE(z, N, data) \
-	template <> constexpr size_t bitsize< Bits<N> >(void) { return N; }
+    template <> constexpr size_t bitsize< Bits<N> >(void) { return N; }
 
 BOOST_PP_REPEAT(64, DEF_BITSIZE,)
 

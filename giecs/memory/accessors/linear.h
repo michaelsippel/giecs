@@ -176,9 +176,9 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
         }
 };
 
-}; // namespace accessors
+} // namespace accessors
 
-}; // namespace memory
+} // namespace memory
 
-}; // namespace giecs
+} // namespace giecs
 
