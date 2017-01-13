@@ -51,7 +51,7 @@ int main(int argc, char** argv)
                     break;
 
                 case 'b':
-                    lang = new repl::lang::Forth<page_size, byte>(context);
+                    lang = new repl::lang::Forth<page_size, byte, iword, word>(context);
                     break;
 
                 case 'c':
