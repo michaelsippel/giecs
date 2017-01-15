@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <functional>
 #include <boost/unordered_map.hpp>
 
 #include <giecs/memory/accessors/stack.h>
@@ -35,7 +36,7 @@ class Core
         template <typename val_t>
         struct TCallback : public Callback
         {
-            TCallback(void (*fn_)(Stack<val_t>&))
+            TCallback(std::function<void (Stack<val_t>&)> fn_)
                 : fn(fn_)
             {
             }
@@ -49,7 +50,7 @@ class Core
                 stack.move(off * bitsize<val_t>() / bitsize<align_t>());
             }
 
-            void (*fn)(Stack<val_t>&);
+            std::function<void (Stack<val_t>&)> fn;
         };
 
         Core()
@@ -61,8 +62,15 @@ class Core
         {
         }
 
+
         template <typename val_t>
         void addOperation(addr_t const id, void (*fn)(Stack<val_t>&))
+        {
+            this->addOperation(id, std::function<void (Stack<val_t>&)>(fn));
+        }
+
+        template <typename val_t>
+        void addOperation(addr_t const id, std::function<void (Stack<val_t>&)> fn)
         {
             this->operations.insert(std::make_pair(id, new TCallback<val_t>(fn)));
         }
