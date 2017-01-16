@@ -29,10 +29,35 @@ class Forth : public Language
             stack.push(a);
         }
 
+        // effectively a push
+        static void nop(memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)
+        {
+        }
+
+        void forth_eval(memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack) const
+        {
+            int len = stack.template pop<word_t>();
+            word_t ptrs[len];
+            for(int i = 0; i < len; i++)
+                ptrs[i] = stack.pop();
+
+            for(int i = 0; i < len; i++)
+            {
+                stack.push(ptrs[i]);
+                this->core.eval(stack);
+            }
+        }
+
     public:
         Forth(memory::Context<page_size, align_t> const& context_)
             : context(context_)
         {
+            std::function<void (memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)> ev = [this](memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)
+            {
+                return this->forth_eval(stack);
+            };
+            this->core.addOperation(addr_t(0), ev);
+            this->addOperation("nop", nop);
             this->addOperation(".", ll::ConsoleIO<int>::print);
 //			this->addOperation("@", read);
 //			this->addOperation("!", write);
@@ -69,22 +94,36 @@ class Forth : public Language
             boost::split(list, str, boost::is_any_of("\n\t "));
 
             bool name = false;
+            int i = 0;
+            int llen = list.size();
+            word_t ptrs[llen];
+            int p = 0;
 
             for(std::string a : list)
             {
-                if(name)
-                {
-                    // TODO
-                }
-                else if(a == ":")
+                if(a == ":" && i == 0)
                 {
                     name = true;
+                }
+                else if(name && i == 1)
+                {
+                    this->symbols[a] = ++this->fnid;
+
+                    stack[this->fnid] = word_t(llen); // total length
+                    stack[++this->fnid] = word_t(0); // forth_eval
+                    stack[++this->fnid] = word_t(llen-2); // length for forth_eval
+
+                    stack.pos = this->fnid+1;
+                    this->fnid += llen-2;
                 }
                 else if((a[0] >= '0' && a[0] <= '9') ||
                         (a[0] == '-' && a[1] >= '0' && a[1] <= '9'))
                 {
                     int n = std::stoi(a);
-                    stack.push(word_t(n));
+                    ptrs[p++] = word_t(++this->fnid);
+                    stack[this->fnid] = word_t(2); // length
+                    stack[++this->fnid] = word_t(this->symbols["nop"]);
+                    stack[++this->fnid] = word_t(n);
                 }
                 else
                 {
@@ -92,15 +131,28 @@ class Forth : public Language
                     if(it != this->symbols.end())
                     {
                         addr_t addr = it->second;
-                        stack.push(word_t(addr));
-                        this->core.eval(stack);
+                        ptrs[p++] = word_t(addr);
                     }
                     else
                         std::cout << "Undefined symbol!\n";
                 }
+
+                ++i;
             }
 
-            std::cout << "\n";
+            if(name)
+            {
+                stack.push(p, ptrs);
+            }
+            else
+            {
+                stack.pos = this->fnid+1;
+
+                stack.push(p, ptrs);
+                stack.push(word_t(llen));
+                this->forth_eval(stack);
+                std::cout << "\n";
+            }
 
             return this;
         }
@@ -118,8 +170,8 @@ class Forth : public Language
 
         void addOperation(std::string name, void (*fn)(memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack))
         {
-            this->core.template addOperation<word_t>(++fnid, fn);
-            this->symbols[name] = fnid;
+            this->core.template addOperation<word_t>(++this->fnid, fn);
+            this->symbols[name] = this->fnid;
         }
 };
 
