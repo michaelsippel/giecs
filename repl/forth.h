@@ -34,6 +34,14 @@ class Forth : public Language
         {
         }
 
+        static void swap(memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)
+        {
+            word_t a = stack.pop();
+            word_t b = stack.pop();
+            stack.push(a);
+            stack.push(b);
+        }
+
         void forth_eval(memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack) const
         {
             int len = stack.template pop<word_t>();
@@ -62,6 +70,7 @@ class Forth : public Language
 //			this->addOperation("@", read);
 //			this->addOperation("!", write);
             this->addOperation("dup", dup);
+            this->addOperation("swap", swap);
             this->addOperation("+", ll::Arithmetic<int>::add);
             this->addOperation("-", ll::Arithmetic<int>::sub);
             this->addOperation("*", ll::Arithmetic<int>::mul);
@@ -90,68 +99,82 @@ class Forth : public Language
 
             memory::accessors::Stack<page_size, align_t, addr_t, word_t> stack = this->context.template createStack<addr_t, word_t>();
 
-            std::vector<std::string> list;
-            boost::split(list, str, boost::is_any_of("\n\t "));
+            std::vector<std::string> lines;
+            boost::split(lines, str, boost::is_any_of(";"));
 
-            bool name = false;
-            int i = 0;
-            int llen = list.size();
-            word_t ptrs[llen];
-            int p = 0;
-
-            for(std::string a : list)
+            for(std::string line : lines)
             {
-                if(a == ":" && i == 0)
-                {
-                    name = true;
-                }
-                else if(name && i == 1)
-                {
-                    this->symbols[a] = ++this->fnid;
+                boost::trim(line);
+                if(line.empty())
+                    continue;
 
-                    stack[this->fnid] = word_t(llen); // total length
-                    stack[++this->fnid] = word_t(0); // forth_eval
-                    stack[++this->fnid] = word_t(llen-2); // length for forth_eval
+                std::vector<std::string> list;
+                boost::split(list, line, boost::is_any_of("\n\t "));
 
-                    stack.pos = this->fnid+1;
-                    this->fnid += llen-2;
-                }
-                else if((a[0] >= '0' && a[0] <= '9') ||
-                        (a[0] == '-' && a[1] >= '0' && a[1] <= '9'))
+                bool name = false;
+                int i = 0;
+                int llen = list.size();
+                word_t ptrs[llen];
+                int p = 0;
+
+                for(std::string a : list)
                 {
-                    int n = std::stoi(a);
-                    ptrs[p++] = word_t(++this->fnid);
-                    stack[this->fnid] = word_t(2); // length
-                    stack[++this->fnid] = word_t(this->symbols["nop"]);
-                    stack[++this->fnid] = word_t(n);
+                    boost::trim(a);
+                    if(a.empty())
+                        continue;
+
+                    if(a == ":" && i == 0)
+                    {
+                        name = true;
+                    }
+                    else if(name && i == 1)
+                    {
+                        this->symbols[a] = ++this->fnid;
+
+                        stack[this->fnid] = word_t(llen); // total length
+                        stack[++this->fnid] = word_t(0); // forth_eval
+                        stack[++this->fnid] = word_t(llen-2); // length for forth_eval
+
+                        stack.pos = this->fnid+1;
+                        this->fnid += llen-2;
+                    }
+                    else if((a[0] >= '0' && a[0] <= '9') ||
+                            (a[0] == '-' && a[1] >= '0' && a[1] <= '9'))
+                    {
+                        int n = std::stoi(a);
+                        ptrs[p++] = word_t(++this->fnid);
+                        stack[this->fnid] = word_t(2); // length
+                        stack[++this->fnid] = word_t(this->symbols["nop"]);
+                        stack[++this->fnid] = word_t(n);
+                    }
+                    else
+                    {
+                        auto it = this->symbols.find(a);
+                        if(it != this->symbols.end())
+                        {
+                            addr_t addr = it->second;
+                            ptrs[p++] = word_t(addr);
+                        }
+                        else
+                            std::cout << "Undefined symbol!\n";
+                    }
+
+                    ++i;
+                }
+
+                if(name)
+                {
+                    stack.push(p, ptrs);
                 }
                 else
                 {
-                    auto it = this->symbols.find(a);
-                    if(it != this->symbols.end())
-                    {
-                        addr_t addr = it->second;
-                        ptrs[p++] = word_t(addr);
-                    }
-                    else
-                        std::cout << "Undefined symbol!\n";
+                    stack.pos = this->fnid+1;
+
+                    stack.push(p, ptrs);
+                    stack.push(word_t(llen));
+                    this->forth_eval(stack);
+                    std::cout << "\n";
                 }
-
-                ++i;
-            }
-
-            if(name)
-            {
-                stack.push(p, ptrs);
-            }
-            else
-            {
-                stack.pos = this->fnid+1;
-
-                stack.push(p, ptrs);
-                stack.push(word_t(llen));
-                this->forth_eval(stack);
-                std::cout << "\n";
             }
 
             return this;
