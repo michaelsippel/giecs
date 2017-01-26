@@ -56,7 +56,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
 #undef TYPEID
 #undef ID
 
-        int getOffset(void)
+        int getOffset(void) const
         {
             return offset;
         }

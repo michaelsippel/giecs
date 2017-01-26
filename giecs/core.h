@@ -83,11 +83,13 @@ class Core
             auto const it = this->operations.find(addr);
             if(it == this->operations.end())
             {
-                int len = stack.read(addr);
+                // TODO: make absolute addresses easier
+                memory::accessors::Linear<page_size, align_t, addr_t, val_t> abs = memory::accessors::Linear<page_size, align_t, addr_t, val_t>(stack, -stack.getOffset());
+                size_t len = abs.read(addr);
                 assert(len > 0);
                 val_t* buf = (val_t*) malloc(len * sizeof(val_t));
 
-                stack.read(++addr, len, buf);
+                abs.read(++addr, len, buf);
                 stack.push(len, buf);
 
                 free(buf);
