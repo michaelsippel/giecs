@@ -19,7 +19,7 @@ using namespace giecs;
 int main(int argc, char** argv)
 {
     // set up vm
-    size_t const page_size = 1024;
+    size_t const page_size = 4096;
     size_t const word_width = 32;
 
     typedef Bits<8> byte;
@@ -51,7 +51,7 @@ int main(int argc, char** argv)
                     break;
 
                 case 'b':
-                    lang = new repl::lang::Forth<page_size, byte, iword, word>(context);
+                    lang = new repl::lang::Forth<page_size, byte, iword, word>(context, 0x8000);
                     break;
 
                 case 'c':

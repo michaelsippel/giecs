@@ -42,6 +42,43 @@ class Forth : public Language
             stack.push(b);
         }
 
+        static void out(memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)
+        {
+            ll::ConsoleIO<int>::print(stack);
+            std::cout << "\n";
+        }
+
+        static void fif(memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)
+        {
+        }
+
+        static void felse(memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)
+        {
+        }
+
+        static void fthen(memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)
+        {
+        }
+
+        static void read(memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)
+        {
+            addr_t addr = stack.pop();
+
+            memory::accessors::Linear<page_size, align_t, addr_t, word_t> abs = memory::accessors::Linear<page_size, align_t, addr_t, word_t>(stack, -stack.getOffset());
+            word_t v = abs.read(addr);
+
+            stack.push(v);
+        }
+
+        static void write(memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)
+        {
+            addr_t addr = stack.pop();
+            word_t v = stack.pop();
+
+            memory::accessors::Linear<page_size, align_t, addr_t, word_t> abs = memory::accessors::Linear<page_size, align_t, addr_t, word_t>(stack, -stack.getOffset());
+            abs.write(addr, v);
+        }
+
         void forth_eval(memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack) const
         {
             int len = stack.template pop<word_t>();
@@ -57,32 +94,61 @@ class Forth : public Language
         }
 
     public:
-        Forth(memory::Context<page_size, align_t> const& context_)
-            : context(context_)
+        Forth(memory::Context<page_size, align_t> const& context_, int limit_)
+            : context(context_), limit(limit_),
+              stack(this->context.template createStack<addr_t, word_t>()),
+              def_stack(memory::accessors::Stack<page_size, align_t, addr_t, word_t>(context_, (limit_*bitsize<word_t>())/bitsize<align_t>()))
         {
-            std::function<void (memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)> ev = [this](memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)
+            std::function<void (memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)> fev =
+                [this](memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)
             {
-                return this->forth_eval(stack);
+                this->forth_eval(stack);
             };
-            this->core.addOperation(addr_t(0), ev);
-            this->addOperation("nop", nop);
-            this->addOperation(".", ll::ConsoleIO<int>::print);
-//			this->addOperation("@", read);
-//			this->addOperation("!", write);
-            this->addOperation("dup", dup);
-            this->addOperation("swap", swap);
+            std::function<void (memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)> eval =
+                [this](memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)
+            {
+                this->core.eval(stack);
+            };
+
+            this->def_limit = 0;
+            this->core.addOperation(addr_t(this->def_limit + this->limit), fev);
+            ++this->def_limit;
+
+            this->addOperation("EXECUTE", eval);
+            this->addOperation("NOP", nop);
+
+            this->addOperation("IF", fif);
+            this->addOperation("ELSE", felse);
+            this->addOperation("THEN", fthen);
+
+            this->addOperation(".", out);
+            this->addOperation("EMIT", ll::ConsoleIO<char>::print);
+            this->addOperation("@", read);
+            this->addOperation("!", write);
+
+            this->addOperation("DUP", dup);
+            this->addOperation("SWAP", swap);
+
             this->addOperation("+", ll::Arithmetic<int>::add);
             this->addOperation("-", ll::Arithmetic<int>::sub);
             this->addOperation("*", ll::Arithmetic<int>::mul);
             this->addOperation("/", ll::Arithmetic<int>::div);
 
-            this->addOperation("if", ll::cond);
             this->addOperation("=", ll::Arithmetic<int>::eq);
             this->addOperation("!=", ll::Arithmetic<int>::neq);
             this->addOperation(">", ll::Arithmetic<int>::gt);
             this->addOperation(">=", ll::Arithmetic<int>::get);
             this->addOperation("<", ll::Arithmetic<int>::lt);
             this->addOperation("<=", ll::Arithmetic<int>::let);
+
+            // a tiny stdlib
+            this->parse(
+                "\
+				: ? @ . ;\
+				: CR 10 EMIT ;\
+				: SPACE 32 EMIT ;\
+				"
+            );
         }
 
         ~Forth()
@@ -91,14 +157,6 @@ class Forth : public Language
 
         Language* parse(char* str)
         {
-            if(strcmp(str, "exit") == 0)
-            {
-                delete this;
-                return NULL;
-            }
-
-            memory::accessors::Stack<page_size, align_t, addr_t, word_t> stack = this->context.template createStack<addr_t, word_t>();
-
             std::vector<std::string> lines;
             boost::split(lines, str, boost::is_any_of(";"));
 
@@ -108,14 +166,25 @@ class Forth : public Language
                 if(line.empty())
                     continue;
 
+                if(line == "exit")
+                {
+                    delete this;
+                    return NULL;
+                }
+
                 std::vector<std::string> list;
                 boost::split(list, line, boost::is_any_of("\n\t "));
 
                 bool name = false;
+                bool var = false;
+                bool quote = false;
                 int i = 0;
                 int llen = list.size();
-                word_t ptrs[llen];
+                addr_t ptrs[llen];
                 int p = 0;
+                int tmp;
+
+                this->def_stack.pos = this->def_limit; // erase all temporary allocations
 
                 for(std::string a : list)
                 {
@@ -123,29 +192,34 @@ class Forth : public Language
                     if(a.empty())
                         continue;
 
-                    if(a == ":" && i == 0)
+                    if(a == "'")
+                        quote = true;
+                    else if(a == ":" && i == 0)
+                        name = true;
+                    else if(a == "VARIABLE" && i == 0)
                     {
                         name = true;
+                        var = true;
                     }
                     else if(name && i == 1)
                     {
-                        this->symbols[a] = ++this->fnid;
+                        tmp = this->def_stack.pos;
+                        this->symbols[a] = addr_t(this->limit + tmp);
+                        this->def_stack.move(llen-2 + 3);
+                    }
+                    else if(var && i == 1)
+                    {
+                        word_t addr = word_t(this->limit + this->def_stack.pos);
+                        this->def_stack << word_t(42); // initialize
 
-                        stack[this->fnid] = word_t(llen); // total length
-                        stack[++this->fnid] = word_t(0); // forth_eval
-                        stack[++this->fnid] = word_t(llen-2); // length for forth_eval
-
-                        stack.pos = this->fnid+1;
-                        this->fnid += llen-2;
+                        this->symbols[a] = this->push_num(addr);
+                        goto run;
                     }
                     else if((a[0] >= '0' && a[0] <= '9') ||
                             (a[0] == '-' && a[1] >= '0' && a[1] <= '9'))
                     {
                         int n = std::stoi(a);
-                        ptrs[p++] = word_t(++this->fnid);
-                        stack[this->fnid] = word_t(2); // length
-                        stack[++this->fnid] = word_t(this->symbols["nop"]);
-                        stack[++this->fnid] = word_t(n);
+                        ptrs[p++] = this->push_num(word_t(n));
                     }
                     else
                     {
@@ -153,30 +227,63 @@ class Forth : public Language
                         if(it != this->symbols.end())
                         {
                             addr_t addr = it->second;
-                            ptrs[p++] = word_t(addr);
+
+                            if(quote)
+                            {
+                                ptrs[p++] = this->push_num(word_t(addr));
+                                quote = false;
+                            }
+                            else
+                                ptrs[p++] =	addr;
                         }
                         else
-                            std::cout << "Undefined symbol!\n";
+                        {
+                            std::cout << "undefined symbol \"" << a << "\"!\n";
+                            goto abort;
+                        }
                     }
 
                     ++i;
                 }
 
+run:
                 if(name)
                 {
-                    stack.push(p, ptrs);
-                }
-                else
-                {
-                    stack.pos = this->fnid+1;
+                    this->def_limit = this->def_stack.pos; // save allocations
 
-                    stack.push(p, ptrs);
-                    stack.push(word_t(llen));
-                    this->forth_eval(stack);
-                    std::cout << "\n";
+                    this->def_stack.pos = tmp;
+                    this->def_stack << word_t(p+2); // total length
+                    this->def_stack << word_t(this->limit+0); // forth_eval
+                    this->def_stack << word_t(p); // length for forth_eval
+                    for(int i=0; i < p; ++i)
+                        this->def_stack.push(word_t(ptrs[i]));
+
+                    this->def_stack.pos = this->def_limit;
+                }
+                else if(p > 0)
+                {
+                    this->stack.push(p, ptrs);
+                    this->stack.push(word_t(p));
+                    this->forth_eval(this->stack);
+
+                    if(this->stack.pos < 0)
+                    {
+                        this->stack.pos = 0;
+                        std::cout << "stack underflow!" << std::endl;
+                        goto abort;
+                    }
+                    else if(this->stack.pos > this->limit)
+                    {
+                        this->stack.pos = this->limit;
+                        std::cout << "stack underflow!" << std::endl;
+                        goto abort;
+                    }
                 }
             }
 
+            std::cout << "ok" << std::endl;
+
+abort:
             return this;
         }
 
@@ -187,14 +294,34 @@ class Forth : public Language
 
     private:
         memory::Context<page_size, align_t> const& context;
+        memory::accessors::Stack<page_size, align_t, addr_t, word_t> stack;
+        memory::accessors::Stack<page_size, align_t, addr_t, word_t> def_stack;
         Core<page_size, align_t, addr_t> core;
         std::map<std::string, addr_t> symbols;
-        addr_t fnid;
+        int def_limit;
+        int const limit;
 
         void addOperation(std::string name, void (*fn)(memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack))
         {
-            this->core.template addOperation<word_t>(++this->fnid, fn);
-            this->symbols[name] = this->fnid;
+            this->addOperation(name, std::function<void (memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)>(fn));
+        }
+
+        void addOperation(std::string name, std::function<void (memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)> fn)
+        {
+            this->core.template addOperation<word_t>(this->limit + this->def_stack.pos, fn);
+            this->symbols[name] = this->limit + this->def_stack.pos;
+
+            this->def_stack.move(1);
+            this->def_limit = this->def_stack.pos;
+        }
+
+        addr_t push_num(word_t n)
+        {
+            addr_t p = addr_t(this->limit + this->def_stack.pos);
+            this->def_stack << word_t(2); // length
+            this->def_stack << word_t(this->symbols["NOP"]);
+            this->def_stack << word_t(n);
+            return p;
         }
 };
 
