@@ -1,10 +1,7 @@
 
-lib giecs : [ glob-tree *.cpp ] :
+alias giecs : : : :
 	<include>$(BOOST_ROOT)
 	<include>$(TOP)
-	<cxxflags>-std=c++11
-	: :
-	<include>$(TOP)
-	<cxxflags>-std=c++11
+	<cxxflags>-std=c++11 
 	;
 

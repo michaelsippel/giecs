@@ -87,7 +87,6 @@ class Context
             {
                 if(key.accessor_id == b.first.accessor_id)
                 {
-//                    this->syncPage(b.first);
                     vec.push_back(b);
                 }
             }
@@ -97,8 +96,8 @@ class Context
 
         BlockPtr getBlock(BlockKey const key) const
         {
-//    auto const p = this->blocks->find(key, BlockMap::hasher(), std::equal_to<BlockKey>());
-//	if(p != this->blocks->end())
+//  auto const p = this->blocks->find(key, BlockMap::hasher(), std::equal_to<BlockKey>());
+//  if(p != this->blocks->end())
 
             // overloading find doesn't work..
             BOOST_FOREACH(auto b, this->blocks->equal_range(key))

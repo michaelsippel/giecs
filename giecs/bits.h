@@ -147,29 +147,6 @@ size_t hash_value(Bits<N> const& a)
 
 namespace memory
 {
-/*  E X A M P L E
- *  page_size = 2
- *  block_size = 2
- *                          offset = 1 (x align_t)
- *                          V
- *          |     buf[0]    |      buf[1]   |
- *   – – – –|– – – – – – – –|– – – – – – – –|– – – –   buf (align_t)
- *          |            P A G E            |
- *  –––––––––––––––––––––––––––––––––––––––––––––––––
- *  |       B L O C K       |       B L O C K       |
- *  |– – – – – –|– – – – – –|– – – – – –|– – – – – –|  block (val_t)
- *  |block[i-1] | block[i]  |  block[0] | block[1]  |
- *
- *  ^       ^ boff = 8 bits ^
- *  |       |_ _ _ _ _ _ _ _|
- *  |
- *  |           ^ ioff = 1  ^
- *  |           | i = 1     |
- *  |       ^   ^
- *  |       |_ _| bitoff = 2 bits
- *  |
- *  block_id = -1
- */
 
 template <size_t page_size, typename align_t, typename val_t>
 void read_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const end, std::array<align_t, page_size>& buf, int off, int bitoff)
