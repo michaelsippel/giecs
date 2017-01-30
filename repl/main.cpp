@@ -51,11 +51,11 @@ int main(int argc, char** argv)
                     break;
 
                 case 'b':
-                    lang = new repl::lang::Forth<page_size, byte, iword, word>(context, 0x8000);
+                    lang = new repl::lang::Forth<page_size, byte, iword>(context, 0x8000);
                     break;
 
                 case 'c':
-                    lang = new repl::lang::Brainfuck<page_size, byte>(context);
+                    lang = new repl::lang::Brainfuck<page_size, byte, iword>(context, 0x8000);
                     break;
 
                 case 'x':
