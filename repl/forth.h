@@ -142,13 +142,13 @@ class Forth : public Language
             this->addOperation("<=", ll::Arithmetic<int>::let);
 
             // a tiny stdlib
-            this->parse(
-                "\
-				: ? @ . ;\
-				: CR 10 EMIT ;\
-				: SPACE 32 EMIT ;\
-				"
-            );
+            this->parse("\
+				: ? @ . ; \
+				: CR 10 EMIT ; \
+				: SPACE 32 EMIT ; \
+            ");
+
+            std::cout << "To exit type \"BYE\"." << std::endl;
         }
 
         ~Forth()
@@ -166,12 +166,6 @@ class Forth : public Language
                 if(line.empty())
                     continue;
 
-                if(line == "exit")
-                {
-                    delete this;
-                    return NULL;
-                }
-
                 std::vector<std::string> list;
                 boost::split(list, line, boost::is_any_of("\n\t "));
 
@@ -184,13 +178,21 @@ class Forth : public Language
                 int p = 0;
                 int tmp;
 
-                this->def_stack.pos = this->def_limit; // erase all temporary allocations
+//                this->def_stack.pos = this->def_limit; // erase all temporary allocations
 
                 for(std::string a : list)
                 {
                     boost::trim(a);
+                    boost::to_upper(a);
+
                     if(a.empty())
                         continue;
+
+                    if(a == "BYE")
+                    {
+                        delete this;
+                        return NULL;
+                    }
 
                     if(a == "'")
                         quote = true;
@@ -203,6 +205,11 @@ class Forth : public Language
                     }
                     else if(name && i == 1)
                     {
+                        if(this->symbols.count(a) > 0)
+                        {
+                            std::cout << "Symbol \"" << a << "\" already defined!" << std::endl;
+                            goto abort;
+                        }
                         tmp = this->def_stack.pos;
                         this->symbols[a] = addr_t(this->limit + tmp);
                         this->def_stack.move(llen-2 + 3);
@@ -255,7 +262,7 @@ run:
                     this->def_stack << word_t(p+2); // total length
                     this->def_stack << word_t(this->limit+0); // forth_eval
                     this->def_stack << word_t(p); // length for forth_eval
-                    for(int i=0; i < p; ++i)
+                    for(int i = 0; i < p; ++i)
                         this->def_stack.push(word_t(ptrs[i]));
 
                     this->def_stack.pos = this->def_limit;
@@ -275,7 +282,7 @@ run:
                     else if(this->stack.pos > this->limit)
                     {
                         this->stack.pos = this->limit;
-                        std::cout << "stack underflow!" << std::endl;
+                        std::cout << "stack overflow!" << std::endl;
                         goto abort;
                     }
                 }
