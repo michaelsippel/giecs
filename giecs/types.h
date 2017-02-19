@@ -56,6 +56,11 @@ Bits<N>& operator ++ ()
     ++this->value;
     return *this;
 }
+Bits<N>& operator -- ()
+{
+    --this->value;
+    return *this;
+}
 };
 
 NUMBER_TYPE_BITS(Float, float)

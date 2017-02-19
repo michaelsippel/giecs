@@ -11,4 +11,5 @@ Makefile~
 .gitignore~
 vm_*
 bin
+history.txt
 

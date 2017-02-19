@@ -2,7 +2,7 @@
 using testing ;
 
 unit-test test : [ glob-tree *.cpp ] :
-	<library>/giecs/<link>static
+	<library>/giecs
 	<library>/boost//unit_test_framework/<link>shared
 	<define>BOOST_TEST_DYN_LINK
 	;

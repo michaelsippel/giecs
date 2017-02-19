@@ -26,8 +26,15 @@ class Stack : public Linear<page_size, align_t, addr_t, val_t, val_t*, int>
             this->pos = 0;
         }
 
-        Stack(Context<page_size, align_t> const& context_, addr_t offset_)
+        Stack(Context<page_size, align_t> const& context_, int offset_)
             : Linear<page_size, align_t, addr_t, val_t, val_t*, int>::Linear(context_, offset_)
+        {
+            this->pos = 0;
+        }
+
+        template <typename val2_t>
+        Stack(Stack<page_size, align_t, addr_t, val2_t> const& s, int offset_)
+            : Linear<page_size, align_t, addr_t, val_t, val_t*, int>::Linear(s, offset_)
         {
             this->pos = 0;
         }
