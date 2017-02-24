@@ -47,7 +47,7 @@ int main(int argc, char** argv)
             switch(c)
             {
                 case 'a':
-                    lang = new repl::lang::Lisp<page_size, byte>(context);
+                    lang = new repl::lang::Lisp<page_size, byte, iword>(context);
                     break;
 
                 case 'b':
