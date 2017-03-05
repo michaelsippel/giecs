@@ -3,7 +3,9 @@
 
 #include <giecs/memory/context.h>
 
+#include <sstream>
 #include <lisp/ast.h>
+#include <lisp/reader.h>
 
 #include "language.h"
 
@@ -31,22 +33,13 @@ class Lisp : public Language
 
         Language* parse(char* str)
         {
-            auto a = std::make_shared<lisp::ast::Atom<int> >(123);
-            auto b = std::make_shared<lisp::ast::Atom<float> >(3.14159);
-            auto c = std::make_shared<lisp::ast::Atom<std::string> >("Hello");
+            std::istream* stream = new std::istringstream(std::string(str));
 
-            auto ast_root = std::make_shared<lisp::ast::List>();
-
-            ast_root->addNode(a);
-            ast_root->addNode(b);
-            ast_root->addNode(c);
-
+            auto ast_root = lisp::Reader<lisp::ast::List>::read(*stream);
             std::cout << *ast_root << std::endl;
 
 //			this->stack.push(addr);
 //			this->core.eval(this->stack);
-
-            std::cout << str << "\n";
 
             if(std::string(str) == "exit")
             {

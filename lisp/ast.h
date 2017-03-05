@@ -10,6 +10,16 @@ namespace lisp
 namespace ast
 {
 
+enum NodeType
+{
+    none,
+    list,
+    symbol,
+    integer,
+    string,
+};
+
+
 class Node
 {
     public:
@@ -21,6 +31,11 @@ class Node
         {
             node.print(stream);
             return stream;
+        }
+
+        virtual NodeType getType(void) const
+        {
+            return NodeType::none;
         }
 
     private:
@@ -46,6 +61,11 @@ class List : public Node
             this->addNode(std::make_shared<N>(node));
         }
 
+        NodeType getType(void) const
+        {
+            return NodeType::list;
+        }
+
     private:
         void print(std::ostream& stream) const final
         {
@@ -67,17 +87,26 @@ class Atom : public Node
 {
     public:
         Atom() {}
-        Atom(T const& value_)
-            : value(value_)
+        Atom(NodeType type_, T const& value_)
+            : type(type_), value(value_)
         {
+        }
+
+        virtual NodeType getType(void) const
+        {
+            return this->type;
         }
 
     private:
         void print(std::ostream& stream) const final
         {
-            stream << this->value;
+            if(type == NodeType::string)
+                stream << "\"" << this->value << "\"";
+            else
+                stream << this->value;
         }
 
+        NodeType type;
         T value;
 }; // class Atom
 
