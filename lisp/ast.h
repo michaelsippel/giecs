@@ -90,6 +90,11 @@ class Atom : public Node
         {
         }
 
+        T operator() (void) const
+        {
+            return this->value;
+        }
+
         virtual NodeType getType(void) const
         {
             return this->type;

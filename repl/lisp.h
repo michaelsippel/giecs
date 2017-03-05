@@ -7,6 +7,7 @@
 #include <lisp/ast.h>
 #include <lisp/reader.h>
 #include <lisp/parser.h>
+#include <lisp/context.h>
 
 #include "language.h"
 
@@ -22,9 +23,8 @@ template <int page_size, typename align_t, typename addr_t=align_t, typename wor
 class Lisp : public Language
 {
     public:
-        Lisp(memory::Context<page_size, align_t> const& context_)
-            : context(context_),
-              stack(this->context.template createStack<addr_t, word_t>())
+        Lisp(memory::Context<page_size, align_t> const& context_, addr_t limit_)
+            : context(context_, limit_)
         {
         }
 
@@ -34,22 +34,20 @@ class Lisp : public Language
 
         Language* parse(char* str)
         {
-            std::istream* stream = new std::istringstream(std::string(str));
-
-            auto ast_root = lisp::Reader<lisp::ast::List>::read(*stream);
-            std::cout << *ast_root << std::endl;
-
-            lisp::Parser<lisp::ast::List>::parse(*ast_root);
-
-//			this->stack.push(addr);
-//			this->core.eval(this->stack);
-
             if(std::string(str) == "exit")
             {
                 delete this;
                 return NULL;
             }
 
+            std::istream* stream = new std::istringstream(std::string(str));
+            auto ast_root = lisp::Reader<lisp::ast::List>::read(*stream);
+            if(! ast_root->empty())
+            {
+                this->context.reset();
+                lisp::Parser<lisp::ast::List>::parse(*ast_root, this->context);
+                this->context.eval();
+            }
             return this;
         }
 
@@ -59,8 +57,7 @@ class Lisp : public Language
         }
 
     private:
-        memory::Context<page_size, align_t> const& context;
-        memory::accessors::Stack<page_size, align_t, addr_t, word_t> stack;
+        lisp::Context<page_size, align_t, addr_t, word_t> context;
 };
 
 } // namespace lang
