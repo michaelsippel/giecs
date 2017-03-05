@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <istream>
 #include <cstring>
 #include <giecs/memory/context.h>
 
@@ -91,8 +92,11 @@ class Brainfuck : public Language
         {
         }
 
-        Language* parse(char* str)
+        Language* parse(std::istream& stream)
         {
+            char str[512];
+            stream.get(str, 512);
+
             if(strcmp(str, "exit") == 0)
             {
                 delete this;

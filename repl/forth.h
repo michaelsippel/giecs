@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <istream>
 #include <string>
 #include <map>
 #include <boost/algorithm/string.hpp>
@@ -155,13 +156,13 @@ class Forth : public Language
         {
         }
 
-        Language* parse(char* str)
+        using Language::parse;
+        Language* parse(std::istream& stream)
         {
-            std::vector<std::string> lines;
-            boost::split(lines, str, boost::is_any_of(";"));
-
-            for(std::string line : lines)
+            char linebuf[512];
+            while(stream.get(linebuf, 512, ';'))
             {
+                std::string line(linebuf);
                 boost::trim(line);
                 if(line.empty())
                     continue;
