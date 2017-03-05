@@ -44,7 +44,7 @@ class Node
         }
 }; // class Node
 
-class List : public Node
+class List : public Node, public std::vector< std::shared_ptr<Node> >
 {
     public:
         List() {}
@@ -52,7 +52,7 @@ class List : public Node
         template <typename N>
         void addNode(std::shared_ptr<N> node)
         {
-            this->subnodes.push_back(node);
+            this->push_back(node);
         }
 
         template <typename N>
@@ -70,16 +70,14 @@ class List : public Node
         void print(std::ostream& stream) const final
         {
             stream << "(";
-            for(auto it = this->subnodes.begin(); it != this->subnodes.end(); ++it)
+            for(auto it = this->begin(); it != this->end(); ++it)
             {
                 stream << (*(*it));
-                if(std::next(it) != this->subnodes.end())
+                if(std::next(it) != this->end())
                     stream << " ";
             }
             stream << ")";
         }
-
-        std::vector<std::shared_ptr<Node> > subnodes;
 }; // class List
 
 template <typename T>

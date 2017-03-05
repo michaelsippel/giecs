@@ -6,6 +6,7 @@
 #include <sstream>
 #include <lisp/ast.h>
 #include <lisp/reader.h>
+#include <lisp/parser.h>
 
 #include "language.h"
 
@@ -37,6 +38,8 @@ class Lisp : public Language
 
             auto ast_root = lisp::Reader<lisp::ast::List>::read(*stream);
             std::cout << *ast_root << std::endl;
+
+            lisp::Parser<lisp::ast::List>::parse(*ast_root);
 
 //			this->stack.push(addr);
 //			this->core.eval(this->stack);

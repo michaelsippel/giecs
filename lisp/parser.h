@@ -1,84 +1,65 @@
-#ifndef _parser_h_
-#define _parser_h_
 
-#include <giecs/context.h>
-#include <lisp/reader.h>
+#pragma once
 
-class Namespace;
+#include <lisp/ast.h>
 
-struct symbol
+namespace lisp
 {
-    char* name;
-    vword_t start;
-    Namespace* ns;
-};
 
-struct parsepoint
+void parse(std::shared_ptr<ast::Node> node);
+
+template <typename T>
+struct Parser
 {
-    vword_t addr;
-    size_t reqb;
-};
+    static void parse(T const& a)
+    {
+    }
+}; // struct Parser
 
-class Namespace
+template <typename T>
+struct Parser< ast::Atom<T> >
 {
-    public:
-        Namespace(Namespace* parent);
-        ~Namespace();
+    static void parse(ast::Atom<T> const& atom)
+    {
+        std::cout << "parse atom " << atom << std::endl;
+    }
+}; // struct Parser< ast::Atom >
 
-        void add_parsepoint(vword_t addr, size_t reqb);
-        void remove_parsepoint(vword_t addr);
-        size_t get_reqb(vword_t addr);
+template <>
+struct Parser< ast::List >
+{
+    static void parse(ast::List const& list)
+    {
+        std::cout << "parse list " << list << std::endl;
+        for(auto sub : list)
+            ::lisp::parse(sub);
+    }
+}; // struct Parser< ast::List >
 
-        struct symbol* resolve_symbol(vword_t addr);
-        struct symbol* resolve_symbol(const char* name);
-        struct symbol* resolve_symbol(char* name);
+template <typename T>
+void parse_cast(std::shared_ptr<ast::Node> node)
+{
+    Parser<T>::parse(*std::static_pointer_cast<T>(node));
+}
 
-        void add_symbol(const char* name, vword_t start);
-        void add_symbol(const char* name, vword_t start, size_t reqb);
-        void add_symbol(const char* name, vword_t start, size_t reqb, Namespace* ns);
-        void add_symbol(char* name, vword_t start);
-        void add_symbol(char* name, vword_t start, size_t reqb);
-        void add_symbol(char* name, vword_t start, size_t reqb, Namespace* ns);
+void parse(std::shared_ptr<ast::Node> node)
+{
+    switch(node->getType())
+    {
+        case ast::NodeType::list:
+            parse_cast<ast::List>(node);
+            break;
 
-        void remove_symbol(vword_t addr);
-        void remove_symbol(char* name);
+        case ast::NodeType::integer:
+            parse_cast<ast::Atom<int>>(node);
+            break;
 
-    private:
-        Namespace* parent;
-        List<struct symbol*>* symbols;
-        List<struct parsepoint>* parselist;
-};
+        case ast::NodeType::symbol:
+        case ast::NodeType::string:
+            parse_cast<ast::Atom<std::string>>(node);
+            break;
+    }
+}
 
-void add_parsepoint(vword_t addr, size_t reqb);
-void remove_parsepoint(vword_t addr);
-size_t get_reqb(vword_t addr);
-
-struct symbol* resolve_symbol(vword_t addr);
-struct symbol* resolve_symbol(const char* name);
-struct symbol* resolve_symbol(char* name);
-
-void add_symbol(const char* name, vword_t start);
-void add_symbol(const char* name, vword_t start, size_t reqb);
-void add_symbol(const char* name, vword_t start, size_t reqb, Namespace* ns);
-void add_symbol(char* name, vword_t start);
-void add_symbol(char* name, vword_t start, size_t reqb);
-void add_symbol(char* name, vword_t start, size_t reqb, Namespace* ns);
-
-void remove_symbol(vword_t addr);
-void remove_symbol(char* name);
-
-
-int asm_parse(Context* context, vword_t addr, SNode* ast);
-int asm_parse_list(Context* context, vword_t addr, SNode* ast);
-
-size_t lisp_parse_size(SNode* ast);
-
-int lisp_parse(Context* context, vword_t addr, SNode* ast);
-int lisp_parse_list(Context* context, vword_t addr, SNode* ast);
-int asm_parse_symbol(Context* context, vword_t addr, SNode* ast);
-int lisp_parse_symbol(Context* context, vword_t addr, SNode* ast);
-int lisp_parse_string(Context* context, vword_t addr, SNode* ast);
-int lisp_parse_integer(Context* context, vword_t addr, SNode* ast);
-
-#endif
+} // namespace lisp
 
