@@ -162,7 +162,7 @@ class Context
             {
                 this->masters->erase(masterp);
                 BlockKey const masterkey = masterp->first;
-                if(! (masterkey.accessor_id == req_block.accessor_id))
+//                if(! (masterkey.accessor_id == req_block.accessor_id))
                 {
                     unsigned int const page_id = masterkey.page_id;
                     if(this->blocks->count({page_id}) > 1)
