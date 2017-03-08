@@ -39,10 +39,7 @@ class Lisp : public Language
             if(! ast_root->empty())
             {
                 this->context.reset();
-                this->context.push(10);
-                this->context.push(std::string("nop"));
-                size_t l = this->context.push_ast(ast_root);
-//                lisp::Parser<lisp::ast::List>::parse(*ast_root, this->context);
+                lisp::Parser<lisp::ast::List>::parse(*ast_root, this->context);
                 this->context.eval();
             }
 

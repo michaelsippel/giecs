@@ -139,6 +139,11 @@ class Context
             return addr_t(this->limit + this->def_stack.pos);
         }
 
+        void write_def(addr_t addr, val_t val)
+        {
+            this->def_stack[addr-this->limit] = val;
+        }
+
         struct List : public std::vector<val_t>
         {
             addr_t start;
@@ -162,7 +167,7 @@ class Context
         }
 
         template <typename Node>
-        size_t push_ast(Node const& node)
+        size_t push_ast(std::shared_ptr<Node> node)
         {
             return write_ast<page_size, align_t, addr_t, val_t>(node, this->def_stack);
         }

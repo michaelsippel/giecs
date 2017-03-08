@@ -5,6 +5,7 @@
 #include <giecs/memory/accessors/stack.h>
 
 #include <lisp/ast.h>
+#include <lisp/ast_write.h>
 #include <lisp/context.h>
 
 namespace lisp
@@ -38,6 +39,19 @@ struct Parser< ast::List >
     template <int page_size, typename align_t, typename addr_t, typename val_t>
     static void parse(ast::List const& list, Context<page_size, align_t, addr_t, val_t>& context)
     {
+        addr_t laddr = context.def_ptr();
+        context.push(val_t());
+
+        auto it = list.begin();
+        lisp::parse<page_size, align_t, addr_t, val_t>(*it, context);
+        ++it;
+
+        std::shared_ptr<ast::List> arglist = std::make_shared<ast::List>();
+        for(; it != list.end(); ++it)
+            arglist->push_back(*it);
+
+        size_t len = 1 + context.push_ast(arglist);
+        context.write_def(laddr, len);
     }
 }; // struct Parser< ast::List >
 
