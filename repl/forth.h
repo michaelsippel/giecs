@@ -162,6 +162,7 @@ class Forth : public Language
             char linebuf[512];
             while(stream.get(linebuf, 512, ';'))
             {
+                stream.ignore(1);
                 std::string line(linebuf);
                 boost::trim(line);
                 if(line.empty())
