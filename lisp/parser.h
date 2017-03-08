@@ -28,8 +28,7 @@ struct Parser< ast::Atom<T> >
     template <int page_size, typename align_t, typename addr_t, typename val_t>
     static void parse(ast::Atom<T> const& atom, Context<page_size, align_t, addr_t, val_t>& context)
     {
-        val_t val(atom());
-        context.push(val);
+        context.push(atom());
     }
 }; // struct Parser< ast::Atom >
 
@@ -39,10 +38,6 @@ struct Parser< ast::List >
     template <int page_size, typename align_t, typename addr_t, typename val_t>
     static void parse(ast::List const& list, Context<page_size, align_t, addr_t, val_t>& context)
     {
-        // TODO: should be reversed, but only used for definitions and then called from execution stack, so its okay ;)
-//		context.push(list.size());
-        for(auto sub : list)
-            lisp::parse<page_size, align_t, addr_t, val_t>(sub, context);
     }
 }; // struct Parser< ast::List >
 
@@ -65,10 +60,37 @@ void parse(std::shared_ptr<ast::Node> node, Context<page_size, align_t, addr_t, 
             parse_cast<ast::Atom<int>, page_size, align_t, addr_t, val_t>(node, context);
             break;
 
-        case ast::NodeType::string:
+        case ast::NodeType::symbol:
             parse_cast<ast::Atom<std::string>, page_size, align_t, addr_t, val_t>(node, context);
             break;
     }
+}
+
+template <int page_size, typename align_t, typename addr_t, typename val_t>
+void asm_parse(ast::List const& list, Context<page_size, align_t, addr_t, val_t>& context)
+{
+    auto l1 = context.create_list(list.size());
+    for(auto sub : list)
+    {
+        switch(sub->getType())
+        {
+            case ast::NodeType::list:
+                l1.push_back(context.def_ptr());
+                asm_parse(*std::static_pointer_cast<ast::List>(sub), context);
+                break;
+
+            case ast::NodeType::integer:
+                l1.push_back((*std::static_pointer_cast<ast::Atom<int>>(sub))());
+                break;
+
+            case ast::NodeType::symbol:
+                l1.push_back(context.resolve_symbol((*std::static_pointer_cast<ast::Atom<std::string>>(sub))()));
+                break;
+        }
+
+    }
+
+    context.push(l1);
 }
 
 } // namespace lisp

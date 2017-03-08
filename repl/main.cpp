@@ -40,21 +40,25 @@ int main(int argc, char** argv)
     {
         while(lang == NULL)
         {
-            std::cout << "(x) exit\n(a) Lisp\n(b) Forth\n(c) Brainfuck\n\n";
+            std::cout << "(x) exit\n(a) Lisp\n(b) Lisp ASM\n(c) Forth\n(d) Brainfuck\n\n";
 
             char c;
             std::cin >> c;
             switch(c)
             {
                 case 'a':
-                    lang = new repl::lang::Lisp<page_size, byte, iword>(context, 0x8000);
+                    lang = new repl::lang::Lisp<page_size, byte, iword>(context, 0x10000);
                     break;
 
                 case 'b':
-                    lang = new repl::lang::Forth<page_size, byte, iword>(context, 0x8000);
+                    lang = new repl::lang::LispASM<page_size, byte, iword>(context, 0x10000);
                     break;
 
                 case 'c':
+                    lang = new repl::lang::Forth<page_size, byte, iword>(context, 0x8000);
+                    break;
+
+                case 'd':
                     lang = new repl::lang::Brainfuck<page_size, byte, iword>(context, 0x8000);
                     break;
 
