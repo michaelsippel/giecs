@@ -87,7 +87,6 @@ void asm_parse(ast::List const& list, Context<page_size, align_t, addr_t, val_t>
                 l1.push_back(context.resolve_symbol((*std::static_pointer_cast<ast::Atom<std::string>>(sub))()));
                 break;
         }
-
     }
 
     context.push(l1);

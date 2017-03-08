@@ -7,6 +7,7 @@
 #include <lisp/ast.h>
 #include <lisp/reader.h>
 #include <lisp/parser.h>
+#include <lisp/ast_write.h>
 #include <lisp/context.h>
 
 #include "language.h"
@@ -38,7 +39,10 @@ class Lisp : public Language
             if(! ast_root->empty())
             {
                 this->context.reset();
-                lisp::Parser<lisp::ast::List>::parse(*ast_root, this->context);
+                this->context.push(10);
+                this->context.push(std::string("nop"));
+                size_t l = this->context.push_ast(ast_root);
+//                lisp::Parser<lisp::ast::List>::parse(*ast_root, this->context);
                 this->context.eval();
             }
 

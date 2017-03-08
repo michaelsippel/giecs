@@ -12,6 +12,8 @@
 #include <giecs/ll/io.h>
 #include <giecs/ll/system.h>
 
+#include <lisp/ast_write.h>
+
 namespace lisp
 {
 
@@ -22,10 +24,15 @@ template <int page_size, typename align_t, typename addr_t, typename val_t>
 class Context
 {
     private:
-        static void printi(giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
+        static void ll_printi(giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
         {
             giecs::ll::ConsoleIO<int>::print(stack);
             std::cout << std::endl;
+        }
+
+        static void ll_nop(giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
+        {
+            std::cout << (*read_ast<page_size, align_t, addr_t, val_t>(stack)) << std::endl;
         }
 
     public:
@@ -79,10 +86,11 @@ class Context
                 this->core.eval(stack);
             };
 
+            this->add_llfn("nop", ll_nop);
             this->add_llfn("eval", eval);
             this->add_llfn("deval", deval);
             this->add_llfn("syscall", giecs::ll::System::syscall);
-            this->add_llfn("printi", printi);
+            this->add_llfn("printi", ll_printi);
             this->add_llfn("+", giecs::ll::Arithmetic<int>::add);
             this->add_llfn("-", giecs::ll::Arithmetic<int>::sub);
             this->add_llfn("*", giecs::ll::Arithmetic<int>::mul);
@@ -151,6 +159,12 @@ class Context
                 this->def_stack[l.start] = a;
                 ++l.start;
             }
+        }
+
+        template <typename Node>
+        size_t push_ast(Node const& node)
+        {
+            return write_ast<page_size, align_t, addr_t, val_t>(node, this->def_stack);
         }
 
     private:
