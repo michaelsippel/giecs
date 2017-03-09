@@ -150,7 +150,23 @@ class Context
             std::function<void (giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)> define =
                 [this](giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
             {
-                std::cout << "Define" << std::endl;
+                auto name = read_ast<page_size, align_t, addr_t, val_t>(stack);
+                if(name->getType() != ast::NodeType::symbol)
+                {
+                    std::cout << "define: first parameter must be a symbol!" << std::endl;
+                    return;
+                }
+
+                auto def = read_ast<page_size, align_t, addr_t, val_t>(stack);
+
+                int start = this->def_stack.pos;
+                parse(def, *this);
+                stack.push(addr_t(this->limit + start));
+
+                this->reset();
+                this->core.eval(stack);
+
+                this->save_symbol((*std::static_pointer_cast<ast::Atom<std::string>>(name))());
             };
             std::function<void (giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)> peval =
                 [this](giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
