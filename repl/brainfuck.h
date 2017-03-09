@@ -80,11 +80,15 @@ class Brainfuck : public Language
             this->core.addOperation(this->ptrs[7],
                                     std::function<void (Stack&)>([this](Stack& stack)
             {
+                word_t ptr = stack.pop();
+
                 word_t a = this->mem[this->memptr];
-                if(a > word_t())
+                while(a > word_t())
+                {
+                    stack.push(ptr);
                     this->core.eval(stack);
-                else
-                    stack.move(-1);
+                    a = this->mem[this->memptr];
+                }
             }));
         }
 
