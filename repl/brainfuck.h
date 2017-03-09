@@ -51,7 +51,7 @@ class Brainfuck : public Language
                                     std::function<void (Stack&)>([this](Stack& stack)
             {
                 word_t a = this->mem[this->memptr];
-                std::cout << char(a) << std::endl;
+                std::cout << char(a);
             }));
             this->core.addOperation(this->ptrs[3],
                                     std::function<void (Stack&)>([this](Stack& stack)
@@ -92,22 +92,23 @@ class Brainfuck : public Language
         {
         }
 
-        Language* parse(std::istream& stream)
+        int parse(std::istream& stream)
         {
             char str[512];
             stream.get(str, 512);
 
             if(strcmp(str, "exit") == 0)
-            {
-                delete this;
-                return NULL;
-            }
+                return 1;
 
             this->def_stack.pos = this->def_limit;
             addr_t addr = this->parse_def(str, str+strlen(str));
             if(addr > this->limit)
             {
                 Stack stack = this->context.template createStack<addr_t, word_t>();
+
+                for(int i = 0; i < this->limit; ++i)
+                    this->mem[i] = word_t();
+
                 stack.move(this->limit + this->def_stack.pos);
                 stack << word_t(addr);
                 this->core.eval(stack);
@@ -115,7 +116,7 @@ class Brainfuck : public Language
                 std::cout << std::endl;
             }
 
-            return this;
+            return 0;
         }
 
         void name(char* buf)

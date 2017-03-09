@@ -24,8 +24,8 @@ template <int page_size, typename align_t, typename addr_t=align_t, typename wor
 class Lisp : public Language
 {
     public:
-        Lisp(memory::Context<page_size, align_t> const& context_, addr_t limit_)
-            : context(context_, limit_)
+        Lisp(memory::Context<page_size, align_t> const& context_, Core<page_size, align_t, addr_t>& core_, addr_t limit_)
+            : context(context_, core_, limit_)
         {
         }
 
@@ -33,7 +33,7 @@ class Lisp : public Language
         {
         }
 
-        Language* parse(std::istream& stream)
+        int parse(std::istream& stream)
         {
             auto ast_root = lisp::Reader<lisp::ast::List>::read(stream);
             if(! ast_root->empty())
@@ -43,7 +43,7 @@ class Lisp : public Language
                 this->context.eval();
             }
 
-            return this;
+            return 0;
         }
 
         void name(char* buf)
@@ -59,8 +59,8 @@ template <int page_size, typename align_t, typename addr_t=align_t, typename wor
 class LispASM : public Language
 {
     public:
-        LispASM(memory::Context<page_size, align_t> const& context_, addr_t limit_)
-            : context(context_, limit_)
+        LispASM(memory::Context<page_size, align_t> const& context_, Core<page_size, align_t, addr_t>& core_, addr_t limit_)
+            : context(context_, core_, limit_)
         {
         }
 
@@ -68,7 +68,7 @@ class LispASM : public Language
         {
         }
 
-        Language* parse(std::istream& stream)
+        int parse(std::istream& stream)
         {
             auto ast_root = lisp::Reader<lisp::ast::List>::read(stream);
             if(! ast_root->empty())
@@ -78,7 +78,7 @@ class LispASM : public Language
                 this->context.eval();
             }
 
-            return this;
+            return 0;
         }
 
         void name(char* buf)

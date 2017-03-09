@@ -102,8 +102,8 @@ class Context
 
 
     public:
-        Context(giecs::memory::Context<page_size, align_t> const& mem_context_, int limit_)
-            : mem_context(mem_context_),
+        Context(giecs::memory::Context<page_size, align_t> const& mem_context_, giecs::Core<page_size, align_t, addr_t>& core_, int limit_)
+            : mem_context(mem_context_), core(core_),
               limit(limit_), def_limit(0),
               stack(mem_context_.template createStack<addr_t, val_t>()),
               def_stack(giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>(mem_context_, (limit_*giecs::bitsize<val_t>())/giecs::bitsize<align_t>()))
@@ -197,14 +197,39 @@ class Context
             {
                 addr_t fn = stack.pop();
                 int len = stack.template pop<val_t>();
+
                 this->eval_param(len, stack);
                 stack.push(fn);
                 this->core.eval(stack);
             };
+            std::function<void (giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)> call =
+                [this](giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
+            {
+                auto fn = read_ast<page_size, align_t, addr_t, val_t>(stack);
+                auto len = read_ast<page_size, align_t, addr_t, val_t>(stack);
+
+                int start = this->def_stack.pos;
+                parse(fn, *this);
+                parse(len, *this);
+                int end = this->def_stack.pos;
+                int pl = end - start;
+                this->def_stack.pos = start;
+
+                val_t buf[pl];
+                this->def_stack.read(start, pl, buf);
+                stack.push(pl, buf);
+
+                stack.push(this->symbols["peval"]);
+                this->core.eval(stack);
+            };
+
+
             std::function<void (giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)> macro =
                 [this](giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
             {
                 auto ast = expand_macro(stack);
+                if(ast == nullptr)
+                    return;
 
                 int start = this->def_stack.pos;
                 parse(ast, *this);
@@ -218,6 +243,7 @@ class Context
             this->add_macro("quote", quote);
             this->add_macro("define", define);
             this->add_macro("peval", peval);
+            this->add_macro("call", call);
             this->add_macro("macro", macro);
 
             this->add_function("eval", 1, eval);
@@ -311,7 +337,7 @@ class Context
         giecs::memory::Context<page_size, align_t> const& mem_context;
         giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t> stack;
         giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t> def_stack;
-        giecs::Core<page_size, align_t, addr_t> core;
+        giecs::Core<page_size, align_t, addr_t>& core;
 
         int def_limit;
         int limit;

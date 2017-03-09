@@ -95,8 +95,8 @@ class Forth : public Language
         }
 
     public:
-        Forth(memory::Context<page_size, align_t> const& context_, int limit_)
-            : context(context_), limit(limit_),
+        Forth(memory::Context<page_size, align_t> const& context_, Core<page_size, align_t, addr_t>& core_, int limit_)
+            : context(context_), core(core_), limit(limit_),
               stack(this->context.template createStack<addr_t, word_t>()),
               def_stack(memory::accessors::Stack<page_size, align_t, addr_t, word_t>(context_, (limit_*bitsize<word_t>())/bitsize<align_t>()))
         {
@@ -157,7 +157,7 @@ class Forth : public Language
         }
 
         using Language::parse;
-        Language* parse(std::istream& stream)
+        int parse(std::istream& stream)
         {
             char linebuf[512];
             while(stream.get(linebuf, 512, ';'))
@@ -190,10 +190,7 @@ class Forth : public Language
                         continue;
 
                     if(a == "BYE")
-                    {
-                        delete this;
-                        return NULL;
-                    }
+                        return 1;
 
                     if(a == "'")
                         quote = true;
@@ -214,6 +211,8 @@ class Forth : public Language
                         tmp = this->def_stack.pos;
                         this->symbols[a] = addr_t(this->limit + tmp);
                         this->def_stack.move(llen-2 + 3);
+
+                        std::cout << "defined " << name << " as " << int(this->limit + tmp) << std::endl;
                     }
                     else if(var && i == 1)
                     {
@@ -292,7 +291,7 @@ run:
             std::cout << "ok" << std::endl;
 
 abort:
-            return this;
+            return 0;
         }
 
         void name(char* buf)
@@ -304,7 +303,7 @@ abort:
         memory::Context<page_size, align_t> const& context;
         memory::accessors::Stack<page_size, align_t, addr_t, word_t> stack;
         memory::accessors::Stack<page_size, align_t, addr_t, word_t> def_stack;
-        Core<page_size, align_t, addr_t> core;
+        Core<page_size, align_t, addr_t>& core;
         std::map<std::string, addr_t> symbols;
         int def_limit;
         int const limit;
