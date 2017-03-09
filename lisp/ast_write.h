@@ -58,6 +58,23 @@ size_t write_ast(std::shared_ptr<ast::List> list, giecs::memory::accessors::Stac
 }
 
 template <int page_size, typename align_t, typename addr_t, typename val_t>
+size_t write_ast(std::shared_ptr<ast::Node> node, giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
+{
+    switch(node->getType())
+    {
+        case ast::NodeType::list:
+            return write_ast<page_size, align_t, addr_t, val_t>(std::static_pointer_cast<ast::List>(node), stack);
+
+        case ast::NodeType::integer:
+            return write_ast<page_size, align_t, addr_t, val_t>(std::static_pointer_cast<ast::Atom<int>>(node), stack);
+
+        case ast::NodeType::symbol:
+        case ast::NodeType::string:
+            return write_ast<page_size, align_t, addr_t, val_t>(std::static_pointer_cast<ast::Atom<std::string>>(node), stack);
+    }
+}
+
+template <int page_size, typename align_t, typename addr_t, typename val_t>
 std::shared_ptr<ast::Node> read_ast(giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
 {
     ast::NodeType type = stack.pop();

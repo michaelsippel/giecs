@@ -32,7 +32,49 @@ class Context
 
         static void ll_nop(giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
         {
-            std::cout << (*read_ast<page_size, align_t, addr_t, val_t>(stack)) << std::endl;
+        }
+
+        void eval_param(int l, giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
+        {
+            int i = 0;
+            val_t buffer[l];
+
+            while(i < l)
+            {
+                auto root = read_ast<page_size, align_t, addr_t, val_t>(stack);
+
+                int start = this->def_stack.pos;
+                parse(root, *this);
+                int end = this->def_stack.pos;
+
+                int sb = stack.pos;
+
+                size_t len = end - start;
+                size_t nl = 0;
+                if(root->getType() == ast::NodeType::list)
+                {
+                    val_t buf[len];
+                    this->def_stack.read(addr_t(start), len, buf);
+
+                    stack.push(len, buf);
+                    stack.pop();
+                    this->core.eval(stack);
+
+                    nl = stack.pos - sb;
+                    stack.read(addr_t(sb), nl, &buffer[i]);
+                }
+                else
+                {
+                    this->def_stack.read(addr_t(start), len, &buffer[i]);
+                    nl = len;
+                }
+
+                stack.pos = sb;
+                this->def_stack.pos = start;
+                i += nl;
+            }
+
+            stack.push(l, buffer);
         }
 
     public:
@@ -85,22 +127,46 @@ class Context
 
                 this->core.eval(stack);
             };
+            std::function<void (giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)> quote =
+                [this](giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
+            {
+                auto root = read_ast<page_size, align_t, addr_t, val_t>(stack);
+                std::cout << "quote " << *root << std::endl;
+            };
+            std::function<void (giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)> define =
+                [this](giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
+            {
+                std::cout << "Define" << std::endl;
+            };
+            std::function<void (giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)> peval =
+                [this](giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
+            {
+                addr_t fn = stack.pop();
+                int len = stack.template pop<val_t>();
+                this->eval_param(len, stack);
+                stack.push(fn);
+                this->core.eval(stack);
+            };
 
-            this->add_llfn("nop", ll_nop);
-            this->add_llfn("eval", eval);
-            this->add_llfn("deval", deval);
-            this->add_llfn("syscall", giecs::ll::System::syscall);
-            this->add_llfn("printi", ll_printi);
-            this->add_llfn("+", giecs::ll::Arithmetic<int>::add);
-            this->add_llfn("-", giecs::ll::Arithmetic<int>::sub);
-            this->add_llfn("*", giecs::ll::Arithmetic<int>::mul);
-            this->add_llfn("/", giecs::ll::Arithmetic<int>::div);
-            this->add_llfn("=", giecs::ll::Arithmetic<int>::eq);
-            this->add_llfn("!=", giecs::ll::Arithmetic<int>::neq);
-            this->add_llfn(">", giecs::ll::Arithmetic<int>::gt);
-            this->add_llfn(">=", giecs::ll::Arithmetic<int>::get);
-            this->add_llfn("<", giecs::ll::Arithmetic<int>::lt);
-            this->add_llfn("<=", giecs::ll::Arithmetic<int>::let);
+            this->add_macro("nop", ll_nop);
+            this->add_macro("quote", quote);
+            this->add_macro("define", define);
+            this->add_macro("peval", peval);
+
+            this->add_function("eval", 1, eval);
+            this->add_function("deval", 2, deval);
+            this->add_function("syscall", 6, giecs::ll::System::syscall);
+            this->add_function("printi", 1, ll_printi);
+            this->add_function("+", 2, giecs::ll::Arithmetic<int>::add);
+            this->add_function("-", 2, giecs::ll::Arithmetic<int>::sub);
+            this->add_function("*", 2, giecs::ll::Arithmetic<int>::mul);
+            this->add_function("/", 2, giecs::ll::Arithmetic<int>::div);
+            this->add_function("=", 2, giecs::ll::Arithmetic<int>::eq);
+            this->add_function("!=", 2, giecs::ll::Arithmetic<int>::neq);
+            this->add_function(">", 2, giecs::ll::Arithmetic<int>::gt);
+            this->add_function(">=", 2, giecs::ll::Arithmetic<int>::get);
+            this->add_function("<", 2, giecs::ll::Arithmetic<int>::lt);
+            this->add_function("<=", 2, giecs::ll::Arithmetic<int>::let);
         }
 
         void reset(void)
@@ -190,18 +256,38 @@ class Context
             std::cout << "saved " << name << " as " << int(this->symbols[name]) << std::endl;
         }
 
-        void add_llfn(std::string name, void (*fn)(giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack))
+        void add_macro(std::string name, void (*fn)(giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack))
         {
-            this->add_llfn(name, std::function<void (giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)>(fn));
+            this->add_macro(name, std::function<void (giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)>(fn));
         }
 
-        void add_llfn(std::string name, std::function<void (giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)> fn)
+        void add_macro(std::string name, std::function<void (giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)> fn)
         {
             this->core.template addOperation<val_t>(this->def_ptr(), fn);
             this->def_stack.move(1);
+            this->save_symbol(name);
+        }
+
+        void add_function(std::string name, int l, void (*fn)(giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack))
+        {
+            this->add_function(name, l, std::function<void (giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)>(fn));
+        }
+
+        void add_function(std::string name, int l, std::function<void (giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)> fn)
+        {
+            this->core.template addOperation<val_t>(this->def_ptr(), fn);
+            addr_t addr = this->def_ptr();
+            this->def_stack.move(1);
+            this->def_limit = this->def_stack.pos;
+
+            this->push(3);
+            this->push(std::string("peval"));
+            this->push(addr);
+            this->push(l);
 
             this->save_symbol(name);
         }
+
 }; // class Context
 
 } // namespace lisp

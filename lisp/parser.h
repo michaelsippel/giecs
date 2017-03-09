@@ -46,11 +46,10 @@ struct Parser< ast::List >
         lisp::parse<page_size, align_t, addr_t, val_t>(*it, context);
         ++it;
 
-        std::shared_ptr<ast::List> arglist = std::make_shared<ast::List>();
+        size_t len = 1;
         for(; it != list.end(); ++it)
-            arglist->push_back(*it);
+            len += context.push_ast(*it);
 
-        size_t len = 1 + context.push_ast(arglist);
         context.write_def(laddr, len);
     }
 }; // struct Parser< ast::List >
