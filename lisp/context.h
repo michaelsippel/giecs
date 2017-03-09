@@ -131,7 +131,21 @@ class Context
                 [this](giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
             {
                 auto root = read_ast<page_size, align_t, addr_t, val_t>(stack);
-                std::cout << "quote " << *root << std::endl;
+
+                int start = this->def_stack.pos;
+                parse(root, *this);
+                int end = this->def_stack.pos;
+
+                if(root->getType() != ast::NodeType::list)
+                {
+                    int len = end - start;
+                    val_t buf[len];
+                    this->def_stack.read(addr_t(start), len, buf);
+                    stack.push(len, buf);
+                    this->def_stack.pos = start;
+                }
+                else
+                    stack.push(addr_t(this->limit + start));
             };
             std::function<void (giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)> define =
                 [this](giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
