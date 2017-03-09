@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <memory>
 
 #include <cstdlib>
 #include <cstddef>
@@ -26,8 +27,10 @@ int main(int argc, char** argv)
     typedef Bits<word_width> word;
     typedef Int<word_width> iword;
     auto const context = memory::Context<page_size, byte>();
+    auto core = Core<page_size, byte, iword>();
 
-    repl::Language* lang = NULL;
+    std::shared_ptr<repl::Language> lang = nullptr;
+    std::shared_ptr<repl::Language> store = nullptr;
 
     // Read-Eval-Print-Loop
     linenoiseHistoryLoad("history.txt");
@@ -38,24 +41,28 @@ int main(int argc, char** argv)
     bool running = true;
     while(running)
     {
-        while(lang == NULL)
+        while(lang == nullptr)
         {
-            std::cout << "(x) exit\n(a) Lisp\n(b) Forth\n(c) Brainfuck\n\n";
+            std::cout << "(x) exit\n(a) Lisp\n(b) Lisp ASM\n(c) Forth\n(d) Brainfuck\n\n";
 
             char c;
             std::cin >> c;
             switch(c)
             {
                 case 'a':
-                    lang = new repl::lang::Lisp<page_size, byte>(context);
+                    lang = std::make_shared<repl::lang::Lisp<page_size, byte, iword>>(context, core, 0x10000);
                     break;
 
                 case 'b':
-                    lang = new repl::lang::Forth<page_size, byte, iword>(context, 0x8000);
+                    lang = std::make_shared<repl::lang::LispASM<page_size, byte, iword>>(context, core, 0x10000);
                     break;
 
                 case 'c':
-                    lang = new repl::lang::Brainfuck<page_size, byte, iword>(context, 0x8000);
+                    lang = std::make_shared<repl::lang::Forth<page_size, byte, iword>>(context, core, 0x8000);
+                    break;
+
+                case 'd':
+                    lang = std::make_shared<repl::lang::Brainfuck<page_size, byte, iword>>(context, 0x8000);
                     break;
 
                 case 'x':
@@ -71,7 +78,11 @@ int main(int argc, char** argv)
 
         if((line = linenoise(name)) != NULL)
         {
-            lang = lang->parse(line);
+            if(lang->parse(line) != 0)
+            {
+                store = lang;
+                lang = nullptr;
+            }
 
             if(line[0] != '\0')
             {
