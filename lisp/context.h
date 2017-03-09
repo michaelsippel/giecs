@@ -77,6 +77,30 @@ class Context
             stack.push(l, buffer);
         }
 
+        static std::shared_ptr<ast::Node> expand_macro(giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
+        {
+            auto plist = read_ast<page_size, align_t, addr_t, val_t>(stack);
+            if(plist->getType() != ast::NodeType::list)
+            {
+                std::cout << "macro: first parameter must be a list!" << std::endl;
+                return nullptr;
+            }
+
+            auto def = read_ast<page_size, align_t, addr_t, val_t>(stack);
+            if(def->getType() == ast::NodeType::list)
+            {
+                auto list = std::static_pointer_cast<ast::List>(def);
+                for(auto p : *std::static_pointer_cast<ast::List>(plist))
+                {
+                    auto node = read_ast<page_size, align_t, addr_t, val_t>(stack);
+                    list->replace_symbol((*std::static_pointer_cast<ast::Atom<std::string>>(p))(), node);
+                }
+            }
+
+            return def;
+        };
+
+
     public:
         Context(giecs::memory::Context<page_size, align_t> const& mem_context_, int limit_)
             : mem_context(mem_context_),
@@ -177,11 +201,24 @@ class Context
                 stack.push(fn);
                 this->core.eval(stack);
             };
+            std::function<void (giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)> macro =
+                [this](giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
+            {
+                auto ast = expand_macro(stack);
+
+                int start = this->def_stack.pos;
+                parse(ast, *this);
+                stack.push(addr_t(this->limit + start));
+
+                this->reset();
+                this->core.eval(stack);
+            };
 
             this->add_macro("nop", ll_nop);
             this->add_macro("quote", quote);
             this->add_macro("define", define);
             this->add_macro("peval", peval);
+            this->add_macro("macro", macro);
 
             this->add_function("eval", 1, eval);
             this->add_function("deval", 2, deval);
@@ -197,6 +234,7 @@ class Context
             this->add_function(">=", 2, giecs::ll::Arithmetic<int>::get);
             this->add_function("<", 2, giecs::ll::Arithmetic<int>::lt);
             this->add_function("<=", 2, giecs::ll::Arithmetic<int>::let);
+            this->add_function("vif", 3, giecs::ll::cond);
         }
 
         void reset(void)
@@ -283,7 +321,7 @@ class Context
             this->symbols[name] = this->limit + this->def_limit;
             this->def_limit = this->def_stack.pos;
 
-            std::cout << "saved " << name << " as " << int(this->symbols[name]) << std::endl;
+            std::cout << "defined " << name << " as " << int(this->symbols[name]) << std::endl;
         }
 
         void add_macro(std::string name, void (*fn)(giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack))
