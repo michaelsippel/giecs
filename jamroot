@@ -9,7 +9,7 @@ actions style
 	astyle --style=allman --indent-classes --indent-switches $(>)
 }
 
-make style : [ glob-tree *.cpp ] [ glob-tree *.h ] : @style ;
+make style : [ glob-tree *.cpp ] [ glob-tree *.h ] [ glob-tree *.hpp ] : @style ;
 
 use-project /giecs : giecs ;
 
