@@ -4,6 +4,8 @@ path-constant TOP : . ;
 path-constant BOOST_ROOT : [ os.environ BOOST_ROOT ] ;
 use-project /boost : $(BOOST_ROOT) ;
 
+using gcc : : g++ -fdiagnostics-color=always ;
+
 actions style
 {
 	astyle --style=allman --indent-classes --indent-switches $(>)
