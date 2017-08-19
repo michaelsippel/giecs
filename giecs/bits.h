@@ -1,5 +1,8 @@
 #pragma once
 
+#pragma GCC diagnostic ignored "-Wshift-count-overflow"
+#pragma GCC diagnostic ignored "-Woverflow"
+
 #include <array>
 #include <cstdint>
 #include <boost/preprocessor/repetition/repeat.hpp>
