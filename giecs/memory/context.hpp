@@ -9,8 +9,8 @@
 #include <boost/unordered_map.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include <giecs/bits.h>
-#include <giecs/memory/block.h>
+#include <giecs/bits.hpp>
+#include <giecs/memory/block.hpp>
 
 namespace giecs
 {

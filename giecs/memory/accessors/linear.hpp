@@ -5,9 +5,9 @@
 #include <boost/type_index.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include <giecs/memory/accessor.h>
+#include <giecs/memory/accessor.hpp>
 #include <giecs/memory/reference.hpp>
-#include <giecs/bits.h>
+#include <giecs/bits.hpp>
 
 namespace giecs
 {

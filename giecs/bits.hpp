@@ -8,7 +8,7 @@
 #include <boost/preprocessor/repetition/repeat.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
 
-#include <giecs/memory/block.h>
+#include <giecs/memory/block.hpp>
 
 namespace giecs
 {

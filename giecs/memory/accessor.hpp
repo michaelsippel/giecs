@@ -3,8 +3,8 @@
 
 #include <cstddef>
 
-#include <giecs/memory/context.h>
-#include <giecs/memory/block.h>
+#include <giecs/memory/context.hpp>
+#include <giecs/memory/block.hpp>
 
 namespace giecs
 {
