@@ -37,8 +37,6 @@ struct BlockKey
     unsigned int block_id;
     AccessorId accessor_id;
 
-    std::pair<int, int> page_range;
-
     bool operator==(BlockKey const& b) const
     {
         return (this->page_id == b.page_id &&
@@ -70,7 +68,7 @@ class ContextSync
         typedef std::pair< BlockKey const, BlockPtr const > BlockRef;
 
         virtual void read_page_block(BlockRef const b, std::array<align_t, page_size>& buf) const {}
-        virtual void write_page_block(BlockRef const b, std::array<align_t, page_size> const& buf, std::pair<int,int> range) const {}
+        virtual void write_page_block(BlockRef const b, std::array<align_t, page_size> const& buf) const {}
 
         inline void read_page(unsigned int const page_id, std::array<align_t, page_size>& buf) const
         {
@@ -78,10 +76,10 @@ class ContextSync
                 this->read_page_block(b, buf);
         }
 
-        inline void write_page(unsigned int const page_id, std::array<align_t, page_size> const& buf, std::pair<int, int> range) const
+        inline void write_page(unsigned int const page_id, std::array<align_t, page_size> const& buf) const
         {
             for(BlockRef b : this->context.getPageRange({page_id, 0, this->accessor_id}))
-                this->write_page_block(b, buf, range);
+                this->write_page_block(b, buf);
         }
 
     protected:
@@ -104,8 +102,8 @@ class Block
             free(this->ptr);
         }
 
-        virtual void read(int i, size_t const end, std::array<align_t, page_size>& buf, int off, int bitoff) const {}
-        virtual void write(int i, size_t const end, std::array<align_t, page_size> const& buf, int off, int bitoff, std::pair<int, int> range) const {}
+        virtual void read(int i, size_t const end, std::array<align_t, page_size>& buf, int off) const {}
+        virtual void write(int i, size_t const end, std::array<align_t, page_size> const& buf, int off) const {}
 
         inline ContextSync<page_size, align_t>* getSync(Context<page_size, align_t> const& context) const
         {
@@ -128,14 +126,14 @@ class TypeBlock : public Block<page_size, align_t>
         {
         }
 
-        void read(int i, size_t const end, std::array<align_t, page_size>& buf, int off, int bitoff) const final
+        void read(int i, size_t const end, std::array<align_t, page_size>& buf, int off) const final
         {
-            read_block(*this, i, end, buf, off, bitoff);
+            read_block(*this, i, end, buf, off);
         }
 
-        void write(int i, size_t const end, std::array<align_t, page_size> const& buf, int off, int bitoff, std::pair<int, int> range) const final
+        void write(int i, size_t const end, std::array<align_t, page_size> const& buf, int off) const final
         {
-            write_block(*this, i, end, buf, off, bitoff, range);
+            write_block(*this, i, end, buf, off);
         }
 
         inline int numElements(void) const
