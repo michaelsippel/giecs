@@ -4,7 +4,11 @@ path-constant TOP : . ;
 path-constant BOOST_ROOT : [ os.environ BOOST_ROOT ] ;
 use-project /boost : $(BOOST_ROOT) ;
 
-using gcc : : g++ -fdiagnostics-color=always ;
+import feature ;
+feature.feature color : always off : composite propagated ;
+feature.compose <color>always :
+  <cxxflags>"-fdiagnostics-color=always" ;
+feature.compose <color>off : ;
 
 actions style
 {
