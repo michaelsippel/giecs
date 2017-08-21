@@ -4,7 +4,7 @@
 #include <giecs/types.hpp>
 #include <giecs/memory/context.hpp>
 #include <giecs/memory/accessors/stack.hpp>
-/*#include <giecs/core.h>
+#include <giecs/core.hpp>
 
 BOOST_AUTO_TEST_SUITE(core);
 
@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE(eval)
     stack[334] = 1;   // addr of addi
     stack[335] = 10;  // 10
 
-    for(iword a = 0; a < 10000; ++a)
+    for(iword a = 0; a < 1; ++a)
     {
         stack << word(a);
         stack << word(333);
@@ -48,4 +48,4 @@ BOOST_AUTO_TEST_CASE(eval)
 }
 
 BOOST_AUTO_TEST_SUITE_END();
-*/
+

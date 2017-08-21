@@ -53,29 +53,29 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
             // TODO: fix possible integer overflow
             return (nalign < 1) ? 0 : ((ref.page_id * page_size + ref.offset) % nalign);
         }
-        inline unsigned int alignShift() const
+        inline int alignShift() const
         {
             return alignShift(this->reference);
         }
 
         inline index_t valueIndex(addr_t const addr) const
         {
-            return index_t((valueOffset(this->reference.page_id*page_size+this->reference.offset - this->alignShift()) + (unsigned int)addr) % block_size);
+            return index_t((valueOffset(this->reference.page_id*page_size+this->reference.offset - this->alignShift()) + int(addr)) % block_size);
         }
         inline unsigned int pageIndex(addr_t const addr) const
         {
-            return this->reference.page_id + (this->reference.offset + alignOffset((unsigned int) addr)) / page_size;
+            return (this->reference.page_id*page_size+this->reference.offset + alignOffset(int(addr))) / page_size;
         }
         inline unsigned int blockIndex(addr_t const addr) const
         {
-            return blockOffset(valueOffset(this->reference.page_id*page_size+this->reference.offset - this->alignShift()) + (unsigned int)addr);
+            return blockOffset(valueOffset(this->reference.page_id*page_size+this->reference.offset - this->alignShift()) + int(addr));
         }
 
         using typename ContextSync<page_size, align_t>::BlockPtr;
         using typename ContextSync<page_size, align_t>::BlockRef;
         typedef boost::shared_ptr<TypeBlock<page_size, align_t, val_t> const> TypeBlockPtr;
 
-        static inline Reference offsetReference(Reference const& ref, int const offset)
+        static inline Reference offsetReference(Reference const ref, int const offset)
         {
             unsigned int const a = ref.offset + offset;
             return Reference({ref.page_id + a/page_size, a % page_size});
@@ -95,14 +95,18 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
             : Linear(l.context, offsetReference(l.reference,offset))
         {}
 
+        template <typename addr2_t, typename val2_t, typename buf2_t, typename index2_t>
+        Linear(Linear<page_size, align_t, addr2_t, val2_t, buf2_t, index2_t> const& l, Reference const ref)
+            : Linear(l.context, ref)
+        {}
+
 #undef TYPEID
 #undef ID_F
 #undef ID
 
-        size_t operate(addr_t const oaddr, index_t const len, std::function<void (val_t&)> const operation, bool dirty) const
+        index_t operate(addr_t addr, index_t const len, std::function<void (val_t&)> const operation, bool dirty) const
         {
-            size_t l;
-            addr_t addr = oaddr;
+            index_t l;
             if(operation)
             {
                 addr_t const end = addr + len;
@@ -126,7 +130,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
         using Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::read;
         using Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::write;
 
-        index_t read(addr_t const addr, index_t const len, buf_t buf) const final
+        index_t read(addr_t addr, index_t const len, buf_t buf) const final
         {
             std::function<void (val_t&)> const operation = [&buf](val_t& v)
             {
@@ -136,7 +140,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
             return this->operate(addr, len, operation, false);
         }
 
-        index_t write(addr_t const addr, index_t const len, buf_t buf) const final
+        index_t write(addr_t addr, index_t const len, buf_t buf) const final
         {
             std::function<void (val_t&)> const operation = [&buf](val_t& v)
             {
@@ -176,8 +180,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
             unsigned int last_page_id = 0;
             for(int i = 0; i < this->alignOffset(block_size); ++i)
             {
-                unsigned int const page_id = this->reference.page_id + (this->reference.offset + this->alignOffset(block_id*block_size) + i) / page_size;
-
+                unsigned int const page_id = (this->alignShift() + this->alignOffset(block_id*block_size) + i) / page_size;
                 if(page_id != last_page_id || i == 0)
                 {
                     keys.push_back({page_id, block_id, this->accessor_id});

@@ -21,46 +21,49 @@ class Stack : public Linear<page_size, align_t, addr_t, val_t, val_t*, int>
         template <size_t, typename, typename, typename> friend class Stack;
 
     public:
-        Stack(Context<page_size, align_t> const& context_, Reference const ref_= {0,0}, int const pos_=0)
+        Stack(Context<page_size, align_t> const& context_, Reference ref_= {0,0}, int pos_=0)
             : Linear<page_size, align_t, addr_t, val_t, val_t*, int>::Linear(context_, ref_), pos(pos_)
         {}
 
         template <typename val2_t>
-        Stack(Stack<page_size, align_t, addr_t, val2_t> const& s, int const offset=0, int const pos_=0)
+        Stack(Stack<page_size, align_t, addr_t, val2_t> const& s, int offset=0, int pos_=0)
             : Linear<page_size, align_t, addr_t, val_t, val_t*, int>::Linear(s, s.alignOffset(s.pos)+offset), pos(pos_)
         {}
 
-        void move(int const off)
+        template <typename val2_t=val_t>
+        void move(int off)
         {
-            this->pos += off;
+#define SIGN ((off>0)-(off<0))
+            int vo = this->valueOffset(Stack<page_size, align_t, addr_t, val2_t>::alignOffset(off-SIGN))+SIGN;
+            this->pos += vo;
         }
 
-        void push(int const n, val_t const* const v)
+        void push(int n, val_t const* v)
         {
             for(int i=n-1; i >= 0; --i)
                 this->write(this->pos++, v[i]);
         }
 
-        void pop(int const n, val_t* const v)
+        void pop(int n, val_t* v)
         {
             for(int i=0; i < n; ++i)
                 v[i] = this->read(--this->pos);
         }
 
         template <typename val2_t>
-        void push(int const n, val2_t const* const v)
+        void push(int n, val2_t const* v)
         {
             auto s = Stack<page_size, align_t, addr_t, val2_t>(*this);
             s.push(n, v);
-            this->move(1+this->valueOffset(s.alignOffset(n)-1));
+            this->move<val2_t>(n);
         }
 
         template <typename val2_t>
-        void pop(int const n, val2_t* v)
+        void pop(int n, val2_t* v)
         {
             auto s = Stack<page_size, align_t, addr_t, val2_t>(*this);
             s.pop(n, v);
-            this->move(-1-this->valueOffset(s.alignOffset(n)-1));
+            this->move<val2_t>(-n);
         }
 
         template <typename val2_t=val_t>

@@ -2,11 +2,10 @@
 #pragma once
 
 #include <cassert>
-#include <iostream>
 #include <functional>
 #include <boost/unordered_map.hpp>
 
-#include <giecs/memory/accessors/stack.h>
+#include <giecs/memory/accessors/stack.hpp>
 
 namespace giecs
 {
@@ -26,10 +25,8 @@ class Core
             void operator()(Stack<val_t>& stack) const
             {
                 Stack<align_t> s = Stack<align_t>(stack);
-                int off = s.pos;
                 (*this)(s);
-                off = s.pos - off;
-                stack.move(off * bitsize<align_t>() / bitsize<val_t>());
+                stack.template move<align_t>(s.pos);
             }
         };
 
@@ -44,10 +41,8 @@ class Core
             void operator()(Stack<align_t>& stack) const
             {
                 Stack<val_t> s = Stack<val_t>(stack);
-                int off = s.pos;
                 this->fn(s);
-                off = s.pos - off;
-                stack.move(off * bitsize<val_t>() / bitsize<align_t>());
+                stack.template move<val_t>(s.pos);
             }
 
             std::function<void (Stack<val_t>&)> fn;
@@ -61,7 +56,6 @@ class Core
         ~Core()
         {
         }
-
 
         template <typename val_t>
         void addOperation(addr_t const id, void (*fn)(Stack<val_t>&))
@@ -83,10 +77,10 @@ class Core
             auto const it = this->operations.find(addr);
             if(it == this->operations.end())
             {
-                // TODO: make absolute addresses easier
-                memory::accessors::Linear<page_size, align_t, addr_t, val_t> abs = memory::accessors::Linear<page_size, align_t, addr_t, val_t>(stack, -stack.getOffset());
+                memory::accessors::Linear<page_size, align_t, addr_t, val_t> abs = memory::accessors::Linear<page_size, align_t, addr_t, val_t>(stack, {0,0});
                 size_t len = abs.read(addr);
                 assert(len > 0);
+
                 val_t* buf = (val_t*) malloc(len * sizeof(val_t));
 
                 abs.read(++addr, len, buf);

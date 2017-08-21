@@ -20,11 +20,11 @@ class Accessor : public ContextSync<page_size, align_t>
         {
         }
 
-        virtual index_t read(addr_t const addr, index_t const len, buf_t buf) const
+        virtual index_t read(addr_t addr, index_t const len, buf_t buf) const
         {
             return index_t();
         }
-        virtual index_t write(addr_t const addr, index_t const len, buf_t buf) const
+        virtual index_t write(addr_t addr, index_t const len, buf_t buf) const
         {
             return index_t();
         }
