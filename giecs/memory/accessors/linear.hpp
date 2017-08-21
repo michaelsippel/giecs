@@ -21,7 +21,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
 {
         template <size_t, typename, typename, typename, typename, typename> friend class Linear;
 
-    private:
+    protected:
         static size_t const block_size = 512; // 32bit/val -> 2 MiB.  // TODO: more dynamic
         static int const nalign = (bitsize<val_t>() > bitsize<align_t>()) ?
                                   (1+int(bitsize<val_t>()-1)/int(bitsize<align_t>())) :  // positive: number of align-blocks per value
@@ -75,24 +75,24 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
         using typename ContextSync<page_size, align_t>::BlockRef;
         typedef boost::shared_ptr<TypeBlock<page_size, align_t, val_t> const> TypeBlockPtr;
 
+        static inline Reference offsetReference(Reference const& ref, int const offset)
+        {
+            unsigned int const a = ref.offset + offset;
+            return Reference({ref.page_id + a/page_size, a % page_size});
+        }
+
     public:
 #define TYPEID boost::typeindex::type_id< Linear<page_size, align_t, addr_t, val_t, buf_t, index_t> >()
 #define ID_F(flags) {TYPEID, size_t( flags )}
-#define ID(ref) ID_F( this->alignShift(ref) )
+#define ID(ref) ID_F( alignShift(ref) )
 
-
-        Linear(Context<page_size, align_t> const& context_)
-            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(context_, ID(0))
+        Linear(Context<page_size, align_t> const& context_, Reference const ref_= {})
+            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(context_, ID(ref_)), reference(ref_)
         {}
 
-        Linear(Context<page_size, align_t> const& context_, Reference ref_)
-            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(context_, ID(ref_)), reference(ref_)
-        {
-        }
-
         template <typename addr2_t, typename val2_t, typename buf2_t, typename index2_t>
-        Linear(Linear<page_size, align_t, addr2_t, val2_t, buf2_t, index2_t> const& l)
-            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(l.context, ID(l.reference)), reference(l.reference)
+        Linear(Linear<page_size, align_t, addr2_t, val2_t, buf2_t, index2_t> const& l, int const offset=0)
+            : Linear(l.context, offsetReference(l.reference,offset))
         {}
 
 #undef TYPEID
@@ -167,7 +167,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
         }
 
     private:
-        Reference reference;
+        Reference const reference;
 
         // TODO: optimize?
         std::vector<BlockKey> blockKeys(unsigned int const block_id) const
