@@ -1,10 +1,10 @@
 #include <boost/test/unit_test.hpp>
 
-#include <giecs/bits.h>
-#include <giecs/types.h>
-#include <giecs/memory/context.h>
-#include <giecs/memory/accessors/stack.h>
-#include <giecs/core.h>
+#include <giecs/bits.hpp>
+#include <giecs/types.hpp>
+#include <giecs/memory/context.hpp>
+#include <giecs/memory/accessors/stack.hpp>
+/*#include <giecs/core.h>
 
 BOOST_AUTO_TEST_SUITE(core);
 
@@ -48,4 +48,4 @@ BOOST_AUTO_TEST_CASE(eval)
 }
 
 BOOST_AUTO_TEST_SUITE_END();
-
+*/
