@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <giecs/memory/accessors/stack.h>
+#include <giecs/memory/accessors/stack.hpp>
 
 namespace giecs
 {

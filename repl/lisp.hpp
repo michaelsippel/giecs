@@ -3,14 +3,14 @@
 
 #include <istream>
 
-#include <giecs/memory/context.h>
-#include <lisp/ast.h>
-#include <lisp/reader.h>
-#include <lisp/parser.h>
-#include <lisp/ast_write.h>
-#include <lisp/context.h>
+#include <giecs/memory/context.hpp>
+#include <lisp/ast.hpp>
+#include <lisp/reader.hpp>
+#include <lisp/parser.hpp>
+#include <lisp/ast_write.hpp>
+#include <lisp/context.hpp>
 
-#include "language.h"
+#include "language.hpp"
 
 using namespace giecs;
 

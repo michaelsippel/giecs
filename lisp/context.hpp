@@ -5,14 +5,14 @@
 #include <functional>
 #include <unordered_map>
 
-#include <giecs/memory/context.h>
-#include <giecs/memory/accessors/stack.h>
-#include <giecs/core.h>
-#include <giecs/ll/arithmetic.h>
-#include <giecs/ll/io.h>
-#include <giecs/ll/system.h>
+#include <giecs/memory/context.hpp>
+#include <giecs/memory/accessors/stack.hpp>
+#include <giecs/core.hpp>
+#include <giecs/ll/arithmetic.hpp>
+#include <giecs/ll/io.hpp>
+#include <giecs/ll/system.hpp>
 
-#include <lisp/ast_write.h>
+#include <lisp/ast_write.hpp>
 
 namespace lisp
 {
