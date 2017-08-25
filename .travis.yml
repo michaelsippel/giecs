@@ -31,5 +31,5 @@ install:
     fi
 
 script:
-  - b2 test
+  - b2 test color=off
 

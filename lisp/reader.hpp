@@ -4,9 +4,9 @@
 #include <vector>
 #include <string>
 #include <istream>
-#include "substreambuf.h"
+#include "substreambuf.hpp"
 
-#include <lisp/ast.h>
+#include <lisp/ast.hpp>
 
 namespace lisp
 {

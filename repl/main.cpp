@@ -6,14 +6,14 @@
 #include <cstddef>
 #include "linenoise/linenoise.h"
 
-#include <giecs/bits.h>
-#include <giecs/types.h>
-#include <giecs/memory/context.h>
+#include <giecs/bits.hpp>
+#include <giecs/types.hpp>
+#include <giecs/memory/context.hpp>
 
-#include "language.h"
-#include "forth.h"
-#include "lisp.h"
-#include "brainfuck.h"
+#include "language.hpp"
+#include "forth.hpp"
+#include "lisp.hpp"
+#include "brainfuck.hpp"
 
 using namespace giecs;
 

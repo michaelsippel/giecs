@@ -2,7 +2,7 @@
 #include <boost/mpl/list.hpp>
 #include <cstdint>
 
-#include <giecs/bits.h>
+#include <giecs/bits.hpp>
 
 BOOST_AUTO_TEST_SUITE(bits);
 

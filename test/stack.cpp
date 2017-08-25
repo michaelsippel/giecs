@@ -3,11 +3,10 @@
 #include <boost/range/adaptor/reversed.hpp>
 #include <array>
 
-#include <giecs/bits.h>
-#include <giecs/types.h>
-#include <giecs/memory/context.h>
-#include <giecs/memory/accessors/stack.h>
-#include <giecs/core.h>
+#include <giecs/bits.hpp>
+#include <giecs/types.hpp>
+#include <giecs/memory/context.hpp>
+#include <giecs/memory/accessors/stack.hpp>
 
 BOOST_AUTO_TEST_SUITE(stack);
 

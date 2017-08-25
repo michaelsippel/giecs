@@ -5,14 +5,14 @@
 #include <functional>
 #include <unordered_map>
 
-#include <giecs/memory/context.h>
-#include <giecs/memory/accessors/stack.h>
-#include <giecs/core.h>
-#include <giecs/ll/arithmetic.h>
-#include <giecs/ll/io.h>
-#include <giecs/ll/system.h>
+#include <giecs/memory/context.hpp>
+#include <giecs/memory/accessors/stack.hpp>
+#include <giecs/core.hpp>
+#include <giecs/ll/arithmetic.hpp>
+#include <giecs/ll/io.hpp>
+#include <giecs/ll/system.hpp>
 
-#include <lisp/ast_write.h>
+#include <lisp/ast_write.hpp>
 
 namespace lisp
 {
@@ -106,7 +106,10 @@ class Context
             : mem_context(mem_context_), core(core_),
               limit(limit_), def_limit(0),
               stack(mem_context_.template createStack<addr_t, val_t>()),
-              def_stack(giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>(mem_context_, (limit_*giecs::bitsize<val_t>())/giecs::bitsize<align_t>()))
+              def_stack(giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>(mem_context_,
+        {
+            0,0
+        }, limit_))
         {
             std::function<void (giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)> eval =
                 [this](giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
@@ -169,7 +172,7 @@ class Context
                     this->def_stack.pos = start;
                 }
                 else
-                    stack.push(addr_t(this->limit + start));
+                    stack.push(addr_t(start));
             };
             std::function<void (giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)> define =
                 [this](giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
@@ -185,7 +188,7 @@ class Context
 
                 int start = this->def_stack.pos;
                 parse(def, *this);
-                stack.push(addr_t(this->limit + start));
+                stack.push(addr_t(start));
 
                 this->reset();
                 this->core.eval(stack);
@@ -233,7 +236,7 @@ class Context
 
                 int start = this->def_stack.pos;
                 parse(ast, *this);
-                stack.push(addr_t(this->limit + start));
+                stack.push(addr_t(start));
 
                 this->reset();
                 this->core.eval(stack);
@@ -270,7 +273,7 @@ class Context
 
         void eval(void)
         {
-            this->stack.push(addr_t(this->limit + this->def_limit)); // startig address of last definition
+            this->stack.push(addr_t(this->def_limit)); // startig address of last definition
             this->core.eval(this->stack);
         }
 
@@ -296,12 +299,12 @@ class Context
 
         addr_t def_ptr(void) const
         {
-            return addr_t(this->limit + this->def_stack.pos);
+            return addr_t(this->def_stack.pos);
         }
 
         void write_def(addr_t addr, val_t val)
         {
-            this->def_stack[addr-this->limit] = val;
+            this->def_stack[addr] = val;
         }
 
         struct List : public std::vector<val_t>
@@ -344,7 +347,7 @@ class Context
 
         void save_symbol(std::string name)
         {
-            this->symbols[name] = this->limit + this->def_limit;
+            this->symbols[name] = this->def_limit;
             this->def_limit = this->def_stack.pos;
 
             std::cout << "defined " << name << " as " << int(this->symbols[name]) << std::endl;

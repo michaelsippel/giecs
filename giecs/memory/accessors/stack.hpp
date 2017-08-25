@@ -1,8 +1,9 @@
 
 #pragma once
 
-#include <giecs/memory/accessor.h>
-#include <giecs/memory/accessors/linear.h>
+#include <giecs/memory/reference.hpp>
+#include <giecs/memory/accessor.hpp>
+#include <giecs/memory/accessors/linear.hpp>
 
 #include <functional>
 #include <boost/type_index.hpp>
@@ -20,67 +21,49 @@ class Stack : public Linear<page_size, align_t, addr_t, val_t, val_t*, int>
         template <size_t, typename, typename, typename> friend class Stack;
 
     public:
-        Stack(Context<page_size, align_t> const& context_)
-            : Linear<page_size, align_t, addr_t, val_t, val_t*, int>::Linear(context_)
-        {
-            this->pos = 0;
-        }
-
-        Stack(Context<page_size, align_t> const& context_, int offset_)
-            : Linear<page_size, align_t, addr_t, val_t, val_t*, int>::Linear(context_, offset_)
-        {
-            this->pos = 0;
-        }
+        Stack(Context<page_size, align_t> const& context_, Reference ref_= {0,0}, int pos_=0)
+            : Linear<page_size, align_t, addr_t, val_t, val_t*, int>::Linear(context_, ref_), pos(pos_)
+        {}
 
         template <typename val2_t>
-        Stack(Stack<page_size, align_t, addr_t, val2_t> const& s, int offset_)
-            : Linear<page_size, align_t, addr_t, val_t, val_t*, int>::Linear(s, offset_)
+        Stack(Stack<page_size, align_t, addr_t, val2_t> const& s, int offset=0, int pos_=0)
+            : Linear<page_size, align_t, addr_t, val_t, val_t*, int>::Linear(s, s.alignOffset(s.pos)+offset), pos(pos_)
+        {}
+
+        template <typename val2_t=val_t>
+        void move(int off)
         {
-            this->pos = 0;
+#define SIGN ((off>0)-(off<0))
+            int vo = this->valueOffset(Stack<page_size, align_t, addr_t, val2_t>::alignOffset(off-SIGN))+SIGN;
+            this->pos += vo;
         }
 
-        template <typename val2_t>
-        Stack(Stack<page_size, align_t, addr_t, val2_t> const& s)
-            : Linear<page_size, align_t, addr_t, val_t, val_t*, int>::Linear(s, 1+(s.pos*bitsize<val2_t>()-1)/bitsize<align_t>())
-        {
-            this->pos = 0;
-        }
-
-        void move(int const off)
-        {
-            this->pos += off;
-        }
-
-        void push(int const n, val_t* v)
+        void push(int n, val_t const* v)
         {
             for(int i=n-1; i >= 0; --i)
                 this->write(this->pos++, v[i]);
         }
 
-        void pop(int const n, val_t* v)
+        void pop(int n, val_t* v)
         {
             for(int i=0; i < n; ++i)
                 v[i] = this->read(--this->pos);
         }
 
         template <typename val2_t>
-        void push(int const n, val2_t* v)
+        void push(int n, val2_t const* v)
         {
             auto s = Stack<page_size, align_t, addr_t, val2_t>(*this);
             s.push(n, v);
-
-            size_t bitoff = (s.getOffset() - this->getOffset())*bitsize<align_t>() - this->pos*bitsize<val_t>() + n*bitsize<val2_t>();
-            this->move(1 + (bitoff-1)/bitsize<val_t>());
+            this->move<val2_t>(n);
         }
 
         template <typename val2_t>
-        void pop(int const n, val2_t* v)
+        void pop(int n, val2_t* v)
         {
             auto s = Stack<page_size, align_t, addr_t, val2_t>(*this);
             s.pop(n, v);
-
-            size_t bitoff = (s.getOffset() - this->getOffset())*bitsize<align_t>() - this->pos*bitsize<val_t>() + n*bitsize<val2_t>();
-            this->move(-1 - (bitoff-1)/bitsize<val_t>());
+            this->move<val2_t>(-n);
         }
 
         template <typename val2_t=val_t>

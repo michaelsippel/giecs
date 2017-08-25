@@ -9,8 +9,8 @@
 #include <boost/unordered_map.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include <giecs/bits.h>
-#include <giecs/memory/block.h>
+#include <giecs/bits.hpp>
+#include <giecs/memory/block.hpp>
 
 namespace giecs
 {
@@ -149,7 +149,7 @@ class Context
                 }
 
                 ContextSync<page_size, align_t>* const sync = ref.second->getSync(*this);
-                sync->write_page(page_id, page, std::make_pair(0, page_size*bitsize<align_t>()));
+                sync->write_page(page_id, page);
                 delete sync;
             }
         }
@@ -179,7 +179,7 @@ class Context
                             if(! (it.first.accessor_id == masterp->first.accessor_id))
                             {
                                 ContextSync<page_size, align_t>* const sync = it.second->getSync(*this);
-                                sync->write_page_block(it, page, masterkey.page_range);
+                                sync->write_page_block(it, page);
                                 delete sync;
                             }
                         }

@@ -4,7 +4,7 @@
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/repetition/repeat.hpp>
 
-#include <giecs/bits.h>
+#include <giecs/bits.hpp>
 
 namespace giecs
 {

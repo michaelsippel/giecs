@@ -2,11 +2,11 @@
 #pragma once
 
 #include <boost/range/adaptor/reversed.hpp>
-#include <giecs/memory/accessors/stack.h>
+#include <giecs/memory/accessors/stack.hpp>
 
-#include <lisp/ast.h>
-#include <lisp/ast_write.h>
-#include <lisp/context.h>
+#include <lisp/ast.hpp>
+#include <lisp/ast_write.hpp>
+#include <lisp/context.hpp>
 
 namespace lisp
 {

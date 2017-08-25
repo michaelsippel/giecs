@@ -1,8 +1,8 @@
 #ifndef _lisp_ll_h_
 #define _lisp_ll_h_
 
-#include <giecs/context.h>
-#include <giecs/lisp/reader.h>
+#include <giecs/context.hpp>
+#include <giecs/lisp/reader.hpp>
 
 void init_lisp(Context* context);
 

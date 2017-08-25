@@ -8,7 +8,7 @@
 #include <boost/preprocessor/repetition/repeat.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
 
-#include <giecs/memory/block.h>
+#include <giecs/memory/block.hpp>
 
 namespace giecs
 {
@@ -152,15 +152,16 @@ namespace memory
 {
 
 template <size_t page_size, typename align_t, typename val_t>
-void read_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const end, std::array<align_t, page_size>& buf, int off, int bitoff)
+void read_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const end, std::array<align_t, page_size>& buf, int off)
 {
     constexpr int N_align = bitsize<align_t>();
     constexpr int N_val = bitsize<val_t>();
     TypeBlock<page_size, align_t, Bits<N_val>> const& block = reinterpret_cast<TypeBlock<page_size, align_t, Bits<N_val>> const&>(b);
 
+    int bitoff = 0;
     if(off < 0)
     {
-        int z = off * N_align + bitoff;
+        int z = off * N_align;
         i -= z / N_val;
         bitoff += z % N_val;
         off = 0;
@@ -189,12 +190,13 @@ void read_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const 
 }
 
 template <size_t page_size, typename align_t, typename val_t>
-void write_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const end, std::array<align_t, page_size> const& buf, int off, int bitoff, std::pair<int, int> range)
+void write_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const end, std::array<align_t, page_size> const& buf, int off)
 {
     constexpr int N_align = bitsize<align_t>();
     constexpr int N_val = bitsize<val_t>();
     TypeBlock<page_size, align_t, Bits<N_val>> const& block = reinterpret_cast<TypeBlock<page_size, align_t, Bits<N_val>> const&>(b);
 
+    int bitoff = 0;
     int tbitoff = off * N_align + bitoff;
 
     if(off < 0)
@@ -212,7 +214,7 @@ void write_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const
     while(off < int(page_size) && i <= end)
     {
         Bits<N_align> a(buf[off++]);
-        if(bitoff > 0 && i > 0 && tbitoff >= range.first && tbitoff < range.second)
+        if(bitoff > 0 && i > 0)// && tbitoff >= range.first && tbitoff < range.second)
         {
             block[i-1] &= ~(mask << (N_val-bitoff) );
             block[i-1] |= Bits<N_val>(a) << (N_val-bitoff);
@@ -220,7 +222,7 @@ void write_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const
 
         while(bitoff < N_align && i < end)
         {
-            if(tbitoff >= range.first && tbitoff < range.second)
+            // if(tbitoff >= range.first && tbitoff < range.second)
             {
                 if(bitoff < 0)
                 {

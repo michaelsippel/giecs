@@ -3,9 +3,9 @@
 
 #include <istream>
 #include <cstring>
-#include <giecs/memory/context.h>
+#include <giecs/memory/context.hpp>
 
-#include "language.h"
+#include "language.hpp"
 
 using namespace giecs;
 
@@ -24,13 +24,16 @@ class Brainfuck : public Language
         Brainfuck(memory::Context<page_size, align_t> const& context_, int limit_)
             : context(context_), limit(limit_),
               mem(this->context.template createLinear<addr_t, word_t>()),
-              def_stack(memory::accessors::Stack<page_size, align_t, addr_t, word_t>(context_, (limit_*bitsize<word_t>())/bitsize<align_t>()))
+              def_stack(memory::accessors::Stack<page_size, align_t, addr_t, word_t>(context_,
         {
-            this->def_limit = 0;
+            0,0
+        }, limit_))
+        {
+            this->def_limit = limit;
             this->memptr = addr_t();
 
             for(int i = 0; i < 8; ++i)
-                this->ptrs[i] = this->limit + this->def_limit++;
+                this->ptrs[i] = this->def_limit++;
 
             this->core.addOperation(this->ptrs[0],
                                     std::function<void (Stack&)>([this](Stack& stack)
@@ -104,16 +107,18 @@ class Brainfuck : public Language
             if(strcmp(str, "exit") == 0)
                 return 1;
 
-            this->def_stack.pos = this->def_limit;
+            this->def_stack.pos = this->def_limit; // erase
             addr_t addr = this->parse_def(str, str+strlen(str));
             if(addr > this->limit)
             {
                 Stack stack = this->context.template createStack<addr_t, word_t>();
+                std::cout << "clearing memory....";
 
                 for(int i = 0; i < this->limit; ++i)
                     this->mem[i] = word_t();
 
-                stack.move(this->limit + this->def_stack.pos);
+                std::cout << "done." << std::endl;
+                stack.move(this->def_stack.pos);
                 stack << word_t(addr);
                 this->core.eval(stack);
 
@@ -184,7 +189,7 @@ class Brainfuck : public Language
                         {
                             addr_t addr = this->parse_def(start, prg);
 
-                            pv[j++] = addr_t(this->limit + this->def_stack.pos);
+                            pv[j++] = addr_t(this->def_stack.pos);
                             this->def_stack << word_t(2);
                             this->def_stack << word_t(this->ptrs[7]);
                             this->def_stack << word_t(addr);
@@ -199,7 +204,7 @@ class Brainfuck : public Language
 
             if(j > 0)
             {
-                addr_t addr = addr_t(this->limit + this->def_stack.pos);
+                addr_t addr = addr_t(this->def_stack.pos);
 
                 def_stack << word_t(j+2);
                 def_stack << word_t(ptrs[0]);

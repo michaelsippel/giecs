@@ -1,9 +1,9 @@
 #include <boost/test/unit_test.hpp>
 
-#include <giecs/bits.h>
-#include <giecs/memory/context.h>
-#include <giecs/memory/accessor.h>
-#include <giecs/memory/accessors/linear.h>
+#include <giecs/bits.hpp>
+#include <giecs/memory/context.hpp>
+#include <giecs/memory/accessor.hpp>
+#include <giecs/memory/accessors/linear.hpp>
 
 BOOST_AUTO_TEST_SUITE(context);
 

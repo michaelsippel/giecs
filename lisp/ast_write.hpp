@@ -1,8 +1,8 @@
 #pragma once
 
 #include <memory>
-#include <giecs/memory/accessors/stack.h>
-#include <lisp/ast.h>
+#include <giecs/memory/accessors/stack.hpp>
+#include <lisp/ast.hpp>
 
 namespace lisp
 {

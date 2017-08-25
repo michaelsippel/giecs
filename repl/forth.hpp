@@ -5,13 +5,13 @@
 #include <string>
 #include <map>
 #include <boost/algorithm/string.hpp>
-#include <giecs/memory/context.h>
-#include <giecs/core.h>
-#include <giecs/ll/arithmetic.h>
-#include <giecs/ll/cond.h>
-#include <giecs/ll/io.h>
+#include <giecs/memory/context.hpp>
+#include <giecs/core.hpp>
+#include <giecs/ll/arithmetic.hpp>
+#include <giecs/ll/cond.hpp>
+#include <giecs/ll/io.hpp>
 
-#include "language.h"
+#include "language.hpp"
 
 using namespace giecs;
 
@@ -65,7 +65,7 @@ class Forth : public Language
         {
             addr_t addr = stack.pop();
 
-            memory::accessors::Linear<page_size, align_t, addr_t, word_t> abs = memory::accessors::Linear<page_size, align_t, addr_t, word_t>(stack, -stack.getOffset());
+            memory::accessors::Linear<page_size, align_t, addr_t, word_t> abs = memory::accessors::Linear<page_size, align_t, addr_t, word_t>(stack, {0,0});
             word_t v = abs.read(addr);
 
             stack.push(v);
@@ -76,7 +76,7 @@ class Forth : public Language
             addr_t addr = stack.pop();
             word_t v = stack.pop();
 
-            memory::accessors::Linear<page_size, align_t, addr_t, word_t> abs = memory::accessors::Linear<page_size, align_t, addr_t, word_t>(stack, -stack.getOffset());
+            memory::accessors::Linear<page_size, align_t, addr_t, word_t> abs = memory::accessors::Linear<page_size, align_t, addr_t, word_t>(stack, {0,0});
             abs.write(addr, v);
         }
 
@@ -98,7 +98,10 @@ class Forth : public Language
         Forth(memory::Context<page_size, align_t> const& context_, Core<page_size, align_t, addr_t>& core_, int limit_)
             : context(context_), core(core_), limit(limit_),
               stack(this->context.template createStack<addr_t, word_t>()),
-              def_stack(memory::accessors::Stack<page_size, align_t, addr_t, word_t>(context_, (limit_*bitsize<word_t>())/bitsize<align_t>()))
+              def_stack(memory::accessors::Stack<page_size, align_t, addr_t, word_t>(context_,
+        {
+            0,0
+        }, limit_))
         {
             std::function<void (memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)> fev =
                 [this](memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)
@@ -112,7 +115,7 @@ class Forth : public Language
             };
 
             this->def_limit = 0;
-            this->core.addOperation(addr_t(this->def_limit + this->limit), fev);
+            this->core.addOperation(addr_t(this->limit), fev);
             ++this->def_limit;
 
             this->addOperation("EXECUTE", eval);
@@ -198,10 +201,7 @@ class Forth : public Language
                     else if(a == ":" && i == 0)
                         name = true;
                     else if(a == "VARIABLE" && i == 0)
-                    {
-                        name = true;
                         var = true;
-                    }
                     else if(name && i == 1)
                     {
                         if(this->symbols.count(a) > 0)
@@ -210,15 +210,15 @@ class Forth : public Language
                             goto abort;
                         }
                         tmp = this->def_stack.pos;
-                        this->symbols[a] = addr_t(this->limit + tmp);
+                        this->symbols[a] = addr_t(tmp);
                         this->def_stack.move(llen-2 + 3);
 
-                        std::cout << "defined " << a << " as " << int(this->limit + tmp) << std::endl;
+                        std::cout << "defined " << a << " as " << int(tmp) << std::endl;
                     }
                     else if(var && i == 1)
                     {
-                        word_t addr = word_t(this->limit + this->def_stack.pos);
-                        this->def_stack << word_t(42); // initialize
+                        word_t addr = word_t(this->def_stack.pos);
+                        this->def_stack << word_t(); // initialize
 
                         this->symbols[a] = this->push_num(addr);
                         goto run;
@@ -316,8 +316,8 @@ abort:
 
         void addOperation(std::string name, std::function<void (memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)> fn)
         {
-            this->core.template addOperation<word_t>(this->limit + this->def_stack.pos, fn);
-            this->symbols[name] = this->limit + this->def_stack.pos;
+            this->core.template addOperation<word_t>(this->def_stack.pos, fn);
+            this->symbols[name] = this->def_stack.pos;
 
             this->def_stack.move(1);
             this->def_limit = this->def_stack.pos;
@@ -325,7 +325,7 @@ abort:
 
         addr_t push_num(word_t n)
         {
-            addr_t p = addr_t(this->limit + this->def_stack.pos);
+            addr_t p = addr_t(this->def_stack.pos);
             this->def_stack << word_t(2); // length
             this->def_stack << word_t(this->symbols["NOP"]);
             this->def_stack << word_t(n);
