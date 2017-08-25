@@ -98,7 +98,10 @@ class Forth : public Language
         Forth(memory::Context<page_size, align_t> const& context_, Core<page_size, align_t, addr_t>& core_, int limit_)
             : context(context_), core(core_), limit(limit_),
               stack(this->context.template createStack<addr_t, word_t>()),
-              def_stack(memory::accessors::Stack<page_size, align_t, addr_t, word_t>(context_, {0,0}, limit_))
+              def_stack(memory::accessors::Stack<page_size, align_t, addr_t, word_t>(context_,
+        {
+            0,0
+        }, limit_))
         {
             std::function<void (memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)> fev =
                 [this](memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)

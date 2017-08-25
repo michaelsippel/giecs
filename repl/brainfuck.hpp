@@ -24,7 +24,10 @@ class Brainfuck : public Language
         Brainfuck(memory::Context<page_size, align_t> const& context_, int limit_)
             : context(context_), limit(limit_),
               mem(this->context.template createLinear<addr_t, word_t>()),
-              def_stack(memory::accessors::Stack<page_size, align_t, addr_t, word_t>(context_, {0,0}, limit_))
+              def_stack(memory::accessors::Stack<page_size, align_t, addr_t, word_t>(context_,
+        {
+            0,0
+        }, limit_))
         {
             this->def_limit = limit;
             this->memptr = addr_t();
@@ -106,7 +109,7 @@ class Brainfuck : public Language
 
             this->def_stack.pos = this->def_limit; // erase
             addr_t addr = this->parse_def(str, str+strlen(str));
-             if(addr > this->limit)
+            if(addr > this->limit)
             {
                 Stack stack = this->context.template createStack<addr_t, word_t>();
                 std::cout << "clearing memory....";
@@ -120,7 +123,7 @@ class Brainfuck : public Language
                 this->core.eval(stack);
 
                 std::cout << std::endl;
-             }
+            }
 
             return 0;
         }

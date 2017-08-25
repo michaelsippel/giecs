@@ -12,7 +12,7 @@
 
 #include "language.hpp"
 #include "forth.hpp"
-//#include "lisp.hpp"
+#include "lisp.hpp"
 #include "brainfuck.hpp"
 
 using namespace giecs;
@@ -48,20 +48,20 @@ int main(int argc, char** argv)
             char c;
             std::cin >> c;
             switch(c)
-            {/*
+            {
                 case 'a':
                     lang = std::make_shared<repl::lang::Lisp<page_size, byte, iword>>(context, core, 0x10000);
                     break;
-                    
+
                 case 'b':
                     lang = std::make_shared<repl::lang::LispASM<page_size, byte, iword>>(context, core, 0x10000);
                     break;
-             */
+
                 case 'c':
                     lang = std::make_shared<repl::lang::Forth<page_size, byte, iword>>(context, core, 0x8000);
                     break;
 
-            case 'd':
+                case 'd':
                     lang = std::make_shared<repl::lang::Brainfuck<page_size, byte, iword>>(context, 0x8000);
                     break;
 
