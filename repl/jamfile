@@ -1,5 +1,6 @@
 
 exe repl : main.cpp linenoise/linenoise.c : 
 	<library>/giecs/
+  <library>/boost//program_options/
 	;
 

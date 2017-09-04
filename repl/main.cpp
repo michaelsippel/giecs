@@ -1,9 +1,11 @@
 
 #include <iostream>
 #include <memory>
-
+#include <string>
 #include <cstdlib>
 #include <cstddef>
+#include <fstream>
+#include <boost/program_options.hpp>
 #include "linenoise/linenoise.h"
 
 #include <giecs/bits.hpp>
@@ -16,9 +18,31 @@
 #include "brainfuck.hpp"
 
 using namespace giecs;
+namespace po = boost::program_options;
 
 int main(int argc, char** argv)
 {
+    po::options_description desc("Allowed options");
+    desc.add_options()
+    ("help", "print this help")
+    ("repl", "start Read-Eval-Print-Loop")
+    ("language,L", po::value<std::string>(), "select language")
+    ("input-file", po::value<std::vector<std::string>>(), "input files")
+    ;
+    po::positional_options_description p;
+    p.add("input-file", -1);
+
+    po::variables_map vm;
+    po::store(po::command_line_parser(argc, argv).
+              options(desc).positional(p).run(), vm);
+    po::notify(vm);
+
+    if (vm.count("help"))
+    {
+        std::cout << desc << "\n";
+        return 1;
+    }
+
     // set up vm
     size_t const page_size = 4096;
     size_t const word_width = 32;
@@ -32,64 +56,74 @@ int main(int argc, char** argv)
     std::shared_ptr<repl::Language> lang = nullptr;
     std::shared_ptr<repl::Language> store = nullptr;
 
-    // Read-Eval-Print-Loop
-    linenoiseHistoryLoad("history.txt");
-    linenoiseHistorySetMaxLen(20);
-    char* line;
-    char name[64];
-
-    bool running = true;
-    while(running)
+    if(vm.count("language"))
     {
-        while(lang == nullptr)
+        std::string l = vm["language"].as<std::string>();
+        if(l == "lisp")
+            lang = std::make_shared<repl::lang::Lisp<page_size, byte, iword>>(context, core, 0x10000);
+        else if(l == "asm")
+            lang = std::make_shared<repl::lang::LispASM<page_size, byte, iword>>(context, core, 0x10000);
+        else if(l == "forth")
+            lang = std::make_shared<repl::lang::Forth<page_size, byte, iword>>(context, core, 0x8000);
+        else if(l == "brainfuck")
+            lang = std::make_shared<repl::lang::Brainfuck<page_size, byte, iword>>(context, 0x8000);
+        else
         {
-            std::cout << "(x) exit\n(a) Lisp\n(b) Lisp ASM\n(c) Forth\n(d) Brainfuck\n\n";
-
-            char c;
-            std::cin >> c;
-            switch(c)
-            {
-                case 'a':
-                    lang = std::make_shared<repl::lang::Lisp<page_size, byte, iword>>(context, core, 0x10000);
-                    break;
-
-                case 'b':
-                    lang = std::make_shared<repl::lang::LispASM<page_size, byte, iword>>(context, core, 0x10000);
-                    break;
-
-                case 'c':
-                    lang = std::make_shared<repl::lang::Forth<page_size, byte, iword>>(context, core, 0x8000);
-                    break;
-
-                case 'd':
-                    lang = std::make_shared<repl::lang::Brainfuck<page_size, byte, iword>>(context, 0x8000);
-                    break;
-
-                case 'x':
-                    return 0;
-            }
-
-            if(lang != NULL)
-            {
-                lang->name(name);
-                strcat(name, " >>> ");
-            }
+            std::cout << "Unreconized language " << l << std::endl;
+            return 1;
         }
+    }
+    else
+    {
+        std::cout << "No language specified." << std::endl;
+        return 1;
+    }
 
-        if((line = linenoise(name)) != NULL)
+    // parse file
+    if(vm.count("input-file"))
+    {
+        std::vector<std::string> paths = vm["input-file"].as<std::vector<std::string>>();
+        for(auto path : paths)
         {
-            if(lang->parse(line) != 0)
+            std::ifstream file(path);
+            if(file.good())
+                lang->parse(file);
+            else
+                std::cout << "error opening file " << path << std::endl;
+        }
+    }
+
+    // Read-Eval-Print-Loop
+    if(vm.count("repl") || !vm.count("input-file"))
+    {
+
+        linenoiseHistoryLoad("history.txt");
+        linenoiseHistorySetMaxLen(20);
+        char* line;
+        char name[64];
+
+        bool running = true;
+        while(running)
+        {
+            lang->name(name);
+            strcat(name, " >>> ");
+
+            if((line = linenoise(name)) != NULL)
             {
-                store = lang;
-                lang = nullptr;
+                if(lang->parse(line) != 0)
+                {
+                    store = lang;
+                    lang = nullptr;
+                }
+
+                if(line[0] != '\0')
+                {
+                    linenoiseHistoryAdd(line);
+                    linenoiseHistorySave("history.txt");
+                }
+                linenoiseFree(line);
             }
 
-            if(line[0] != '\0')
-            {
-                linenoiseHistoryAdd(line);
-                linenoiseHistorySave("history.txt");
-            }
-            linenoiseFree(line);
         }
     }
 
