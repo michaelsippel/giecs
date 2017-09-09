@@ -1,6 +1,7 @@
 
 #pragma once
-
+#include <iostream>
+#include <cstddef>
 #include <functional>
 #include <boost/type_index.hpp>
 #include <boost/shared_ptr.hpp>
@@ -16,74 +17,74 @@ namespace memory
 namespace accessors
 {
 
-template <size_t page_size, typename align_t, typename addr_t, typename val_t, typename buf_t=val_t*, typename index_t=size_t>
+template <std::size_t page_size, typename align_t, typename addr_t, typename val_t, typename buf_t=val_t*, typename index_t=size_t>
 class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>
 {
-        template <size_t, typename, typename, typename, typename, typename> friend class Linear;
+        template <std::size_t, typename, typename, typename, typename, typename> friend class Linear;
 
     protected:
-        static size_t const block_size = 512; // 32bit/val -> 2 MiB.  // TODO: more dynamic
-        static int const nalign = (bitsize<val_t>() > bitsize<align_t>()) ?
-                                  (1+int(bitsize<val_t>()-1)/int(bitsize<align_t>())) :  // positive: number of align-blocks per value
-                                  (-int(bitsize<align_t>())/int(bitsize<val_t>())); // negative: number of values per align-block
+        static std::size_t const block_size = 512; // 32bit/val -> 2 MiB.  // TODO: more dynamic
+        static std::ptrdiff_t const nalign = (bitsize<val_t>() > bitsize<align_t>()) ?
+                                             (1+(bitsize<val_t>()-1)/bitsize<align_t>()) :  // positive: number of align-blocks per value
+                                             (-(bitsize<align_t>()/bitsize<val_t>())); // negative: number of values per align-block
 
         // align per value
-        static inline int alignOffset(int const nval)
+        static inline std::ptrdiff_t alignOffset(int const nval)
         {
             return (nalign > 0) ? (nval * nalign) : (nval / (-nalign));
         }
         // value per align
-        static inline int valueOffset(int const na)
+        static inline std::ptrdiff_t valueOffset(int const na)
         {
             return (nalign > 0) ? (na / nalign) : (na * (-nalign));
         }
         // pages per value
-        static inline int pageOffset(int const nval)
+        static inline std::ptrdiff_t pageOffset(int const nval)
         {
             return alignOffset(nval) / page_size;
         }
         // blocks per value
-        static inline int blockOffset(int const nval)
+        static inline std::ptrdiff_t blockOffset(int const nval)
         {
             return nval / block_size;
         }
         // align offset in value
-        static inline int alignShift(Reference const ref)
+        static inline std::ptrdiff_t alignShift(Reference const ref)
         {
             // TODO: fix possible integer overflow
             return (nalign < 1) ? 0 : ((ref.page_id * page_size + ref.offset) % nalign);
         }
-        inline int alignShift() const
+        inline std::ptrdiff_t alignShift() const
         {
             return alignShift(this->reference);
         }
 
         inline index_t valueIndex(addr_t const addr) const
         {
-            return index_t((valueOffset(this->reference.page_id*page_size+this->reference.offset - this->alignShift()) + int(addr)) % block_size);
+            return index_t((valueOffset(this->reference.page_id*page_size+this->reference.offset - this->alignShift()) + std::ptrdiff_t(addr)) % block_size);
         }
-        inline unsigned int pageIndex(addr_t const addr) const
+        inline std::size_t pageIndex(addr_t const addr) const
         {
-            return (this->reference.page_id*page_size+this->reference.offset + alignOffset(int(addr))) / page_size;
+            return (this->reference.page_id*page_size+this->reference.offset + alignOffset(addr)) / page_size;
         }
-        inline unsigned int blockIndex(addr_t const addr) const
+        inline std::size_t blockIndex(addr_t const addr) const
         {
-            return blockOffset(valueOffset(this->reference.page_id*page_size+this->reference.offset - this->alignShift()) + int(addr));
+            return blockOffset(valueOffset(this->reference.page_id*page_size+this->reference.offset - this->alignShift()) + std::ptrdiff_t(addr));
         }
 
         using typename ContextSync<page_size, align_t>::BlockPtr;
         using typename ContextSync<page_size, align_t>::BlockRef;
         typedef boost::shared_ptr<TypeBlock<page_size, align_t, val_t> const> TypeBlockPtr;
 
-        static inline Reference offsetReference(Reference const ref, int const offset)
+        static inline Reference offsetReference(Reference const ref, std::ptrdiff_t const offset)
         {
-            unsigned int const a = ref.offset + offset;
+            std::size_t const a = ref.offset + offset;
             return Reference({ref.page_id + a/page_size, a % page_size});
         }
 
     public:
 #define TYPEID boost::typeindex::type_id< Linear<page_size, align_t, addr_t, val_t, buf_t, index_t> >()
-#define ID_F(flags) {TYPEID, size_t( flags )}
+#define ID_F(flags) {TYPEID, std::uintmax_t( flags )}
 #define ID(ref) ID_F( alignShift(ref) )
 
         Linear(Context<page_size, align_t> const& context_, Reference const ref_= {})
@@ -91,7 +92,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
         {}
 
         template <typename addr2_t, typename val2_t, typename buf2_t, typename index2_t>
-        Linear(Linear<page_size, align_t, addr2_t, val2_t, buf2_t, index2_t> const& l, int const offset=0)
+        Linear(Linear<page_size, align_t, addr2_t, val2_t, buf2_t, index2_t> const& l, std::ptrdiff_t const offset=0)
             : Linear(l.context, offsetReference(l.reference,offset))
         {}
 
@@ -112,11 +113,11 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
                 addr_t const end = addr + len;
                 while(addr < end)
                 {
-                    unsigned int page_id = this->pageIndex(addr);
-                    unsigned int block_id = this->blockIndex(addr);
+                    std::size_t page_id = this->pageIndex(addr);
+                    std::size_t block_id = this->blockIndex(addr);
                     TypeBlockPtr block = this->getBlock(page_id, block_id, dirty);
 
-                    for(index_t i = valueIndex(addr); (i != block_size) && (addr < end); ++i, ++l, ++addr)
+                    for(index_t i = valueIndex(addr); (i != index_t(block_size)) && (addr < end); ++i, ++l, ++addr)
                     {
                         val_t& v = (*block)[i];
                         operation(v);
@@ -152,21 +153,21 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
 
         void read_page_block(BlockRef const b, std::array<align_t, page_size>& buf) const final
         {
-            unsigned int const page_id = b.first.page_id;
-            unsigned int const block_id = b.first.block_id;
+            std::size_t const page_id = b.first.page_id;
+            std::size_t const block_id = b.first.block_id;
             BlockPtr const block = b.second;
 
-            int offset = this->alignShift() + alignOffset(block_id * block_size) - page_id * page_size; // offset in page
+            std::ptrdiff_t offset = this->alignShift() + alignOffset(block_id * block_size) - page_id * page_size; // offset in page
             block->read(0, block_size, buf, offset);
         }
 
         void write_page_block(BlockRef const b, std::array<align_t, page_size> const& buf) const final
         {
-            unsigned int const page_id = b.first.page_id;
-            unsigned int const block_id = b.first.block_id;
+            std::size_t const page_id = b.first.page_id;
+            std::size_t const block_id = b.first.block_id;
             BlockPtr const block = b.second;
 
-            int offset = this->alignShift() + alignOffset(block_id * block_size) - page_id * page_size; // offset in page
+            std::ptrdiff_t offset = this->alignShift() + alignOffset(block_id * block_size) - page_id * page_size; // offset in page
             block->write(0, block_size, buf, offset);
         }
 
@@ -174,23 +175,21 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
         Reference const reference;
 
         // TODO: optimize?
-        std::vector<BlockKey> blockKeys(unsigned int const block_id) const
+        std::vector<BlockKey> blockKeys(std::size_t const block_id) const
         {
             std::vector<BlockKey> keys;
-            unsigned int last_page_id = 0;
+            std::size_t last_page_id = 0;
             for(int i = 0; i < this->alignOffset(block_size); ++i)
             {
-                unsigned int const page_id = (this->alignShift() + this->alignOffset(block_id*block_size) + i) / page_size;
+                std::size_t const page_id = (this->alignShift() + this->alignOffset(block_id*block_size) + i) / page_size;
                 if(page_id != last_page_id || i == 0)
-                {
                     keys.push_back({page_id, block_id, this->accessor_id});
-                }
                 last_page_id = page_id;
             }
             return keys;
         }
 
-        TypeBlockPtr getBlock(unsigned int const page_id, unsigned int const block_id, bool dirty) const
+        TypeBlockPtr getBlock(std::size_t const page_id, std::size_t const block_id, bool dirty) const
         {
             BlockKey const key = {page_id, block_id, this->accessor_id};
             TypeBlockPtr block = boost::static_pointer_cast<TypeBlock<page_size, align_t, val_t> const>(this->context.getBlock(key));

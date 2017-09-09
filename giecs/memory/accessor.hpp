@@ -11,7 +11,7 @@ namespace giecs
 namespace memory
 {
 
-template <size_t page_size, typename align_t, typename addr_t, typename val_t, typename buf_t, typename index_t>
+template <std::size_t page_size, typename align_t, typename addr_t, typename val_t, typename buf_t, typename index_t>
 class Accessor : public ContextSync<page_size, align_t>
 {
     public:

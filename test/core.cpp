@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE(eval)
     stack[334] = 1;   // addr of addi
     stack[335] = 10;  // 10
 
-    for(iword a = 0; a < 1; ++a)
+    for(iword a = 0; a < 10; ++a)
     {
         stack << word(a);
         stack << word(333);

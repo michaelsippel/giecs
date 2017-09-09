@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cassert>
+#include <cstddef>
 #include <functional>
 #include <boost/unordered_map.hpp>
 
@@ -10,7 +11,7 @@
 namespace giecs
 {
 
-template <size_t page_size, typename align_t, typename addr_t>
+template <std::size_t page_size, typename align_t, typename addr_t>
 class Core
 {
     public:
@@ -78,7 +79,7 @@ class Core
             if(it == this->operations.end())
             {
                 memory::accessors::Linear<page_size, align_t, addr_t, val_t> abs = memory::accessors::Linear<page_size, align_t, addr_t, val_t>(stack, {0,0});
-                size_t len = abs.read(addr);
+                std::size_t len = abs.read(addr);
                 assert(len > 0);
 
                 val_t* buf = (val_t*) malloc(len * sizeof(val_t));

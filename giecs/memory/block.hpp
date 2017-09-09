@@ -13,16 +13,16 @@ namespace giecs
 namespace memory
 {
 
-template <size_t page_size, typename align_t>
+template <std::size_t page_size, typename align_t>
 class Context;
 
-template <size_t page_size, typename align_t>
+template <std::size_t page_size, typename align_t>
 class Block;
 
 struct AccessorId
 {
     boost::typeindex::type_index type;
-    size_t flags;
+    std::uintmax_t flags;
 
     bool operator==(AccessorId const& i) const
     {
@@ -33,8 +33,8 @@ struct AccessorId
 
 struct BlockKey
 {
-    unsigned int page_id;
-    unsigned int block_id;
+    std::size_t page_id;
+    std::size_t block_id;
     AccessorId accessor_id;
 
     bool operator==(BlockKey const& b) const
@@ -45,13 +45,13 @@ struct BlockKey
     }
 };
 
-inline size_t hash_value(BlockKey const& block)
+inline std::size_t hash_value(BlockKey const& block)
 {
     boost::hash<unsigned int> hasher;
     return hasher(block.page_id);
 }
 
-template <size_t page_size, typename align_t>
+template <std::size_t page_size, typename align_t>
 class ContextSync
 {
         friend class Context<page_size, align_t>;
@@ -70,13 +70,13 @@ class ContextSync
         virtual void read_page_block(BlockRef const b, std::array<align_t, page_size>& buf) const {}
         virtual void write_page_block(BlockRef const b, std::array<align_t, page_size> const& buf) const {}
 
-        inline void read_page(unsigned int const page_id, std::array<align_t, page_size>& buf) const
+        inline void read_page(std::size_t const page_id, std::array<align_t, page_size>& buf) const
         {
             for(BlockRef b : this->context.getPageRange({page_id, 0, this->accessor_id}))
                 this->read_page_block(b, buf);
         }
 
-        inline void write_page(unsigned int const page_id, std::array<align_t, page_size> const& buf) const
+        inline void write_page(std::size_t const page_id, std::array<align_t, page_size> const& buf) const
         {
             for(BlockRef b : this->context.getPageRange({page_id, 0, this->accessor_id}))
                 this->write_page_block(b, buf);
@@ -87,11 +87,11 @@ class ContextSync
         AccessorId accessor_id;
 };
 
-template <size_t page_size, typename align_t>
+template <std::size_t page_size, typename align_t>
 class Block
 {
     public:
-        Block(size_t const l, std::function<ContextSync<page_size, align_t>* (Context<page_size, align_t> const&)> createSync_)
+        Block(std::size_t const l, std::function<ContextSync<page_size, align_t>* (Context<page_size, align_t> const&)> createSync_)
             : length(l), createSync(createSync_)
         {
             this->ptr = calloc(this->length, 1);
@@ -102,8 +102,8 @@ class Block
             free(this->ptr);
         }
 
-        virtual void read(int i, size_t const end, std::array<align_t, page_size>& buf, int off) const {}
-        virtual void write(int i, size_t const end, std::array<align_t, page_size> const& buf, int off) const {}
+        virtual void read(std::ptrdiff_t i, std::size_t const end, std::array<align_t, page_size>& buf, std::ptrdiff_t off) const {}
+        virtual void write(std::ptrdiff_t i, std::size_t const end, std::array<align_t, page_size> const& buf, std::ptrdiff_t off) const {}
 
         inline ContextSync<page_size, align_t>* getSync(Context<page_size, align_t> const& context) const
         {
@@ -111,27 +111,27 @@ class Block
         }
 
     protected:
-        size_t length;
+        std::size_t length;
         void* ptr;
 
         std::function<ContextSync<page_size, align_t>* (Context<page_size, align_t> const&)> createSync;
 };
 
-template <size_t page_size, typename align_t, typename val_t>
+template <std::size_t page_size, typename align_t, typename val_t>
 class TypeBlock : public Block<page_size, align_t>
 {
     public:
-        TypeBlock(size_t n, std::function<ContextSync<page_size, align_t>* (Context<page_size, align_t> const&)> createSync_)
+        TypeBlock(std::size_t n, std::function<ContextSync<page_size, align_t>* (Context<page_size, align_t> const&)> createSync_)
             : Block<page_size, align_t>(sizeof(val_t) * n, createSync_)
         {
         }
 
-        void read(int i, size_t const end, std::array<align_t, page_size>& buf, int off) const final
+        void read(std::ptrdiff_t i, std::size_t const end, std::array<align_t, page_size>& buf, std::ptrdiff_t off) const final
         {
             read_block(*this, i, end, buf, off);
         }
 
-        void write(int i, size_t const end, std::array<align_t, page_size> const& buf, int off) const final
+        void write(std::ptrdiff_t i, std::size_t const end, std::array<align_t, page_size> const& buf, std::ptrdiff_t off) const final
         {
             write_block(*this, i, end, buf, off);
         }
@@ -141,7 +141,7 @@ class TypeBlock : public Block<page_size, align_t>
             return (this->length / sizeof(val_t));
         }
 
-        val_t& operator[] (int const& index) const
+        val_t& operator[] (std::size_t const& index) const
         {
             return ((val_t*)this->ptr)[index % this->numElements()];
         }

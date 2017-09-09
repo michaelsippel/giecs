@@ -5,6 +5,7 @@
 
 #include <array>
 #include <cstdint>
+#include <cstddef>
 #include <boost/preprocessor/repetition/repeat.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
 
@@ -13,7 +14,7 @@
 namespace giecs
 {
 
-template <int N>
+template <std::size_t N>
 struct bittype_tag
 {
     typedef uintmax_t type;
@@ -29,7 +30,7 @@ BOOST_PP_REPEAT(32, GEN_BITTYPE_TAG, (0x21, uint64_t))
 
 #undef GEN_BITTYPE_TAG
 
-template <int N>
+template <std::size_t N>
 class Bits
 {
     public:
@@ -38,7 +39,7 @@ class Bits
             this->value = 0;
         }
 
-        template <int N2>
+        template <std::size_t N2>
         Bits(Bits<N2> const& b)
         {
             this->value = b.getValue();
@@ -52,7 +53,7 @@ class Bits
 
         inline typename bittype_tag<N>::type getValue(void) const
         {
-            return (this->value & int((1 << N) - 1));
+            return (this->value & std::intmax_t((1 << N) - 1));
         }
 
         template <typename T>
@@ -71,7 +72,7 @@ class Bits
         template <typename T>
         bool operator == (T const& v) const
         {
-            return (uintmax_t(this->getValue()) == uintmax_t(v));
+            return (std::uintmax_t(this->getValue()) == std::uintmax_t(v));
         }
 
         Bits operator ~ () const
@@ -124,26 +125,26 @@ class Bits
 };
 
 template <typename T>
-constexpr size_t bitsize(void)
+constexpr std::size_t bitsize(void)
 {
     return sizeof(T) * 8;
 }
 
 #define DEF_BITSIZE(z, N, data) \
-    template <> constexpr size_t bitsize< Bits<N> >(void) { return N; }
+  template <> constexpr std::size_t bitsize< Bits<N> >(void) { return N; }
 
 BOOST_PP_REPEAT(64, DEF_BITSIZE,)
 
 #undef DEF_BITSIZE
 
 template <typename T>
-constexpr size_t bitsize(T)
+constexpr std::size_t bitsize(T)
 {
     return bitsize<T>();
 }
 
-template <int N>
-size_t hash_value(Bits<N> const& a)
+template <std::size_t N>
+std::size_t hash_value(Bits<N> const& a)
 {
     return size_t(a);
 }
@@ -151,11 +152,11 @@ size_t hash_value(Bits<N> const& a)
 namespace memory
 {
 
-template <size_t page_size, typename align_t, typename val_t>
-void read_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const end, std::array<align_t, page_size>& buf, int off)
+template <std::size_t page_size, typename align_t, typename val_t>
+void read_block(TypeBlock<page_size, align_t, val_t> const& b, std::ptrdiff_t i, std::ptrdiff_t const end, std::array<align_t, page_size>& buf, std::ptrdiff_t off)
 {
-    constexpr int N_align = bitsize<align_t>();
-    constexpr int N_val = bitsize<val_t>();
+    constexpr std::size_t N_align = bitsize<align_t>();
+    constexpr std::size_t N_val = bitsize<val_t>();
     TypeBlock<page_size, align_t, Bits<N_val>> const& block = reinterpret_cast<TypeBlock<page_size, align_t, Bits<N_val>> const&>(b);
 
     int bitoff = 0;
@@ -167,14 +168,14 @@ void read_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const 
         off = 0;
     }
 
-    while(off < int(page_size) && i <= end)
+    while(off < std::ptrdiff_t(page_size) && i <= end)
     {
         Bits<N_align> a = Bits<N_align>();
 
         if(bitoff > 0 && i > 0)
             a = Bits<N_align>(block[i-1] >> (N_val - bitoff));
 
-        while(bitoff < N_align && i < end)
+        while(bitoff < int(N_align) && i < end)
         {
             if(bitoff < 0)
                 a = Bits<N_align>(block[i] >> (-bitoff));
@@ -189,11 +190,11 @@ void read_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const 
     }
 }
 
-template <size_t page_size, typename align_t, typename val_t>
-void write_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const end, std::array<align_t, page_size> const& buf, int off)
+template <std::size_t page_size, typename align_t, typename val_t>
+void write_block(TypeBlock<page_size, align_t, val_t> const& b, std::ptrdiff_t i, std::ptrdiff_t const end, std::array<align_t, page_size> const& buf, std::ptrdiff_t off)
 {
-    constexpr int N_align = bitsize<align_t>();
-    constexpr int N_val = bitsize<val_t>();
+    constexpr std::size_t N_align = bitsize<align_t>();
+    constexpr std::size_t N_val = bitsize<val_t>();
     TypeBlock<page_size, align_t, Bits<N_val>> const& block = reinterpret_cast<TypeBlock<page_size, align_t, Bits<N_val>> const&>(b);
 
     int bitoff = 0;
@@ -211,7 +212,7 @@ void write_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const
     if(N_val > N_align)
         mask = (1 << N_align)-1;
 
-    while(off < int(page_size) && i <= end)
+    while(off < std::ptrdiff_t(page_size) && i <= end)
     {
         Bits<N_align> a(buf[off++]);
         if(bitoff > 0 && i > 0)// && tbitoff >= range.first && tbitoff < range.second)
@@ -220,7 +221,7 @@ void write_block(TypeBlock<page_size, align_t, val_t> const& b, int i, int const
             block[i-1] |= Bits<N_val>(a) << (N_val-bitoff);
         }
 
-        while(bitoff < N_align && i < end)
+        while(bitoff < int(N_align) && i < end)
         {
             // if(tbitoff >= range.first && tbitoff < range.second)
             {

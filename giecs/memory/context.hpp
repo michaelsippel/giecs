@@ -19,19 +19,19 @@ namespace memory
 
 namespace accessors
 {
-template <size_t page_size, typename align_t, typename addr_t, typename val_t, typename buf_t, typename index_t>
+template <std::size_t page_size, typename align_t, typename addr_t, typename val_t, typename buf_t, typename index_t>
 class Linear;
-template <size_t page_size, typename align_t, typename addr_t, typename val_t>
+template <std::size_t page_size, typename align_t, typename addr_t, typename val_t>
 class Stack;
 };
 
-template <size_t page_size, typename align_t>
+template <std::size_t page_size, typename align_t>
 class Context
 {
     public:
         struct CheckOverlapBlocks
         {
-            bool operator() (const BlockKey& key1, const BlockKey& key2) const
+            bool operator() (BlockKey const& key1, BlockKey const& key2) const
             {
                 return (key1.page_id == key2.page_id);
             }
@@ -70,7 +70,7 @@ class Context
             this->syncPage(key);
             auto const val = std::make_pair(key, block);
             this->blocks->insert(val);
-            this->writePageFirst(val); // initialize, even if no master block is avaiable
+            this->writePageFirst(val); // initialize, even if no master block is available
         }
 
         void addBlock(BlockPtr const block, std::vector<BlockKey> const& keys) const
@@ -130,8 +130,7 @@ class Context
         // TODO: optimize
         void writePageFirst(std::pair< BlockKey const, BlockPtr const > const ref) const
         {
-            unsigned int const page_id = ref.first.page_id;
-
+            std::size_t const page_id = ref.first.page_id;
             if(this->blocks->count({page_id}) > 1)
             {
                 std::array<align_t, page_size> page;
@@ -156,7 +155,7 @@ class Context
 
         void syncPage(BlockKey const req_block) const
         {
-            unsigned int const page_id = req_block.page_id;
+            std::size_t const page_id = req_block.page_id;
             auto const masterp = this->masters->find({page_id});
             if(masterp != this->masters->end())
             {
@@ -164,7 +163,7 @@ class Context
                 BlockKey const masterkey = masterp->first;
 //                if(! (masterkey.accessor_id == req_block.accessor_id))
                 {
-                    unsigned int const page_id = masterkey.page_id;
+                    std::size_t const page_id = masterkey.page_id;
                     if(this->blocks->count({page_id}) > 1)
                     {
                         ContextSync<page_size, align_t>* const sync = masterp->second->getSync(*this);
