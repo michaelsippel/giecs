@@ -44,30 +44,25 @@ class Accessor : public ContextSync<page_size, align_t>
             return val;
         }
 
-        class Proxy
+        struct Proxy
         {
-            public:
-                Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t> const& parent;
-                addr_t const addr;
+            Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t> const& parent;
+            addr_t const addr;
 
-                Proxy(Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t> const& parent_, addr_t const addr_)
-                    : parent(parent_), addr(addr_)
-                {}
+            operator val_t ()
+            {
+                return this->parent.read(addr);
+            }
 
-                operator val_t () const
-                {
-                    return this->parent.read(addr);
-                }
-
-                val_t const& operator= (val_t const& val) const
-                {
-                    return this->parent.write(addr, val);
-                }
+            val_t const& operator= (val_t const& val)
+            {
+                return this->parent.write(addr, val);
+            }
         };
 
         Proxy operator[] (addr_t const addr) const
         {
-            return Proxy(*this, addr);
+            return {*this, addr};
         }
 };
 

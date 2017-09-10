@@ -10,6 +10,7 @@
 
 #include <giecs/bits.hpp>
 #include <giecs/types.hpp>
+#include <giecs/core.hpp>
 #include <giecs/memory/context.hpp>
 
 #include "language.hpp"
@@ -19,6 +20,22 @@
 
 using namespace giecs;
 namespace po = boost::program_options;
+
+template <std::size_t page_size, typename align_t, typename addr_t, typename val_t>
+std::shared_ptr<repl::Language> selectLanguage(std::string l, memory::Context<page_size, align_t> const& context, Core<page_size, align_t, addr_t>& core)
+{
+    if(l == "lisp")
+        return std::make_shared<repl::lang::Lisp<page_size, align_t, addr_t>>(context, core, 0x10000);
+    if(l == "asm")
+        return std::make_shared<repl::lang::LispASM<page_size, align_t, addr_t>>(context, core, 0x10000);
+    if(l == "forth")
+        return std::make_shared<repl::lang::Forth<page_size, align_t, addr_t>>(context, core, 0x10000);
+    if(l == "brainfuck")
+        return std::make_shared<repl::lang::Brainfuck<page_size, align_t, addr_t>>(context, 0x10000);
+
+    std::cout << "Unreconized language " << l << std::endl;
+    return nullptr;
+}
 
 int main(int argc, char** argv)
 {
@@ -44,8 +61,8 @@ int main(int argc, char** argv)
     }
 
     // set up vm
-    size_t const page_size = 4096;
-    size_t const word_width = 32;
+    std::size_t const page_size = 4096;
+    std::size_t const word_width = 32;
 
     typedef Bits<8> byte;
     typedef Bits<word_width> word;
@@ -59,24 +76,7 @@ int main(int argc, char** argv)
     if(vm.count("language"))
     {
         std::string l = vm["language"].as<std::string>();
-        if(l == "lisp")
-            lang = std::make_shared<repl::lang::Lisp<page_size, byte, iword>>(context, core, 0x10000);
-        else if(l == "asm")
-            lang = std::make_shared<repl::lang::LispASM<page_size, byte, iword>>(context, core, 0x10000);
-        else if(l == "forth")
-            lang = std::make_shared<repl::lang::Forth<page_size, byte, iword>>(context, core, 0x8000);
-        else if(l == "brainfuck")
-            lang = std::make_shared<repl::lang::Brainfuck<page_size, byte, iword>>(context, 0x8000);
-        else
-        {
-            std::cout << "Unreconized language " << l << std::endl;
-            return 1;
-        }
-    }
-    else
-    {
-        std::cout << "No language specified." << std::endl;
-        return 1;
+        lang = selectLanguage<page_size, byte, iword, word>(l, context, core);
     }
 
     // parse file
@@ -94,9 +94,9 @@ int main(int argc, char** argv)
     }
 
     // Read-Eval-Print-Loop
+    std::cout << "Starting Read-Eval-Print-Loop. Ctrl+C to exit." << std::endl;
     if(vm.count("repl") || !vm.count("input-file"))
     {
-
         linenoiseHistoryLoad("history.txt");
         linenoiseHistorySetMaxLen(20);
         char* line;
@@ -105,6 +105,14 @@ int main(int argc, char** argv)
         bool running = true;
         while(running)
         {
+            while(lang == nullptr)
+            {
+                std::cout << "Please select language: ";
+                std::string l;
+                std::cin >> l;
+                lang = selectLanguage<page_size, byte, iword, word>(l, context, core);
+            }
+
             lang->name(name);
             strcat(name, " >>> ");
 

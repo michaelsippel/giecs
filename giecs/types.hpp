@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <boost/preprocessor/seq/elem.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/repetition/repeat.hpp>
@@ -38,7 +39,7 @@ name<N>& operator op (name<N> const v) \
 #define DEF_OPERATOR_EQ(r, data, elem) OPERATOR_EQ(BOOST_PP_SEQ_ELEM(0,data), BOOST_PP_SEQ_ELEM(1,data), elem)
 
 #define TYPE_BITS(name, T, op_seq, eq_op_seq) \
-template <int N> \
+template <std::size_t N> \
 class name : public Bits<N> \
 { \
     public: \

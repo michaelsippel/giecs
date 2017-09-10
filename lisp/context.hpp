@@ -100,16 +100,15 @@ class Context
             return def;
         };
 
-
     public:
         Context(giecs::memory::Context<page_size, align_t> const& mem_context_, giecs::Core<page_size, align_t, addr_t>& core_, int limit_)
             : mem_context(mem_context_), core(core_),
               limit(limit_), def_limit(0),
-              stack(mem_context_.template createStack<addr_t, val_t>()),
-              def_stack(giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>(mem_context_,
+              stack(this->mem_context.template createStack<addr_t, val_t>()),
+              def_stack(giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>(this->mem_context,
         {
             0,0
-        }, limit_))
+        }, this->limit))
         {
             std::function<void (giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)> eval =
                 [this](giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t>& stack)
@@ -338,12 +337,11 @@ class Context
     private:
         std::unordered_map<std::string, addr_t> symbols;
         giecs::memory::Context<page_size, align_t> const& mem_context;
+        giecs::Core<page_size, align_t, addr_t>& core;
+        addr_t limit;
+        addr_t def_limit;
         giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t> stack;
         giecs::memory::accessors::Stack<page_size, align_t, addr_t, val_t> def_stack;
-        giecs::Core<page_size, align_t, addr_t>& core;
-
-        int def_limit;
-        int limit;
 
         void save_symbol(std::string name)
         {

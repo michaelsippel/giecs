@@ -158,7 +158,7 @@ struct Reader<ast::List>
                             st = ast::NodeType::symbol;
                         break;
                 }
-                start = stream.tellg()-1;
+                start = stream.tellg()-std::streampos(1);
             }
 
             if(st != ast::NodeType::none && !comment)
@@ -252,6 +252,9 @@ std::shared_ptr<ast::Node> read(ast::NodeType type, std::istream& stream)
         case ast::NodeType::symbol:
         case ast::NodeType::string:
             return Reader<ast::Atom<std::string>>::read(type, stream);
+
+        default:
+            return nullptr;
     }
 }
 
@@ -261,7 +264,7 @@ std::shared_ptr<ast::Node> read_substream(ast::NodeType type, std::istream& stre
     if(stream.eof())
     {
         stream.clear();
-        end = stream.tellg()+1;
+        end = stream.tellg()+std::streampos(1);
     }
     else
         end = stream.tellg();

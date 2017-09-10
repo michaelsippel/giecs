@@ -22,7 +22,7 @@ class Substreambuf : public std::streambuf
     protected:
         int underflow(void)
         {
-            if(this->pos+1 >= this->len)
+            if((this->pos+std::streampos(1)) >= this->len)
                 return traits_type::eof();
 
             return this->source->sgetc();
@@ -30,10 +30,10 @@ class Substreambuf : public std::streambuf
 
         int uflow(void)
         {
-            if(this->pos+1 >= this->len)
+            if((this->pos+std::streampos(1)) >= this->len)
                 return traits_type::eof();
 
-            this->pos += 1;
+            this->pos += std::streampos(1);
 
             return this->source->sbumpc();
         }
@@ -50,6 +50,8 @@ class Substreambuf : public std::streambuf
                     break;
                 case std::ios_base::end:
                     this->pos = this->len + off;
+                    break;
+                default:
                     break;
             }
 

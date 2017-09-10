@@ -21,7 +21,7 @@ namespace repl
 namespace lang
 {
 
-template <int page_size, typename align_t, typename addr_t, typename word_t=addr_t>
+template <std::size_t page_size, typename align_t, typename addr_t, typename word_t=addr_t>
 class Forth : public Language
 {
         static void dup(memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)
@@ -95,13 +95,13 @@ class Forth : public Language
         }
 
     public:
-        Forth(memory::Context<page_size, align_t> const& context_, Core<page_size, align_t, addr_t>& core_, int limit_)
+        Forth(memory::Context<page_size, align_t> const& context_, Core<page_size, align_t, addr_t>& core_, addr_t limit_)
             : context(context_), core(core_), limit(limit_),
               stack(this->context.template createStack<addr_t, word_t>()),
-              def_stack(memory::accessors::Stack<page_size, align_t, addr_t, word_t>(context_,
+              def_stack(memory::accessors::Stack<page_size, align_t, addr_t, word_t>(this->context,
         {
             0,0
-        }, limit_))
+        }, this->limit))
         {
             std::function<void (memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)> fev =
                 [this](memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack)
@@ -115,7 +115,7 @@ class Forth : public Language
             };
 
             this->def_limit = 0;
-            this->core.addOperation(addr_t(this->limit), fev);
+            this->core.addOperation(this->limit, fev);
             ++this->def_limit;
 
             this->addOperation("EXECUTE", eval);
@@ -302,12 +302,13 @@ abort:
 
     private:
         memory::Context<page_size, align_t> const& context;
+        Core<page_size, align_t, addr_t>& core;
+        addr_t def_limit;
+        addr_t const limit;
         memory::accessors::Stack<page_size, align_t, addr_t, word_t> stack;
         memory::accessors::Stack<page_size, align_t, addr_t, word_t> def_stack;
-        Core<page_size, align_t, addr_t>& core;
+
         std::map<std::string, addr_t> symbols;
-        int def_limit;
-        int const limit;
 
         void addOperation(std::string name, void (*fn)(memory::accessors::Stack<page_size, align_t, addr_t, word_t>& stack))
         {

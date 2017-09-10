@@ -2,8 +2,10 @@
 #pragma once
 
 #include <istream>
+#include <cstddef>
 
 #include <giecs/memory/context.hpp>
+#include <giecs/core.hpp>
 #include <lisp/ast.hpp>
 #include <lisp/reader.hpp>
 #include <lisp/parser.hpp>
@@ -20,7 +22,7 @@ namespace repl
 namespace lang
 {
 
-template <int page_size, typename align_t, typename addr_t=align_t, typename word_t=addr_t>
+template <std::size_t page_size, typename align_t, typename addr_t=align_t, typename word_t=addr_t>
 class Lisp : public Language
 {
     public:
@@ -55,7 +57,7 @@ class Lisp : public Language
         lisp::Context<page_size, align_t, addr_t, word_t> context;
 }; // class Lisp
 
-template <int page_size, typename align_t, typename addr_t=align_t, typename word_t=addr_t>
+template <std::size_t page_size, typename align_t, typename addr_t=align_t, typename word_t=addr_t>
 class LispASM : public Language
 {
     public:

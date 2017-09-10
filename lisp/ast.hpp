@@ -116,6 +116,9 @@ class List : public Node, public std::vector< std::shared_ptr<Node> >
                             it = this->insert(it, b);
                         }
                         break;
+
+                    default:
+                        break;
                 }
             }
         }
