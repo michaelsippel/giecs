@@ -2,7 +2,6 @@
 #pragma once
 #include <iostream>
 #include <cstddef>
-#include <functional>
 #include <boost/type_index.hpp>
 
 #include <giecs/memory/accessor.hpp>
@@ -104,30 +103,28 @@ class Linear : public Accessor<page_size, align_t, val_t, Linear<page_size, alig
 #undef ID_F
 #undef ID
 
-        index_t operate(addr_t addr, index_t const len, std::function<void (val_t&)> const operation, bool dirty) const
+        template <typename Functor>
+        index_t operate(addr_t addr, index_t const len, Functor operation, bool dirty) const
         {
             index_t l;
-            if(operation)
+            Reference const& r = this->reference;
+            auto const createSync = [r](Context<page_size, align_t> const& c)
             {
-                Reference const& r = this->reference;
-                auto const createSync = [r](Context<page_size, align_t> const& c)
+                return new Linear<page_size, align_t, addr_t, val_t, buf_t, index_t>(c, r);
+            };
+
+            addr_t const end = addr + len;
+            while(addr < end)
+            {
+                std::size_t page_id = this->pageIndex(addr);
+                std::size_t block_id = this->blockIndex(addr);
+
+                auto const block = this->getBlock(page_id, block_id, dirty, createSync, block_size);
+
+                for(index_t i = valueIndex(addr); (i != index_t(block_size)) && (addr < end); ++i, ++l, ++addr)
                 {
-                    return new Linear<page_size, align_t, addr_t, val_t, buf_t, index_t>(c, r);
-                };
-
-                addr_t const end = addr + len;
-                while(addr < end)
-                {
-                    std::size_t page_id = this->pageIndex(addr);
-                    std::size_t block_id = this->blockIndex(addr);
-
-                    auto const block = this->getBlock(page_id, block_id, dirty, createSync, block_size);
-
-                    for(index_t i = valueIndex(addr); (i != index_t(block_size)) && (addr < end); ++i, ++l, ++addr)
-                    {
-                        val_t& v = (*block)[i];
-                        operation(v);
-                    }
+                    val_t& v = (*block)[i];
+                    operation(v);
                 }
             }
 
@@ -136,7 +133,7 @@ class Linear : public Accessor<page_size, align_t, val_t, Linear<page_size, alig
 
         index_t read(addr_t addr, index_t const len, buf_t buf) const
         {
-            std::function<void (val_t&)> const operation = [&buf](val_t& v)
+            auto const operation = [&buf](val_t& v)
             {
                 *buf = v;
                 ++buf;
@@ -146,7 +143,7 @@ class Linear : public Accessor<page_size, align_t, val_t, Linear<page_size, alig
 
         index_t write(addr_t addr, index_t const len, buf_t buf) const
         {
-            std::function<void (val_t&)> const operation = [&buf](val_t& v)
+            auto const operation = [&buf](val_t& v)
             {
                 v = *buf;
                 ++buf;
