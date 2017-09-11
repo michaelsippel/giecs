@@ -4,10 +4,10 @@
 #include <cstddef>
 #include <vector>
 #include <algorithm>
+#include <memory>
 
 #include <boost/foreach.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <giecs/bits.hpp>
 #include <giecs/memory/block.hpp>
@@ -37,7 +37,7 @@ class Context
             }
         };
 
-        typedef boost::shared_ptr<Block<page_size, align_t> const> BlockPtr;
+        typedef std::shared_ptr<Block<page_size, align_t> const> BlockPtr;
         typedef boost::unordered_multimap<BlockKey, BlockPtr, boost::hash<BlockKey>, CheckOverlapBlocks> BlockMap;
         typedef boost::unordered_map<BlockKey, BlockPtr, boost::hash<BlockKey>, CheckOverlapBlocks > MasterMap;
 
@@ -141,13 +141,13 @@ class Context
                 {
                     if(!(it.first.accessor_id == ref.first.accessor_id))
                     {
-                        ContextSync<page_size, align_t>* const msync = it.second->getSync(*this);
+                        ContextSync<page_size, align_t>* const msync = it.second->createSync(*this);
                         msync->read_page(page_id, page);
                         delete msync;
                     }
                 }
 
-                ContextSync<page_size, align_t>* const sync = ref.second->getSync(*this);
+                ContextSync<page_size, align_t>* const sync = ref.second->createSync(*this);
                 sync->write_page(page_id, page);
                 delete sync;
             }
@@ -166,7 +166,7 @@ class Context
                     std::size_t const page_id = masterkey.page_id;
                     if(this->blocks->count({page_id}) > 1)
                     {
-                        ContextSync<page_size, align_t>* const sync = masterp->second->getSync(*this);
+                        ContextSync<page_size, align_t>* const sync = masterp->second->createSync(*this);
 
                         auto const itp = this->blocks->equal_range({page_id});
                         std::array<align_t, page_size> page;
@@ -177,7 +177,7 @@ class Context
                         {
                             if(! (it.first.accessor_id == masterp->first.accessor_id))
                             {
-                                ContextSync<page_size, align_t>* const sync = it.second->getSync(*this);
+                                ContextSync<page_size, align_t>* const sync = it.second->createSync(*this);
                                 sync->write_page_block(it, page);
                                 delete sync;
                             }

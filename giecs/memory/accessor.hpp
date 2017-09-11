@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
 
 #include <giecs/memory/context.hpp>
 #include <giecs/memory/block.hpp>
@@ -11,7 +12,7 @@ namespace giecs
 namespace memory
 {
 
-template <std::size_t page_size, typename align_t, typename addr_t, typename val_t, typename buf_t, typename index_t>
+template <std::size_t page_size, typename align_t, typename addr_t, typename val_t, typename buf_t, typename index_t, typename Derived>
 class Accessor : public ContextSync<page_size, align_t>
 {
     public:
@@ -46,7 +47,7 @@ class Accessor : public ContextSync<page_size, align_t>
 
         struct Proxy
         {
-            Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t> const& parent;
+            Accessor const& parent;
             addr_t const addr;
 
             operator val_t ()
@@ -63,6 +64,23 @@ class Accessor : public ContextSync<page_size, align_t>
         Proxy operator[] (addr_t const addr) const
         {
             return {*this, addr};
+        }
+
+    protected:
+        template <typename CreateSyncFunctor>
+        std::shared_ptr<TypeBlock<page_size, align_t, val_t, CreateSyncFunctor> const> getBlock(std::size_t const page_id, std::size_t const block_id, bool dirty, CreateSyncFunctor createSync, std::size_t block_size) const
+        {
+            BlockKey const key = {page_id, block_id, this->accessor_id};
+            std::shared_ptr<TypeBlock<page_size, align_t, val_t, CreateSyncFunctor> const> block = std::static_pointer_cast<TypeBlock<page_size, align_t, val_t, CreateSyncFunctor> const>(this->context.getBlock(key));
+            if(block == NULL)
+            {
+                block = std::make_shared<TypeBlock<page_size, align_t, val_t, CreateSyncFunctor> const>(block_size, createSync);
+                this->context.addBlock(block, reinterpret_cast<Derived const*>(this)->blockKeys(block_id));
+            }
+            if(dirty)
+                this->context.markPageDirty(key, block);
+
+            return block;
         }
 };
 

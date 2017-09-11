@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <functional>
 #include <boost/type_index.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <giecs/memory/accessor.hpp>
 #include <giecs/memory/reference.hpp>
@@ -18,9 +17,10 @@ namespace accessors
 {
 
 template <std::size_t page_size, typename align_t, typename addr_t, typename val_t, typename buf_t=val_t*, typename index_t=size_t>
-class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>
+class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t, Linear<page_size, align_t, addr_t, val_t, buf_t, index_t>>
 {
         template <std::size_t, typename, typename, typename, typename, typename> friend class Linear;
+        template <std::size_t, typename, typename, typename, typename, typename, typename> friend class Accessor;
 
     protected:
         static std::size_t const block_size = 512; // 32bit/val -> 2 MiB.  // TODO: more dynamic
@@ -74,7 +74,6 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
 
         using typename ContextSync<page_size, align_t>::BlockPtr;
         using typename ContextSync<page_size, align_t>::BlockRef;
-        typedef boost::shared_ptr<TypeBlock<page_size, align_t, val_t> const> TypeBlockPtr;
 
         static inline Reference offsetReference(Reference const ref, std::ptrdiff_t const offset)
         {
@@ -88,7 +87,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
 #define ID(ref) ID_F( alignShift(ref) )
 
         Linear(Context<page_size, align_t> const& context_, Reference const ref_= {})
-            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::Accessor(context_, ID(ref_)), reference(ref_)
+            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t, Linear>::Accessor(context_, ID(ref_)), reference(ref_)
         {}
 
         template <typename addr2_t, typename val2_t, typename buf2_t, typename index2_t>
@@ -110,12 +109,19 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
             index_t l;
             if(operation)
             {
+                Reference const& r = this->reference;
+                auto const createSync = [r](Context<page_size, align_t> const& c)
+                {
+                    return new Linear<page_size, align_t, addr_t, val_t, buf_t, index_t>(c, r);
+                };
+
                 addr_t const end = addr + len;
                 while(addr < end)
                 {
                     std::size_t page_id = this->pageIndex(addr);
                     std::size_t block_id = this->blockIndex(addr);
-                    TypeBlockPtr block = this->getBlock(page_id, block_id, dirty);
+
+                    auto const block = this->getBlock(page_id, block_id, dirty, createSync, block_size);
 
                     for(index_t i = valueIndex(addr); (i != index_t(block_size)) && (addr < end); ++i, ++l, ++addr)
                     {
@@ -128,8 +134,8 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
             return l;
         }
 
-        using Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::read;
-        using Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t>::write;
+        using Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t, Linear>::read;
+        using Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t, Linear>::write;
 
         index_t read(addr_t addr, index_t const len, buf_t buf) const final
         {
@@ -187,26 +193,6 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
                 last_page_id = page_id;
             }
             return keys;
-        }
-
-        TypeBlockPtr getBlock(std::size_t const page_id, std::size_t const block_id, bool dirty) const
-        {
-            BlockKey const key = {page_id, block_id, this->accessor_id};
-            TypeBlockPtr block = boost::static_pointer_cast<TypeBlock<page_size, align_t, val_t> const>(this->context.getBlock(key));
-            if(block == NULL)
-            {
-                Reference const ref = this->reference;
-                auto const createSync = [ref](Context<page_size, align_t> const& c)
-                {
-                    return new Linear<page_size, align_t, addr_t, val_t, buf_t, index_t>(c, ref);
-                };
-                block = TypeBlockPtr(new TypeBlock<page_size, align_t, val_t>(block_size, createSync));
-                this->context.addBlock(block, this->blockKeys(block_id));
-            }
-            if(dirty)
-                this->context.markPageDirty(key, block);
-
-            return block;
         }
 };
 

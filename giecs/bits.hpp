@@ -152,12 +152,12 @@ std::size_t hash_value(Bits<N> const& a)
 namespace memory
 {
 
-template <std::size_t page_size, typename align_t, typename val_t>
-void read_block(TypeBlock<page_size, align_t, val_t> const& b, std::ptrdiff_t i, std::ptrdiff_t const end, std::array<align_t, page_size>& buf, std::ptrdiff_t off)
+template <std::size_t page_size, typename align_t, typename val_t, typename cs>
+void read_block(TypeBlock<page_size, align_t, val_t, cs> const& b, std::ptrdiff_t i, std::ptrdiff_t const end, std::array<align_t, page_size>& buf, std::ptrdiff_t off)
 {
     constexpr std::size_t N_align = bitsize<align_t>();
     constexpr std::size_t N_val = bitsize<val_t>();
-    TypeBlock<page_size, align_t, Bits<N_val>> const& block = reinterpret_cast<TypeBlock<page_size, align_t, Bits<N_val>> const&>(b);
+    TypeBlock<page_size, align_t, Bits<N_val>, cs> const& block = reinterpret_cast<TypeBlock<page_size, align_t, Bits<N_val>, cs> const&>(b);
 
     int bitoff = 0;
     if(off < 0)
@@ -190,12 +190,12 @@ void read_block(TypeBlock<page_size, align_t, val_t> const& b, std::ptrdiff_t i,
     }
 }
 
-template <std::size_t page_size, typename align_t, typename val_t>
-void write_block(TypeBlock<page_size, align_t, val_t> const& b, std::ptrdiff_t i, std::ptrdiff_t const end, std::array<align_t, page_size> const& buf, std::ptrdiff_t off)
+template <std::size_t page_size, typename align_t, typename val_t, typename cs>
+void write_block(TypeBlock<page_size, align_t, val_t, cs> const& b, std::ptrdiff_t i, std::ptrdiff_t const end, std::array<align_t, page_size> const& buf, std::ptrdiff_t off)
 {
     constexpr std::size_t N_align = bitsize<align_t>();
     constexpr std::size_t N_val = bitsize<val_t>();
-    TypeBlock<page_size, align_t, Bits<N_val>> const& block = reinterpret_cast<TypeBlock<page_size, align_t, Bits<N_val>> const&>(b);
+    TypeBlock<page_size, align_t, Bits<N_val>, cs> const& block = reinterpret_cast<TypeBlock<page_size, align_t, Bits<N_val>, cs> const&>(b);
 
     int bitoff = 0;
     int tbitoff = off * N_align + bitoff;

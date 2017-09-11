@@ -3,7 +3,7 @@
 
 #include <array>
 #include <cstddef>
-#include <functional>
+#include <memory>
 
 #include <boost/type_index.hpp>
 #include <boost/functional/hash.hpp>
@@ -57,14 +57,14 @@ class ContextSync
         friend class Context<page_size, align_t>;
 
     public:
-        ContextSync(Context<page_size, align_t> const& context_, AccessorId const accessor_id_)
+        ContextSync(Context<page_size, align_t> const& context_, AccessorId accessor_id_)
             : context(context_), accessor_id(accessor_id_)
         {
         }
 
         virtual ~ContextSync() {}
 
-        typedef boost::shared_ptr<Block<page_size, align_t> const> BlockPtr;
+        typedef std::shared_ptr<Block<page_size, align_t> const> BlockPtr;
         typedef std::pair< BlockKey const, BlockPtr const > BlockRef;
 
         virtual void read_page_block(BlockRef const b, std::array<align_t, page_size>& buf) const {}
@@ -91,8 +91,8 @@ template <std::size_t page_size, typename align_t>
 class Block
 {
     public:
-        Block(std::size_t const l, std::function<ContextSync<page_size, align_t>* (Context<page_size, align_t> const&)> createSync_)
-            : length(l), createSync(createSync_)
+        Block(std::size_t const l)
+            : length(l)
         {
             this->ptr = calloc(this->length, 1);
         }
@@ -105,25 +105,28 @@ class Block
         virtual void read(std::ptrdiff_t i, std::size_t const end, std::array<align_t, page_size>& buf, std::ptrdiff_t off) const {}
         virtual void write(std::ptrdiff_t i, std::size_t const end, std::array<align_t, page_size> const& buf, std::ptrdiff_t off) const {}
 
-        inline ContextSync<page_size, align_t>* getSync(Context<page_size, align_t> const& context) const
+        virtual ContextSync<page_size, align_t>* createSync(Context<page_size, align_t> const& context) const
         {
-            return this->createSync(context);
+            return nullptr;
         }
 
     protected:
         std::size_t length;
         void* ptr;
-
-        std::function<ContextSync<page_size, align_t>* (Context<page_size, align_t> const&)> createSync;
 };
 
-template <std::size_t page_size, typename align_t, typename val_t>
+template <std::size_t page_size, typename align_t, typename val_t, typename CreateSyncFunctor>
 class TypeBlock : public Block<page_size, align_t>
 {
     public:
-        TypeBlock(std::size_t n, std::function<ContextSync<page_size, align_t>* (Context<page_size, align_t> const&)> createSync_)
-            : Block<page_size, align_t>(sizeof(val_t) * n, createSync_)
+        TypeBlock(std::size_t n, CreateSyncFunctor createSync_)
+            : Block<page_size, align_t>(sizeof(val_t) * n), lcreateSync(createSync_)
         {
+        }
+
+        ContextSync<page_size, align_t>* createSync(Context<page_size, align_t> const& context) const final
+        {
+            return this->lcreateSync(context);
         }
 
         void read(std::ptrdiff_t i, std::size_t const end, std::array<align_t, page_size>& buf, std::ptrdiff_t off) const final
@@ -145,6 +148,8 @@ class TypeBlock : public Block<page_size, align_t>
         {
             return ((val_t*)this->ptr)[index % this->numElements()];
         }
+    private:
+        CreateSyncFunctor lcreateSync;
 };
 
 } // namespace memory
