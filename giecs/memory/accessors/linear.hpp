@@ -17,10 +17,10 @@ namespace accessors
 {
 
 template <std::size_t page_size, typename align_t, typename addr_t, typename val_t, typename buf_t=val_t*, typename index_t=size_t>
-class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t, Linear<page_size, align_t, addr_t, val_t, buf_t, index_t>>
+class Linear : public Accessor<page_size, align_t, val_t, Linear<page_size, align_t, addr_t, val_t, buf_t, index_t>>
 {
         template <std::size_t, typename, typename, typename, typename, typename> friend class Linear;
-        template <std::size_t, typename, typename, typename, typename, typename, typename> friend class Accessor;
+        template <std::size_t, typename, typename, typename> friend class Accessor;
 
     protected:
         static std::size_t const block_size = 512; // 32bit/val -> 2 MiB.  // TODO: more dynamic
@@ -87,7 +87,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
 #define ID(ref) ID_F( alignShift(ref) )
 
         Linear(Context<page_size, align_t> const& context_, Reference const ref_= {})
-            : Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t, Linear>::Accessor(context_, ID(ref_)), reference(ref_)
+            : Accessor<page_size, align_t, val_t, Linear>::Accessor(context_, ID(ref_)), reference(ref_)
         {}
 
         template <typename addr2_t, typename val2_t, typename buf2_t, typename index2_t>
@@ -134,10 +134,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
             return l;
         }
 
-        using Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t, Linear>::read;
-        using Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t, Linear>::write;
-
-        index_t read(addr_t addr, index_t const len, buf_t buf) const final
+        index_t read(addr_t addr, index_t const len, buf_t buf) const
         {
             std::function<void (val_t&)> const operation = [&buf](val_t& v)
             {
@@ -147,7 +144,7 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
             return this->operate(addr, len, operation, false);
         }
 
-        index_t write(addr_t addr, index_t const len, buf_t buf) const final
+        index_t write(addr_t addr, index_t const len, buf_t buf) const
         {
             std::function<void (val_t&)> const operation = [&buf](val_t& v)
             {
@@ -156,6 +153,44 @@ class Linear : public Accessor<page_size, align_t, addr_t, val_t, buf_t, index_t
             };
             return this->operate(addr, len, operation, true);
         }
+
+        val_t read(addr_t const addr) const
+        {
+            val_t val;
+            index_t l = index_t();
+            this->read(addr, ++l, buf_t(&val));
+            return val;
+        }
+
+        val_t const& write(addr_t const addr, val_t const& val) const
+        {
+            index_t l = index_t();
+            this->write(addr, ++l, buf_t(&val));
+            return val;
+        }
+
+        struct Proxy
+        {
+            Linear const& parent;
+            addr_t const addr;
+
+            operator val_t ()
+            {
+                return this->parent.read(addr);
+            }
+
+            val_t const& operator= (val_t const& val)
+            {
+                return this->parent.write(addr, val);
+            }
+        };
+
+        Proxy operator[] (addr_t const addr) const
+        {
+            return {*this, addr};
+        }
+
+
 
         void read_page_block(BlockRef const b, std::array<align_t, page_size>& buf) const final
         {
