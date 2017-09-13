@@ -6,7 +6,6 @@
 #include <memory>
 
 #include <boost/type_index.hpp>
-#include <boost/functional/hash.hpp>
 
 namespace giecs
 {
@@ -45,11 +44,13 @@ struct BlockKey
     }
 };
 
-inline std::size_t hash_value(BlockKey const& block)
+struct BlockKeyHash
 {
-    boost::hash<unsigned int> hasher;
-    return hasher(block.page_id);
-}
+    std::size_t operator() (BlockKey const& block) const
+    {
+        return block.page_id;
+    }
+};
 
 template <std::size_t page_size, typename align_t>
 class ContextSync

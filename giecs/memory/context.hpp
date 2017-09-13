@@ -5,9 +5,8 @@
 #include <vector>
 #include <algorithm>
 #include <memory>
-
+#include <unordered_map>
 #include <boost/foreach.hpp>
-#include <boost/unordered_map.hpp>
 
 #include <giecs/bits.hpp>
 #include <giecs/memory/block.hpp>
@@ -38,8 +37,8 @@ class Context
         };
 
         typedef std::shared_ptr<Block<page_size, align_t> const> BlockPtr;
-        typedef boost::unordered_multimap<BlockKey, BlockPtr, boost::hash<BlockKey>, CheckOverlapBlocks> BlockMap;
-        typedef boost::unordered_map<BlockKey, BlockPtr, boost::hash<BlockKey>, CheckOverlapBlocks > MasterMap;
+        typedef std::unordered_multimap<BlockKey, BlockPtr, BlockKeyHash, CheckOverlapBlocks> BlockMap;
+        typedef std::unordered_map<BlockKey, BlockPtr, BlockKeyHash, CheckOverlapBlocks > MasterMap;
 
         Context()
         {
