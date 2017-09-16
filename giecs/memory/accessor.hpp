@@ -1,8 +1,11 @@
 
+
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <boost/type_index.hpp>
 
 #include <giecs/memory/context.hpp>
 #include <giecs/memory/block.hpp>
@@ -16,8 +19,11 @@ template <std::size_t page_size, typename align_t, typename val_t, typename Deri
 class Accessor : public ContextSync<page_size, align_t>
 {
     public:
-        Accessor(Context<page_size, align_t> const& context_, AccessorId const accessor_id_)
-            : ContextSync<page_size, align_t>(context_, accessor_id_)
+        Accessor(Context<page_size, align_t> const& context_, std::uintmax_t flags)
+            : ContextSync<page_size, align_t>(context_,
+        {
+            boost::typeindex::type_id<Derived>(), flags
+        })
         {}
 
         virtual ~Accessor()

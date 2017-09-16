@@ -2,7 +2,6 @@
 #pragma once
 #include <iostream>
 #include <cstddef>
-#include <boost/type_index.hpp>
 
 #include <giecs/memory/accessor.hpp>
 #include <giecs/memory/reference.hpp>
@@ -81,12 +80,9 @@ class Linear : public Accessor<page_size, align_t, val_t, Linear<page_size, alig
         }
 
     public:
-#define TYPEID boost::typeindex::type_id< Linear<page_size, align_t, addr_t, val_t, buf_t, index_t> >()
-#define ID_F(flags) {TYPEID, std::uintmax_t( flags )}
-#define ID(ref) ID_F( alignShift(ref) )
 
         Linear(Context<page_size, align_t> const& context_, Reference const ref_= {})
-            : Accessor<page_size, align_t, val_t, Linear>::Accessor(context_, ID(ref_)), reference(ref_)
+            : Accessor<page_size, align_t, val_t, Linear>::Accessor(context_, alignShift(ref_)), reference(ref_)
         {}
 
         template <typename addr2_t, typename val2_t, typename buf2_t, typename index2_t>
@@ -98,10 +94,6 @@ class Linear : public Accessor<page_size, align_t, val_t, Linear<page_size, alig
         Linear(Linear<page_size, align_t, addr2_t, val2_t, buf2_t, index2_t> const& l, Reference const ref)
             : Linear(l.context, ref)
         {}
-
-#undef TYPEID
-#undef ID_F
-#undef ID
 
         template <typename Functor>
         index_t operate(addr_t addr, index_t const len, Functor operation, bool dirty) const
