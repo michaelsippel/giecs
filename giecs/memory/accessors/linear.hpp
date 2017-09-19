@@ -21,7 +21,7 @@ class Linear : public Accessor<page_size, align_t, val_t, Linear<page_size, alig
         template <std::size_t, typename, typename, typename> friend class Accessor;
 
     protected:
-        static std::size_t const block_size = 512; // 32bit/val -> 2 MiB.  // TODO: more dynamic
+        static std::size_t const block_size = 512; // 64bit/val -> 4 KiB.  // TODO: more dynamic
         static std::ptrdiff_t const nalign = (bitsize<val_t>() > bitsize<align_t>()) ?
                                              (1+(bitsize<val_t>()-1)/bitsize<align_t>()) :  // positive: number of align-blocks per value
                                              (-(bitsize<align_t>()/bitsize<val_t>())); // negative: number of values per align-block
@@ -123,7 +123,7 @@ class Linear : public Accessor<page_size, align_t, val_t, Linear<page_size, alig
             return l;
         }
 
-        index_t read(addr_t addr, index_t const len, buf_t buf) const
+        index_t read(addr_t addr, index_t len, buf_t buf) const
         {
             auto const operation = [&buf](val_t& v)
             {
@@ -133,7 +133,7 @@ class Linear : public Accessor<page_size, align_t, val_t, Linear<page_size, alig
             return this->operate(addr, len, operation, false);
         }
 
-        index_t write(addr_t addr, index_t const len, buf_t buf) const
+        index_t write(addr_t addr, index_t len, buf_t buf) const
         {
             auto const operation = [&buf](val_t& v)
             {
@@ -143,7 +143,7 @@ class Linear : public Accessor<page_size, align_t, val_t, Linear<page_size, alig
             return this->operate(addr, len, operation, true);
         }
 
-        val_t read(addr_t const addr) const
+        val_t read(addr_t addr) const
         {
             val_t val;
             index_t l = index_t();
@@ -151,35 +151,33 @@ class Linear : public Accessor<page_size, align_t, val_t, Linear<page_size, alig
             return val;
         }
 
-        val_t const& write(addr_t const addr, val_t const& val) const
+        val_t const& write(addr_t addr, val_t const& val) const
         {
             index_t l = index_t();
             this->write(addr, ++l, buf_t(&val));
             return val;
         }
 
-        struct Proxy
+        // somehow dangerous
+        val_t& operator[] (addr_t addr)
         {
-            Linear const& parent;
-            addr_t const addr;
-
-            operator val_t ()
+            val_t* val;
+            this->operate(addr, 1, [&val](val_t& v)
             {
-                return this->parent.read(addr);
-            }
-
-            val_t const& operator= (val_t const& val)
-            {
-                return this->parent.write(addr, val);
-            }
-        };
-
-        Proxy operator[] (addr_t const addr) const
-        {
-            return {*this, addr};
+                val = &v;
+            }, true);
+            return *val;
         }
 
-
+        val_t const& operator[] (addr_t addr) const
+        {
+            val_t const* val;
+            this->operate(addr, 1, [&val](val_t& v)
+            {
+                val = &v;
+            }, false);
+            return *val;
+        }
 
         void read_page_block(BlockRef const b, std::array<align_t, page_size>& buf) const final
         {
