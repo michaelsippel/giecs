@@ -34,7 +34,7 @@ class Deque : public Linear<page_size, align_t, addr_t, val_t, val_t*, std::size
 
         template <typename val2_t>
         Deque(Deque<page_size, align_t, addr_t, val2_t> const& s, std::ptrdiff_t offset=0, addr_t back_ptr_=0, addr_t front_ptr_=0)
-            : Linear<page_size, align_t, addr_t, val_t, val_t*, std::size_t>::Linear(s, s.alignOffset(std::ptrdiff_t(s.pos))+offset), back_ptr(back_ptr_), front_ptr(front_ptr_)
+            : Linear<page_size, align_t, addr_t, val_t, val_t*, std::size_t>::Linear(s, s.alignOffset(std::ptrdiff_t(s.back_ptr))+offset), back_ptr(back_ptr_), front_ptr(front_ptr_)
         {}
 
         std::size_t size(void) const
@@ -103,7 +103,7 @@ class Deque : public Linear<page_size, align_t, addr_t, val_t, val_t*, std::size
         void push_back(std::size_t n, val2_t const* val)
         {
             auto s = Deque<page_size, align_t, addr_t, val2_t>(*this);
-            s.push_front(n, val);
+            s.push_back(n, val);
             this->back_ptr += this->diff<val2_t>(n);
         }
 
@@ -119,7 +119,7 @@ class Deque : public Linear<page_size, align_t, addr_t, val_t, val_t*, std::size
         void pop_back(std::size_t n, val2_t* val)
         {
             auto s = Deque<page_size, align_t, addr_t, val2_t>(*this);
-            s.pop_front(n, val);
+            s.pop_back(n, val);
             this->back_ptr += this->diff<val2_t>(-n);
         }
 
@@ -139,7 +139,7 @@ class Deque : public Linear<page_size, align_t, addr_t, val_t, val_t*, std::size
         val2_t pop_front(void)
         {
             val2_t val;
-            this->pop_back(1, &val);
+            this->pop_front(1, &val);
             return val;
         }
 
