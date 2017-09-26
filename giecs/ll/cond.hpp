@@ -10,8 +10,10 @@ namespace ll
 {
 LLFN(cond)
 {
-    val_t c = stack.pop();
-    val_t a = stack.pop();
+    val_t c = stack.top();
+    stack.pop();
+    val_t a = stack.top();
+    stack.pop();
     if(bool(c))
     {
         stack.pop();
