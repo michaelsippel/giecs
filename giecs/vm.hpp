@@ -14,8 +14,6 @@ namespace giecs
 template <std::size_t page_size, typename align_t>
 struct VM
 {
-    using Core = giecs::Core<page_size, align_t>;
-
     struct Memory
     {
         using Context = giecs::memory::Context<page_size, align_t>;
