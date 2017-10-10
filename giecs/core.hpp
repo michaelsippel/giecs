@@ -1,16 +1,10 @@
 
 #pragma once
 
-#include <array>
-#include <memory>
-#include <cassert>
-#include <cstddef>
+#include <queue>
 
 #include <boost/preprocessor/tuple/elem.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
-
-#include <giecs/memory/accessor.hpp>
-#include <giecs/memory/accessors/queue.hpp>
 
 namespace giecs
 {
@@ -29,16 +23,13 @@ struct name \
     } \
 };
 
-struct CoreBase
-{
-    // virtual void eval(Code) {}
-}; // struct CoreBase
-
 template <typename Instruction, typename Operator>
-struct Core : public CoreBase
+struct Core
 {
+    using InstructionType = Instruction;
+
     template <typename Container>
-    void eval(std::queue<Instruction, Container>& code, typename Instruction::Data& data)
+    static inline void eval(std::queue<Instruction, Container>& code, typename Instruction::Data& data)
     {
         while(! code.empty())
         {
@@ -48,25 +39,6 @@ struct Core : public CoreBase
         }
     }
 }; // struct Core
-/*
-template <std::size_t page_size, typename align_t>
-void eval(memory::accessors::Code<page_size, align_t> code)
-{
-    Core* core = code->createCore();
-    while(! code->empty())
-    {
-        CodeBlock c = code->top();
-        core->eval();
 
-        if(code->jmp())
-        {
-          code = code->jmp_code();
-          core = code->createCore();
-        }
-        else
-          code->pop();
-    }
-}
-*/
 } // namespace giecs
 
