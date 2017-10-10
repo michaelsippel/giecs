@@ -9,6 +9,31 @@
 
 BOOST_AUTO_TEST_SUITE(core);
 
+struct Instruction
+{
+        enum Opcode
+        {
+            push,
+            jmp,
+            addi,
+            printi,
+        };
+
+        struct Data : public std::stack<int>
+        {
+            int data;
+        };
+
+        Opcode fetch(Data& d)
+        {
+            d.data = this->data;
+            return this->op;
+        }
+
+        Opcode op;
+        int data;
+};
+
 inline void f_addi(std::stack<int>& stack)
 {
     int a = stack.top();
@@ -26,30 +51,30 @@ inline void f_printi(std::stack<int>& stack)
     std::cout << int(a) << std::endl;
 }
 
-enum Opcode
+inline void f_push(Instruction::Data& stack)
 {
-    push,
-    addi,
-    printi,
-};
+    stack.push(stack.data);
+}
 
 GIECS_CORE_OPERATOR(TestOperator,
-                    ((Opcode::addi, f_addi))
-                    ((Opcode::printi, f_printi))
+                    ((Instruction::Opcode::push, f_push))
+                    ((Instruction::Opcode::addi, f_addi))
+                    ((Instruction::Opcode::printi, f_printi))
                    );
-using TestCore = giecs::Core<Opcode, std::stack<int>&, TestOperator>;
+
+using TestCore = giecs::Core<Instruction, TestOperator>;
 
 BOOST_AUTO_TEST_CASE(eval)
 {
     TestCore core;
 
-    std::stack<int> data = std::stack<int>();
-    std::queue<Opcode> code = std::queue<Opcode>();
+    Instruction::Data data;
+    std::queue<Instruction> code = std::queue<Instruction>();
 
-    data.push(2);
-    data.push(3);
-    code.push(addi);
-    code.push(printi);
+    code.push({Instruction::Opcode::push,2});
+    code.push({Instruction::Opcode::push,3});
+    code.push({Instruction::Opcode::addi});
+    code.push({Instruction::Opcode::printi});
 
     core.eval(code, data);
 }

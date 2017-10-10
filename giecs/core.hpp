@@ -34,15 +34,16 @@ struct CoreBase
     // virtual void eval(Code) {}
 }; // struct CoreBase
 
-template <typename Opcode, typename Data, typename Operator>
+template <typename Instruction, typename Operator>
 struct Core : public CoreBase
 {
     template <typename Container>
-    void eval(std::queue<Opcode, Container>& code, Data data)
+    void eval(std::queue<Instruction, Container>& code, typename Instruction::Data& data)
     {
         while(! code.empty())
         {
-            Operator::template operate<Opcode, Data>(code.front(), data);
+            typename Instruction::Opcode opcode = code.front().fetch(data);
+            Operator::template operate<typename Instruction::Opcode, typename Instruction::Data&>(opcode, data);
             code.pop();
         }
     }
