@@ -14,7 +14,7 @@ BOOST_AUTO_TEST_CASE(accessor)
     typedef Bits<6> byte;
     typedef Bits<24> word;
 
-    auto c1 = new memory::Context<4, word>();
+    auto c1 = memory::Context<4, word>();
 
     struct Index
     {
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(accessor)
         }
     };
 
-    auto acc = c1->createLinear<Index, byte, Array, Index>();
+    auto acc = memory::accessors::Linear<4, word, Index, byte, Array, Index>(c1);
 
     Index len = Index(0,4);
 
@@ -100,16 +100,14 @@ BOOST_AUTO_TEST_CASE(accessor)
         byte b = acc[i];
         BOOST_CHECK( b == a );
     }
-
-    delete c1;
 }
 
 BOOST_AUTO_TEST_CASE(synchronization)
 {
     auto c1 = memory::Context<8, uint8_t>();
 
-    auto acc1 = c1.createLinear<int, uint8_t>();
-    auto acc2 = c1.createLinear<int, uint16_t>();
+    auto acc1 = memory::accessors::Linear<8, uint8_t, int, uint8_t>(c1);
+    auto acc2 = memory::accessors::Linear<8, uint8_t, int, uint16_t>(c1);
 
     static int const n = 4;
 

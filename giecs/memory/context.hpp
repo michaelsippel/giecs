@@ -16,14 +16,6 @@ namespace giecs
 namespace memory
 {
 
-namespace accessors
-{
-template <std::size_t page_size, typename align_t, typename addr_t, typename val_t, typename buf_t, typename index_t>
-class Linear;
-template <std::size_t page_size, typename align_t, typename addr_t, typename val_t>
-class Stack;
-};
-
 template <std::size_t page_size, typename align_t>
 class Context
 {
@@ -50,18 +42,6 @@ class Context
         {
             delete this->blocks;
             delete this->masters;
-        }
-
-        template <typename addr_t, typename val_t, typename buf_t=val_t*, typename index_t=size_t>
-        inline accessors::Linear<page_size, align_t, addr_t, val_t, buf_t, index_t> createLinear() const
-        {
-            return accessors::Linear<page_size, align_t, addr_t, val_t, buf_t, index_t>(*this);
-        }
-
-        template <typename addr_t, typename val_t>
-        inline accessors::Stack<page_size, align_t, addr_t, val_t> createStack() const
-        {
-            return accessors::Stack<page_size, align_t, addr_t, val_t>(*this);
         }
 
         void addBlock(BlockPtr const block, BlockKey const key) const

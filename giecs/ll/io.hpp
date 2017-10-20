@@ -15,7 +15,8 @@ struct ConsoleIO
 {
     LLFN(print)
     {
-        val_t a = stack.pop();
+        val_t a = stack.top();
+        stack.pop();
         std::cout << cast_t(a);
     }
 
