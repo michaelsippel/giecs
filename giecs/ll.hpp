@@ -1,14 +1,14 @@
 
 #pragma once
 
-#include <giecs/memory/accessors/stack.hpp>
+#include <stack>
 
 namespace giecs
 {
 
 #define LLFN(name) \
-template <size_t page_size, typename align_t, typename val_t> \
-static void name (memory::accessors::Stack<page_size, align_t, val_t>& stack)
+template <typename val_t, typename Container> \
+static void name (std::stack<val_t, Container>& stack)
 
 } // namespace giecs
 

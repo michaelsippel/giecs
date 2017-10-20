@@ -30,6 +30,19 @@ struct Arithmetic
     OP(div, /)
 #undef OP
 
+#define SINGLE_OP(name, op) \
+    LLFN( name ) \
+    { \
+        val_t a = stack.top(); \
+        stack.pop(); \
+        cast_t r = cast_t(a); \
+        op r; \
+        stack.push(val_t(r)); \
+    }
+
+    SINGLE_OP(inc, ++)
+    SINGLE_OP(dec, --)
+
 #define COMP(name, op) \
     LLFN( name ) \
     { \
