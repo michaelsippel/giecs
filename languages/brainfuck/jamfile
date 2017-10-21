@@ -1,0 +1,5 @@
+
+exe bf : main.cpp : 
+	<library>/giecs/
+	;
+
