@@ -2,7 +2,7 @@
 #include <iostream>
 #include <array>
 
-#include <languages/brainfuck/brainfuck.hpp>
+#include <languages/brainfuck/vm.hpp>
 
 int main(int argc, char* argv[])
 {
@@ -24,9 +24,9 @@ int main(int argc, char* argv[])
     *p++ = (uint8_t)brainfuck::Opcode::jmp;
     *p++ = (uint8_t)-6;
 
-    auto tape = VM::Instruction::Data(mem.begin(), prg.begin());
-    auto code = VM::CodeAccessor(tape.pc, p);
+    VM::Instruction::Data state = {mem.begin(), prg.begin()};
+    auto code = VM::CodeAccessor(state.pc, p);
     auto pq = std::queue<VM::Instruction, VM::CodeAccessor>(code);
-    BFCore::eval(pq, tape);
+    BFCore::eval(pq, state);
 }
 
