@@ -1,57 +1,83 @@
 
 #pragma once
 
+#include <queue>
+#include <istream>
+#include <sstream>
+
 namespace brainfuck
 {
 
-class SyntaxAccessor : public giecs::memory::Linear<char>
+template <typename Container>
+class SyntaxAccessor : public std::queue<uint8_t, Container>
 {
-    void parse(char* cmd, char* end)
-    {
-        int m = 0; // loop level
-        char* start = nullptr;
-
-        while(cmd < end)
+    public:
+        void parse(std::istream& stream)
         {
-            switch(*cmd)
+            int level = 0;
+            int n_brackets = 0;
+            std::stringbuf buf;
+
+            char cmd;
+            while(stream.get(cmd))
             {
-#define BF_CASE(r, data, elem) case BOOST_PP_TUPLE_ELEM(2, 0, elem) : if(m == 0) this->push( BOOST_PP_TUPLE_ELEM(2, 1, elem) ); break;
-
-                    BOOST_PP_SEQ_FOR_EACH(BF_CASE, 0,
-                                          ((',', Opcode::in))
-                                          (('.', Opcode::out))
-                                          (('+', Opcode::inc))
-                                          (('-', Opcode::dec))
-                                          (('<', Opcode::left))
-                                          (('>', Opcode::right))
-                                         );
-
-                case '[':
-                    if(m == 0)
-                        start = cmd+1;
-                    // PUSH jz ...
-                    m++;
-                    break;
-
-                case ']':
-                    if(m == 1)
+                if(cmd == ']')
+                {
+                    ++n_brackets;
+                    --level;
+                }
+                if(level == 0)
+                {
+                    switch(cmd)
                     {
-                        // n = cmd - start
-                        // PUSH ... n
-                        // this->parse(start, cmd);
-                        // PUSH jmp -n
+#define BF_CASE(r, data, elem) case BOOST_PP_TUPLE_ELEM(2, 0, elem) : this->push(BOOST_PP_TUPLE_ELEM(2, 1, elem)); break;
+                            BOOST_PP_SEQ_FOR_EACH(BF_CASE, 0,
+                                                  ((',', Opcode::in))
+                                                  (('.', Opcode::out))
+                                                  (('+', Opcode::inc))
+                                                  (('-', Opcode::dec))
+                                                  (('>', Opcode::next))
+                                                  (('<', Opcode::prev))
+                                                  (('[', Opcode::jz))
+                                                 );
 
-                        SyntaxAccessor sub;
-                        sub->parse(start, cmd);
-                        start = nullptr;
+                        case ']':
+                        {
+                            int jmpoff = buf.str().length() + 2*n_brackets;
+                            n_brackets = 0;
+                            this->push(jmpoff);
+
+                            buf.sputc(0);
+                            std::istream substream(&buf);
+                            this->parse(substream);
+
+                            this->push(Opcode::jmp);
+                            this->push(-jmpoff-2);
+
+                            buf = std::stringbuf();
+                        }
+                        break;
                     }
-                    m--;
-                    break;
+                }
+                else
+                {
+                    switch(cmd)
+                    {
+                        case '.':
+                        case ',':
+                        case '+':
+                        case '-':
+                        case '>':
+                        case '<':
+                        case '[':
+                        case ']':
+                            buf.sputc(cmd);
+                            break;
+                    }
+                }
+                if(cmd == '[') ++level;
             }
-            cmd++;
         }
-    }
-}
 }; // class SyntaxAccessor
 
 } // namespace brainfuck

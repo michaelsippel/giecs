@@ -55,10 +55,10 @@ struct VM
         }
 
 #define DATA_FN(def) ([](typename Instruction::Data& d){ def ; })
-#define TAPE_FN(def) DATA_FN( auto tape = d.tape; def )
+#define TAPE_FN(def) DATA_FN( auto& tape = d.tape; def )
         GIECS_CORE_OPERATOR(Operator,
                             ((Opcode::in, TAPE_FN(std::cin >> *tape)))
-                            ((Opcode::out, TAPE_FN(std::cout << *tape)))
+                            ((Opcode::out, TAPE_FN(std::cout << (char)*tape)))
                             ((Opcode::inc, TAPE_FN(++(*tape))))
                             ((Opcode::dec, TAPE_FN(--(*tape))))
                             ((Opcode::next, TAPE_FN(++tape)))
@@ -71,10 +71,10 @@ struct VM
         {
             private:
                 ProgramIterator& pc;
-                ProgramIterator& end;
+                ProgramIterator const& end;
 
             public:
-                CodeAccessor(ProgramIterator& begin_, ProgramIterator& end_)
+                CodeAccessor(ProgramIterator& begin_, ProgramIterator const& end_)
                     : boost::circular_buffer<Instruction>(16), pc(begin_), end(end_)
                 {}
 

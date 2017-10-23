@@ -1,32 +1,39 @@
 
 #include <iostream>
 #include <array>
+#include <deque>
+#include <fstream>
 
 #include <languages/brainfuck/vm.hpp>
+#include <languages/brainfuck/syntax.hpp>
 
 int main(int argc, char* argv[])
 {
-    using Memory = std::array<char, 4096>;
+    using Memory = std::array<int8_t, 30000>;
     using Program = std::array<uint8_t, 4096>;
     using VM = brainfuck::VM<Memory::iterator, Program::iterator>;
     using BFCore = giecs::Core<VM::Instruction, VM::Operator>;
 
-    Memory mem;
+    if(argc > 1)
+    {
+        std::ifstream file(argv[1]);
 
-    // print all chars
-    Program prg;
-    Program::iterator p = prg.begin();
-    *p++ = (uint8_t)brainfuck::Opcode::inc;
-    *p++ = (uint8_t)brainfuck::Opcode::jz;
-    *p++ = (uint8_t)4;
-    *p++ = (uint8_t)brainfuck::Opcode::inc;
-    *p++ = (uint8_t)brainfuck::Opcode::out;
-    *p++ = (uint8_t)brainfuck::Opcode::jmp;
-    *p++ = (uint8_t)-6;
+        brainfuck::SyntaxAccessor<std::deque<uint8_t>> reader;
+        reader.parse(file);
 
-    VM::Instruction::Data state = {mem.begin(), prg.begin()};
-    auto code = VM::CodeAccessor(state.pc, p);
-    auto pq = std::queue<VM::Instruction, VM::CodeAccessor>(code);
-    BFCore::eval(pq, state);
+        Program prg;
+        Program::iterator p = prg.begin();
+        for(int i=0; !reader.empty(); ++i)
+        {
+            *p++ = (uint8_t) reader.front();
+            reader.pop();
+        }
+
+        Memory mem = {0};
+        VM::Instruction::Data state = {mem.begin(), prg.begin()};
+        auto code = VM::CodeAccessor(state.pc, p);
+        auto pq = std::queue<VM::Instruction, VM::CodeAccessor>(code);
+        BFCore::eval(pq, state);
+    }
 }
 
