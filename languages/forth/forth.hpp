@@ -12,10 +12,7 @@
 
 #include "language.hpp"
 
-namespace repl
-{
-
-namespace lang
+namespace forth
 {
 
 enum WordType
@@ -23,9 +20,6 @@ enum WordType
     Lit,
     SubWord,
 };
-
-namespace forth
-{
 
 class Context
 {
@@ -37,7 +31,6 @@ class Context
             addr_t link;
             bool immediate;
         };
-        giecs::Core<page_size, align_t> core;
         std::map<std::string, Entry> dictionary;
 
         enum Primitive
@@ -112,7 +105,6 @@ class ForthSyntaxAccessor : public giecs::memory::accessors::Stream<page_size, a
                 {
                     addr_t addr = it->second.link;
                     compile |= it->second.compile;
-
                     words.push(addr);
                 }
                 else

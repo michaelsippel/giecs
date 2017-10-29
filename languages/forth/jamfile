@@ -1,0 +1,5 @@
+
+exe forth : main.cpp : 
+	<library>/giecs/
+	;
+
