@@ -13,3 +13,6 @@ vm_*
 bin
 history.txt
 
+docs/build
+docs/doxyxml
+
