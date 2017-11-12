@@ -1,94 +1,179 @@
 
 #pragma once
 
+#include <map>
 #include <stack>
+#include <boost/circular_buffer.hpp>
 #include <giecs/ll/arithmetic.hpp>
 #include <giecs/ll/io.hpp>
 
 #include <giecs/core.hpp>
+#include <giecs/eval.hpp>
 
 namespace forth
 {
-
-enum WordType
+/**
+ * Implements the complete Virtual-Forth-Machine
+ */
+template <typename MemWord, typename DataStackContainer, typename ReturnStackContainer, typename MemContainer>
+class VM
 {
-    Lit,
-    SubWord,
-};
-
-enum Primitive
-{
-    noop,
-    // flow
-    branch,
-    exit,
-    // meta
-    compile,
-    execute,
-    create,
-    // stack
-    push,
-    drop,
-    dup,
-    // memory
-    load,
-    store,
-    // logic
-    andb,
-    orb,
-    xorb,
-    // integer
-    addi,
-    subi,
-    muli,
-    divi,
-    printi,
-};
-
-template <typename word_t, typename Container>
-struct VM
-{
+    public:
         struct Instruction
         {
-                using Opcode = enum Primitive;
-                Opcode op;
-                word_t arg[2];
-
-                struct Data : public std::stack<word_t, Container>
+                enum Opcode
                 {
-                    word_t r[2];
-                    /*   Container& container(void)
-                    {
-                      return this->c;
-                      }*/
+                    compose, exit, // flow
+                    push, drop, dup, over, swap, // stack
+                    load, store, // memory
+                    noti, andi, ori, xori, // bitwise logic
+                    addi, subi, muli, divi, // integer arithmetic
+                    gti, lti, eq, // integer relation
+                    printi, emit, // out
                 };
 
-                Primitive fetch(Data& data)
+                Opcode op;
+                MemWord pc;
+
+                /**
+                 * Represents the VM-State with Memory & Registers
+                 */
+                struct Data : public std::stack<MemWord, DataStackContainer>, public MemContainer
                 {
-                    data.r[0] = this->arg[0];
-                    data.r[1] = this->arg[1];
+                    MemWord pc;
+                    std::stack<MemWord, ReturnStackContainer> return_stack;
+                };
+
+                Opcode fetch(Data& data)
+                {
+                    data.pc = this->pc;
                     return op;
                 }
         }; // struct Instruction
 
-#define FN(def) ([](typename Instruction::Data& data){ def ;})
+        using State = typename Instruction::Data;
+        State state;
+        std::map<MemWord, giecs::ProgramBase*> programs;
+
+        giecs::ProgramBase* get_program(MemWord addr)
+        {
+            auto it = this->programs.find(addr);
+            if(it == this->programs.end())
+                return nullptr;
+            else
+                return it->second;
+        }
+
+        template <typename T, typename Container>
+        static inline T pop(std::stack<T, Container>& stack)
+        {
+            T a = stack.top();
+            stack.pop();
+            return a;
+        }
+
+        /**
+         * Executes Opcodes
+         */
+#define FN(def) ([](State& data){ def ;})
         GIECS_CORE_OPERATOR(Operator,
-                            ((Primitive::noop, FN()))
-                            //((Primitive::branch, FN(jmp(data.r0))))
-                            //((Primitive::load, FN(data.push(data.mem[data.r0]))))
-                            //((Primitive::store, FN(data.mem[])))
+                            ((Instruction::Opcode::compose, FN(data.return_stack.push(data.pc); data.pc = data[data.pc];)))
+                            ((Instruction::Opcode::exit, FN(data.pc = pop(data.return_stack);)))
 
-                            ((Primitive::push, FN(data.push(data.r[0]))))
-                            ((Primitive::drop, FN(data.pop())))
-                            ((Primitive::dup, FN(data.push(data.top()))))
-                            ((Primitive::addi, giecs::ll::Arithmetic<int>::add))
-                            ((Primitive::subi, giecs::ll::Arithmetic<int>::sub))
-                            ((Primitive::muli, giecs::ll::Arithmetic<int>::mul))
-                            ((Primitive::divi, giecs::ll::Arithmetic<int>::div))
+                            ((Instruction::Opcode::load, FN(MemWord addr=pop(data); data.push(data[addr]);)))
+                            ((Instruction::Opcode::store, FN(MemWord addr=pop(data); data[addr] = pop(data);)))
+                            ((Instruction::Opcode::push, FN(data.push(data[++data.pc]);)))
+                            ((Instruction::Opcode::drop, FN(data.pop())))
+                            ((Instruction::Opcode::dup, FN(data.push(data.top()))))
+                            ((Instruction::Opcode::over, FN(MemWord a = pop(data); MemWord b = data.top(); data.push(a); data.push(b);)))
+                            ((Instruction::Opcode::swap, FN(MemWord a = pop(data); MemWord b = pop(data); data.push(a); data.push(b);)))
 
-                            ((Primitive::printi, giecs::ll::ConsoleIO<int>::print))
-                           );
-}; // struct VM
+                            ((Instruction::Opcode::noti, giecs::ll::Bitwise<int>::op_not))
+                            ((Instruction::Opcode::andi, giecs::ll::Bitwise<int>::op_and))
+                            ((Instruction::Opcode::ori, giecs::ll::Bitwise<int>::op_or))
+                            ((Instruction::Opcode::xori, giecs::ll::Bitwise<int>::op_xor))
+                            ((Instruction::Opcode::addi, giecs::ll::Arithmetic<int>::add))
+                            ((Instruction::Opcode::subi, giecs::ll::Arithmetic<int>::sub))
+                            ((Instruction::Opcode::muli, giecs::ll::Arithmetic<int>::mul))
+                            ((Instruction::Opcode::divi, giecs::ll::Arithmetic<int>::div))
+                            ((Instruction::Opcode::gti, giecs::ll::Relation<int>::gt))
+                            ((Instruction::Opcode::lti, giecs::ll::Relation<int>::lt))
+                            ((Instruction::Opcode::eq, giecs::ll::Relation<int>::eq))
+
+                            ((Instruction::Opcode::emit, giecs::ll::ConsoleIO<char>::print))
+                            ((Instruction::Opcode::printi, giecs::ll::ConsoleIO<int>::print))
+                           ); // Operator
+
+        /**
+         * Evaluated by giecs::eval
+         */
+        class Program : public giecs::Program<giecs::Core<Instruction, Operator>, Program>
+        {
+            private:
+                class InstructionDecoder : public boost::circular_buffer<Instruction>
+                {
+                    private:
+                        State& state;
+
+                    public:
+                        InstructionDecoder(State& s)
+                            : boost::circular_buffer<Instruction>(16), state(s)
+                        {
+                        }
+
+                        Instruction& front(void)
+                        {
+                            if(this->boost::circular_buffer<Instruction>::empty())
+                            {
+                                //std::cout << "BEGIN DECODE" << std::endl;
+                                MemWord pc = state.pc;
+                                for(Instruction inst; inst.op != Instruction::Opcode::compose && inst.op != Instruction::Opcode::exit && !this->full();)
+                                {
+                                    ++pc;
+                                    inst.op = (typename Instruction::Opcode) this->state[this->state[pc]];
+                                    inst.pc = pc;
+                                    // We know which instructions take more
+                                    if(inst.op == Instruction::Opcode::push)
+                                        ++pc;
+                                    this->push_back(inst);
+                                    //std::cout << "Instruction " << inst.op << std::endl;
+                                }
+                                //  std::cout << "END DECODE" << std::endl;
+                            }
+                            return this->boost::circular_buffer<Instruction>::front();
+                        }
+
+                        bool empty(void) const
+                        {
+                            return /*(this->programs.count(this->state.pc) > 0) ||*/ this->state.return_stack.empty();
+                        }
+                }; // class InstructionDecoder
+
+                VM& vm;
+                std::queue<Instruction, InstructionDecoder> queue; // could be multiple objects for multithreaded operation
+
+            public:
+                Program(VM& vm_, giecs::ProgramBase* ret=nullptr)
+                    : vm(vm_), queue(InstructionDecoder(vm_.state))
+                {
+                }
+
+                std::queue<Instruction, InstructionDecoder>& program(void)
+                {
+                    return this->queue;
+                }
+
+                State& data(void)
+                {
+                    return this->vm.state;
+                }
+
+                giecs::ProgramBase* next(void)
+                {
+                    return this->vm.get_program(this->vm.state.pc);
+                }
+        }; // class Word
+}; // class VM
 
 } // namespace forth
 

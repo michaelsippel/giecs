@@ -1,28 +1,39 @@
 
-#include <deque>
+#include <vector>
+#include <iostream>
+#include <memory>
 
-#include <languages/forth/vm.hpp>
+#include <giecs/eval.hpp>
+#include <languages/forth/bootstrap.hpp>
 
 int main(int argc, char* argv[])
 {
-    using Word = int;
-    using VM = forth::VM<Word, std::deque<Word>>;
-    using ForthCore = giecs::Core<VM::Instruction, VM::Operator>;
+    auto vm = forth::Bootstrap<int>();
+    /*
+    using Opcode = forth::Bootstrap<int>::Opcode;
+    vm.state[51] = 200;
+    vm.state[52] = 4;
+    vm.state[53] = 100;
+    vm.state[54] = 500;
+    vm.state[55] = 600;
 
-    VM::Instruction::Data data;
-    std::queue<VM::Instruction> prog;
+    vm.state[100] = Opcode::compose;
+    vm.state[101] = 300;
+    vm.state[102] = 400;
+    vm.state[103] = 600;
 
-    prog.push({forth::Primitive::push, {2}});
-    prog.push({forth::Primitive::push, {3}});
-    prog.push({forth::Primitive::addi});
+    vm.state[200] = Opcode::push;
+    vm.state[300] = Opcode::dup;
+    vm.state[400] = Opcode::muli;
+    vm.state[500] = Opcode::printi;
+    vm.state[600] = Opcode::exit;
 
-    prog.push({forth::Primitive::dup});
-    prog.push({forth::Primitive::printi});
-
-    prog.push({forth::Primitive::dup});
-    prog.push({forth::Primitive::muli});
-    prog.push({forth::Primitive::printi});
-
-    ForthCore::eval(prog, data);
+    vm.state.return_stack.push(0);
+    vm.state.pc = 50;
+    auto p = typename forth::Bootstrap<int>::Program(vm);
+    giecs::eval(&p);
+    std::cout << std::endl;
+    */
+    vm.repl();
 }
 

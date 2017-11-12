@@ -43,7 +43,7 @@ struct Arithmetic
     SINGLE_OP(dec, --)
 }; // struct Arithmetic
 
-  template <typename cast_t=bool>
+template <typename cast_t=bool>
 struct Logic
 {
     SINGLE_OP(op_not, not);
