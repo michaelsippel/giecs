@@ -24,7 +24,7 @@ class VM
                 enum Opcode
                 {
                     compose, exit, // flow
-                    push, drop, dup, over, swap, // stack
+                    push, drop, dup, over, swap, pushr, popr, // stack
                     load, store, // memory
                     noti, andi, ori, xori, // bitwise logic
                     addi, subi, muli, divi, // integer arithmetic
@@ -42,6 +42,7 @@ class VM
                 {
                     MemWord pc;
                     std::stack<MemWord, ReturnStackContainer> return_stack;
+                    std::map<MemWord, giecs::ProgramBase*> programs;
                 };
 
                 Opcode fetch(Data& data)
@@ -53,12 +54,11 @@ class VM
 
         using State = typename Instruction::Data;
         State state;
-        std::map<MemWord, giecs::ProgramBase*> programs;
 
         giecs::ProgramBase* get_program(MemWord addr)
         {
-            auto it = this->programs.find(addr);
-            if(it == this->programs.end())
+            auto it = this->state.programs.find(addr);
+            if(it == this->state.programs.end())
                 return nullptr;
             else
                 return it->second;
@@ -87,6 +87,8 @@ class VM
                             ((Instruction::Opcode::dup, FN(data.push(data.top()))))
                             ((Instruction::Opcode::over, FN(MemWord a = pop(data); MemWord b = data.top(); data.push(a); data.push(b);)))
                             ((Instruction::Opcode::swap, FN(MemWord a = pop(data); MemWord b = pop(data); data.push(a); data.push(b);)))
+                            ((Instruction::Opcode::pushr, FN(data.return_stack.push(pop(data)))))
+                            ((Instruction::Opcode::popr, FN(data.push(pop(data.return_stack)))))
 
                             ((Instruction::Opcode::noti, giecs::ll::Bitwise<int>::op_not))
                             ((Instruction::Opcode::andi, giecs::ll::Bitwise<int>::op_and))
@@ -145,7 +147,7 @@ class VM
 
                         bool empty(void) const
                         {
-                            return /*(this->programs.count(this->state.pc) > 0) ||*/ this->state.return_stack.empty();
+                            return (this->state.programs.count(this->state.pc) > 0) || this->state.return_stack.empty();
                         }
                 }; // class InstructionDecoder
 
