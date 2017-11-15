@@ -21,6 +21,7 @@ class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::arr
         using Instruction = typename fVM::Instruction;
         using Opcode = typename Instruction::Opcode;
 
+        std::istream& stream;
         struct Entry
         {
             bool immediate;
@@ -29,22 +30,25 @@ class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::arr
 
         std::map<std::string, Entry> dictionary;
 
-        void add_prim(std::string name, Opcode op)
+        void add_prim(std::string name, Opcode op, bool immediate=false)
         {
-            this->dictionary[name] = {false, here()};
+            this->dictionary[name] = {immediate, here()};
             this->state[here()] = op;
             ++here();
         }
 
-  void add_comp(std::string name, std::vector<std::string> prg)
-  {
-    this->add_prim(name, Opcode::compose);
-    for(std::string const& word : prg)
-    this->state[here()++] = this->dictionary[word].xt;
-  }
+        void add_comp(std::string name, std::vector<std::string> prg, bool immediate=false)
+        {
+            this->add_prim(name, Opcode::compose, immediate);
+            for(std::string const& word : prg)
+            {
+                this->state[here()++] = this->dictionary[word].xt;
+            }
+        }
 
     public:
-        Bootstrap()
+        Bootstrap(std::istream& stream_)
+            : stream(stream_)
         {
             this->here() = 0x100;
 
@@ -56,6 +60,8 @@ class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::arr
             add_prim("over", Opcode::over);
             add_prim("drop", Opcode::drop);
             add_prim("swap", Opcode::swap);
+            add_prim(">r", Opcode::pushr);
+            add_prim("r>", Opcode::popr);
 
             add_prim("not", Opcode::noti);
             add_prim("and", Opcode::andi);
@@ -71,6 +77,36 @@ class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::arr
             add_prim(".", Opcode::printi);
 
             add_comp("?", {"@", ".", "exit"});
+            add_comp("execute", {">r", "exit"});
+
+            // Simple extern program
+            struct Ext : public giecs::ProgramBase
+            {
+                    //              giecs::ProgramBase* m_next;
+
+                    struct Evaluator : public giecs::EvaluatorBase
+                    {
+                        void eval(ProgramBase&)
+                        {
+                            std::cout << "Test from extern." << std::endl;
+                            delete this;
+                        }
+                    };
+
+                    giecs::EvaluatorBase* createEvaluator(void)
+                    {
+                        return new Evaluator();
+                    }
+
+                    giecs::ProgramBase* next(void)
+                    {
+                        std::cout << "Next" << std::endl;
+                        return nullptr;
+                    }
+            };
+
+            giecs::ProgramBase* prg = new Ext();
+            this->state.programs[789] = prg;
         }
 
         Cell& compiling(void)
@@ -138,10 +174,8 @@ class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::arr
         {
             this->compiling() = 0; // default mode: interpret
 
-            std::istream& stream = std::cin;
-
             std::string line;
-            while(std::getline(stream, line))
+            while(std::getline(this->stream, line))
             {
                 this->read(line);
                 std::cout << " ok." << std::endl;
