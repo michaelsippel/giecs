@@ -45,6 +45,53 @@ class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::arr
                 this->state[here()++] = this->dictionary[word].xt;
             }
         }
+        // Simple extern program
+        template <typename Functor>
+        struct Ext : public giecs::ProgramBase
+        {
+                struct Evaluator : public giecs::EvaluatorBase
+                {
+                    Functor fn;
+                    Bootstrap& bs;
+                    Evaluator(Functor const& fn_, Bootstrap& bs_)
+                        : fn(fn_), bs(bs_)
+                    {}
+                    void eval(ProgramBase& prg)
+                    {
+                        this->fn(this->bs);
+                    }
+                };
+
+                Evaluator e;
+
+                Ext(Functor const& f, Bootstrap& bs)
+                    : e(f, bs)
+                {
+                }
+
+                giecs::EvaluatorBase* createEvaluator(void)
+                {
+                    return &this->e;
+                }
+
+                giecs::ProgramBase* next(void)
+                {
+                    // not returning works for immediate mode
+                    return nullptr;
+                }
+        };
+
+        template <typename Functor>
+        void add_ext(std::string name, Functor const& fn, bool immediate=false)
+        {
+            giecs::ProgramBase* prg = new Ext<Functor>(fn, *this);
+            Cell addr = here()++;
+            this->state.programs[addr] = prg;
+            this->add_prim(name, Opcode::compose, immediate);
+            this->state[here()++] = this->dictionary["push"].xt;
+            this->state[here()++] = addr;
+            this->state[here()++] = this->dictionary["execute"].xt;
+        }
 
     public:
         Bootstrap(std::istream& stream_)
@@ -79,34 +126,10 @@ class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::arr
             add_comp("?", {"@", ".", "exit"});
             add_comp("execute", {">r", "exit"});
 
-            // Simple extern program
-            struct Ext : public giecs::ProgramBase
+            add_ext("test", [](Bootstrap& bs)
             {
-                    //              giecs::ProgramBase* m_next;
-
-                    struct Evaluator : public giecs::EvaluatorBase
-                    {
-                        void eval(ProgramBase&)
-                        {
-                            std::cout << "Test from extern." << std::endl;
-                            delete this;
-                        }
-                    };
-
-                    giecs::EvaluatorBase* createEvaluator(void)
-                    {
-                        return new Evaluator();
-                    }
-
-                    giecs::ProgramBase* next(void)
-                    {
-                        std::cout << "Next" << std::endl;
-                        return nullptr;
-                    }
-            };
-
-            giecs::ProgramBase* prg = new Ext();
-            this->state.programs[789] = prg;
+                std::cout << "TEST"<<std::endl;
+            });
         }
 
         Cell& compiling(void)
@@ -161,6 +184,11 @@ class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::arr
                     // execute
                     this->state[++here()] = this->dictionary["exit"].xt;
                     this->state.pc = begin;
+
+                    // clean up if external word was called
+                    while(!this->state.return_stack.empty())
+                        this->state.return_stack.pop();
+
                     this->state.return_stack.push(0);
                     typename fVM::Program p = typename fVM::Program(*this);
                     giecs::eval(&p);

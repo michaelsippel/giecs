@@ -8,7 +8,7 @@
 
 int main(int argc, char* argv[])
 {
-    auto vm = forth::Bootstrap<int>();
+    auto vm = forth::Bootstrap<int>(std::cin);
     /*
     using Opcode = forth::Bootstrap<int>::Opcode;
     vm.state[51] = 200;
