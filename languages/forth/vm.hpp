@@ -12,6 +12,7 @@
 
 namespace forth
 {
+
 /**
  * Implements the complete Virtual-Forth-Machine
  */
@@ -23,7 +24,7 @@ class VM
         {
                 enum Opcode
                 {
-                    compose, exit, // flow
+                    compose, branch, exit, // flow
                     push, drop, dup, over, swap, pushr, popr, // stack
                     load, store, // memory
                     noti, andi, ori, xori, // bitwise logic
@@ -78,6 +79,7 @@ class VM
 #define FN(def) ([](State& data){ def ;})
         GIECS_CORE_OPERATOR(Operator,
                             ((Instruction::Opcode::compose, FN(data.return_stack.push(data.pc); data.pc = data[data.pc];)))
+                            ((Instruction::Opcode::branch, FN(if(data.top() == 0) data.pc += data[++data.pc];)))
                             ((Instruction::Opcode::exit, FN(data.pc = pop(data.return_stack);)))
 
                             ((Instruction::Opcode::load, FN(MemWord addr=pop(data); data.push(data[addr]);)))

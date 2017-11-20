@@ -32,19 +32,18 @@ class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::arr
 
         void add_prim(std::string name, Opcode op, bool immediate=false)
         {
-            this->dictionary[name] = {immediate, here()};
-            this->state[here()] = op;
-            ++here();
+            Cell addr = here()++;
+            this->dictionary[name] = {immediate, addr};
+            this->state[addr] = op;
         }
 
         void add_comp(std::string name, std::vector<std::string> prg, bool immediate=false)
         {
             this->add_prim(name, Opcode::compose, immediate);
             for(std::string const& word : prg)
-            {
-                this->state[here()++] = this->dictionary[word].xt;
-            }
+                this->read_word(word, true);
         }
+
         // Simple extern program
         template <typename Functor>
         struct Ext : public giecs::ProgramBase
@@ -100,6 +99,7 @@ class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::arr
             this->here() = 0x100;
 
             add_prim("push", Opcode::push);
+            add_prim("?branch", Opcode::branch);
             add_prim("exit", Opcode::exit);
             add_prim("!", Opcode::store);
             add_prim("@", Opcode::load);
@@ -125,10 +125,36 @@ class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::arr
 
             add_comp("?", {"@", ".", "exit"});
             add_comp("execute", {">r", "exit"});
+            add_comp("state", {"0", "@", "exit"});
+            add_comp("[", {"0", "state", "!", "exit"}, true);
+            add_comp("]", {"1", "state", "!", "exit"}, true);
+            //add_comp("constant", {"create", "does>", "@", "exit"}, true);
 
-            add_ext("test", [](Bootstrap& bs)
+            add_ext("'", [](Bootstrap& bs)
             {
-                std::cout << "TEST"<<std::endl;
+                std::string name;
+                bs.stream >> name;
+                bs.state.push(bs.dictionary[name].xt);
+            }, true);
+
+            add_ext(":", [](Bootstrap& bs)
+            {
+                std::string name;
+                bs.stream >> name;
+                std::cout << "DEFINE " << name << std::endl;
+                bs.add_prim(name, Opcode::compose);
+                bs.compiling() = 1;
+            }, true);
+
+            add_ext(";", [](Bootstrap& bs)
+            {
+                bs.read_word("exit", true);
+                bs.compiling() = 0;
+            }, true);
+
+            add_ext("bye", [](Bootstrap& bs)
+            {
+                exit(bs.state.top());
             });
         }
 
@@ -142,6 +168,57 @@ class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::arr
             return this->state[1];
         }
 
+        void read_word(std::string word_str, bool compiling)
+        {
+            // std::cout << "Compile: " << word_str << std::endl;
+            bool immediate = !(compiling || this->compiling());
+
+            // find
+            auto it = this->dictionary.find(word_str);
+            if(it != this->dictionary.end())
+            {
+                immediate |= it->second.immediate;
+                Cell addr = it->second.xt;
+                if(immediate)
+                {
+                    // execute
+                    this->state[0x11] = addr;
+                    this->state[0x12] = this->dictionary["exit"].xt;
+                    this->state.pc = 0x10;
+
+                    // clean up if external word was called
+                    while(!this->state.return_stack.empty())
+                        this->state.return_stack.pop();
+
+                    this->state.return_stack.push(0);
+                    typename fVM::Program p = typename fVM::Program(*this);
+                    giecs::eval(&p);
+                }
+                else
+                    this->state[here()++] = addr;
+            }
+            else
+            {
+                // number
+                try
+                {
+                    Cell a = std::stoi(word_str);
+                    if(immediate)
+                        this->state.push(a);
+                    else
+                    {
+                        this->state[here()++] = this->dictionary["push"].xt;
+                        this->state[here()++] = a;
+                    }
+                }
+                catch(std::invalid_argument const&)
+                {
+                    std::cout << "Error: undefined symbol \"" << word_str << "\"!\n";
+                }
+            }
+
+        }
+
         void read(std::string& str)
         {
             std::stringstream ss(str);
@@ -151,61 +228,19 @@ class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::arr
         void read(std::istream& stream)
         {
             std::string word_str;
-            Cell begin = this->here();
-            while(stream >> word_str)
-            {
-                // interpret
-                bool compile = this->compiling();
-
-                // find
-                auto it = this->dictionary.find(word_str);
-                if(it != this->dictionary.end())
-                {
-                    compile &= !it->second.immediate;
-                    this->state[++here()] = it->second.xt;
-                }
-                else
-                {
-                    // number
-                    try
-                    {
-                        Cell a = std::stoi(word_str);
-                        this->state[++here()] = this->dictionary["push"].xt;
-                        this->state[++here()] = a;
-                    }
-                    catch(std::invalid_argument const&)
-                    {
-                        std::cout << "Error: undefined symbol \"" << word_str << "\"!\n";
-                    }
-                }
-
-                if(!compile)
-                {
-                    // execute
-                    this->state[++here()] = this->dictionary["exit"].xt;
-                    this->state.pc = begin;
-
-                    // clean up if external word was called
-                    while(!this->state.return_stack.empty())
-                        this->state.return_stack.pop();
-
-                    this->state.return_stack.push(0);
-                    typename fVM::Program p = typename fVM::Program(*this);
-                    giecs::eval(&p);
-
-                    this->here() = begin; // FIXME
-                }
-            }
+            stream >> word_str;
+            this->read_word(word_str, false);
         }
 
         void repl(void)
         {
             this->compiling() = 0; // default mode: interpret
 
-            std::string line;
-            while(std::getline(this->stream, line))
+            while(1)
             {
-                this->read(line);
+                do this->read(this->stream);
+                while(this->stream.peek()!='\n');
+
                 std::cout << " ok." << std::endl;
             }
         }
