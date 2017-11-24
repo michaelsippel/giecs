@@ -17,18 +17,14 @@ First lets define our VM-Opcodes with an *enum*:
 
 
 
-Now we need to represent the state of the VM. The neccesary values are members of *brainfuck::VM*: Tape and Program pointers have templated types and are expected to behave as iterators on a container (e.g. std::array).
+Now we need to represent the state of the VM. The neccesary values are members of *brainfuck::VM*: Tape and Program pointers have templated types and are expected to behave as iterators on a container (e.g. std::array). It contains a struct which defines *Instructions*.
+When the *Operator* (defined later) wants to execute an instruction, the method *fetch* is called, which updates the VM-State (in this case load the register) and returns the Opcode to be executed. Note that *Data* is the type for the VM-State.
+The last thing to do is to get the *Instructions*. This is done by *CodeAccessor*.
+
 
 .. doxygenclass:: brainfuck::VM
    :members:
-
-
-It contains a struct which defines *Instructions*:
-
-.. doxygenstruct:: brainfuck::VM::Instruction
-    :undoc-members:
-
-When the *Operator* (defined later) wants to execute an instruction, the method *fetch* is called, which updates the VM-State (in this case load the register) and returns the Opcode to be executed. Note that *Data* is the type for the VM-State.
+   :undoc-members:
 
 .. code-block:: c++
 
@@ -39,7 +35,7 @@ When the *Operator* (defined later) wants to execute an instruction, the method 
     }
 
 
-Now we need to implement the opcodes using an *Operator*:
+Now we need to implement the opcodes using an *Operator*. This generates a class which can be used with *giecs::eval*.
 
 .. code-block:: c++
 
@@ -55,15 +51,6 @@ Now we need to implement the opcodes using an *Operator*:
                             ((Opcode::jmp, DATA_FN(_jmp(d))))
                             ((Opcode::jz, TAPE_FN(if(*tape == 0) _jmp(d))))
                            );
-
-This generates a class which can be used with *giecs::eval*.
-
-
-The last thing to do is to get the *Instructions*. This is done by *CodeAccessor*:
-
-.. doxygenclass:: brainfuck::VM::CodeAccessor
-   :members:
-
 
 Compiling Syntax for the VM
 ===========================
