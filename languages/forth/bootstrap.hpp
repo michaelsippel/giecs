@@ -14,10 +14,10 @@ namespace forth
 {
 
 template <typename Cell>
-class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::array<Cell, 10000>>
+class Bootstrap : public VM<Cell, std::array<Cell, 10000>, std::vector<Cell>, std::vector<Cell>>
 {
     public:
-        using fVM = VM<Cell, std::vector<Cell>, std::vector<Cell>, std::array<Cell, 10000>>;
+        using fVM = VM<Cell, std::array<Cell, 10000>, std::vector<Cell>, std::vector<Cell>>;
         using Instruction = typename fVM::Instruction;
         using Opcode = typename Instruction::Opcode;
 
@@ -34,7 +34,7 @@ class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::arr
         {
             Cell addr = here()++;
             this->dictionary[name] = {immediate, addr};
-            this->state[addr] = op;
+            this->mem[addr] = op;
         }
 
         void add_comp(std::string name, std::vector<std::string> prg, bool immediate=false)
@@ -85,11 +85,11 @@ class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::arr
         {
             giecs::ProgramBase* prg = new Ext<Functor>(fn, *this);
             Cell addr = here()++;
-            this->state.programs[addr] = prg;
+            this->programs[addr] = prg;
             this->add_prim(name, Opcode::compose, immediate);
-            this->state[here()++] = this->dictionary["push"].xt;
-            this->state[here()++] = addr;
-            this->state[here()++] = this->dictionary["execute"].xt;
+            this->mem[here()++] = this->dictionary["push"].xt;
+            this->mem[here()++] = addr;
+            this->mem[here()++] = this->dictionary["execute"].xt;
         }
 
     public:
@@ -127,14 +127,21 @@ class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::arr
             add_comp("execute", {">r", "exit"});
             add_comp("state", {"0", "@", "exit"});
             add_comp("[", {"0", "state", "!", "exit"}, true);
-            add_comp("]", {"1", "state", "!", "exit"}, true);
+            add_comp("]", {"1", "state", "!", "exit"});
             //add_comp("constant", {"create", "does>", "@", "exit"}, true);
+
+            add_ext("create", [](Bootstrap& bs)
+            {
+                std::string name;
+                bs.stream >> name;
+                bs.add_prim(name, Opcode::compose);
+            }, true);
 
             add_ext("'", [](Bootstrap& bs)
             {
                 std::string name;
                 bs.stream >> name;
-                bs.state.push(bs.dictionary[name].xt);
+                bs.push(bs.dictionary[name].xt);
             }, true);
 
             add_ext(":", [](Bootstrap& bs)
@@ -154,18 +161,18 @@ class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::arr
 
             add_ext("bye", [](Bootstrap& bs)
             {
-                exit(bs.state.top());
+                exit(bs.top());
             });
         }
 
         Cell& compiling(void)
         {
-            return this->state[0];
+            return this->mem[0];
         }
 
         Cell& here(void)
         {
-            return this->state[1];
+            return this->mem[1];
         }
 
         void read_word(std::string word_str, bool compiling)
@@ -182,20 +189,20 @@ class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::arr
                 if(immediate)
                 {
                     // execute
-                    this->state[0x11] = addr;
-                    this->state[0x12] = this->dictionary["exit"].xt;
-                    this->state.pc = 0x10;
+                    this->mem[0x11] = addr;
+                    this->mem[0x12] = this->dictionary["exit"].xt;
+                    this->pc = 0x10;
 
                     // clean up if external word was called
-                    while(!this->state.return_stack.empty())
-                        this->state.return_stack.pop();
+                    while(!this->return_stack.empty())
+                        this->return_stack.pop();
 
-                    this->state.return_stack.push(0);
+                    this->return_stack.push(0);
                     typename fVM::Program p = typename fVM::Program(*this);
                     giecs::eval(&p);
                 }
                 else
-                    this->state[here()++] = addr;
+                    this->mem[here()++] = addr;
             }
             else
             {
@@ -204,11 +211,11 @@ class Bootstrap : public VM<Cell, std::vector<Cell>, std::vector<Cell>, std::arr
                 {
                     Cell a = std::stoi(word_str);
                     if(immediate)
-                        this->state.push(a);
+                        this->push(a);
                     else
                     {
-                        this->state[here()++] = this->dictionary["push"].xt;
-                        this->state[here()++] = a;
+                        this->mem[here()++] = this->dictionary["push"].xt;
+                        this->mem[here()++] = a;
                     }
                 }
                 catch(std::invalid_argument const&)

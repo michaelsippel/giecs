@@ -16,81 +16,74 @@ namespace forth
 /**
  * Implements the complete Virtual-Forth-Machine
  */
-template <typename MemWord, typename DataStackContainer, typename ReturnStackContainer, typename MemContainer>
-class VM
+template <typename MemWord, typename MemContainer, typename DataStackContainer, typename ReturnStackContainer>
+class VM : public std::stack<MemWord, DataStackContainer>
 {
     public:
+        MemWord pc; /// Instruction pointer
+        MemContainer mem;
+        std::stack<MemWord, ReturnStackContainer> return_stack; /// return stack
+        std::map<MemWord, giecs::ProgramBase*> programs; /// external programs
+
         struct Instruction
         {
-                enum Opcode
-                {
-                    compose, branch, exit, // flow
-                    push, drop, dup, over, swap, pushr, popr, // stack
-                    load, store, // memory
-                    noti, andi, ori, xori, // bitwise logic
-                    addi, subi, muli, divi, // integer arithmetic
-                    gti, lti, eq, // integer relation
-                    printi, emit, // out
-                };
+            enum Opcode
+            {
+                compose, branch, exit, // flow
+                push, drop, dup, over, swap, pushr, popr, // stack
+                load, store, // memory
+                noti, andi, ori, xori, // bitwise logic
+                addi, subi, muli, divi, // integer arithmetic
+                gti, lti, eq, // integer relation
+                printi, emit, // out
+            };
 
-                Opcode op;
-                MemWord pc;
+            using Data = VM<MemWord, MemContainer, DataStackContainer, ReturnStackContainer>;
 
-                /**
-                 * Represents the VM-State with Memory & Registers
-                 */
-                struct Data : public std::stack<MemWord, DataStackContainer>, public MemContainer
-                {
-                    MemWord pc;
-                    std::stack<MemWord, ReturnStackContainer> return_stack;
-                    std::map<MemWord, giecs::ProgramBase*> programs;
-                };
+            Opcode op;
+            MemWord pc;
 
-                Opcode fetch(Data& data)
-                {
-                    data.pc = this->pc;
-                    return op;
-                }
+            Opcode fetch(Data& data)
+            {
+                data.pc = this->pc;
+                return op;
+            }
         }; // struct Instruction
-
-        using State = typename Instruction::Data;
-        State state;
 
         giecs::ProgramBase* get_program(MemWord addr)
         {
-            auto it = this->state.programs.find(addr);
-            if(it == this->state.programs.end())
+            auto it = this->programs.find(addr);
+            if(it == this->programs.end())
                 return nullptr;
             else
                 return it->second;
         }
 
-        template <typename T, typename Container>
-        static inline T pop(std::stack<T, Container>& stack)
+        MemWord pop()
         {
-            T a = stack.top();
-            stack.pop();
+            MemWord a = this->top();
+            this->std::stack<MemWord, DataStackContainer>::pop();
             return a;
         }
 
         /**
          * Executes Opcodes
          */
-#define FN(def) ([](State& data){ def ;})
+#define FN(def) ([](VM<MemWord, MemContainer, DataStackContainer, ReturnStackContainer>& state){ def ;})
         GIECS_CORE_OPERATOR(Operator,
-                            ((Instruction::Opcode::compose, FN(data.return_stack.push(data.pc); data.pc = data[data.pc];)))
-                            ((Instruction::Opcode::branch, FN(if(data.top() == 0) data.pc += data[++data.pc];)))
-                            ((Instruction::Opcode::exit, FN(data.pc = pop(data.return_stack);)))
+                            ((Instruction::Opcode::compose, FN(state.return_stack.push(state.pc); state.pc = state.mem[state.pc];)))
+                            ((Instruction::Opcode::branch, FN(if(state.top() == 0) state.pc += state.mem[++state.pc];)))
+                            ((Instruction::Opcode::exit, FN(state.pc = state.return_stack.top(); state.return_stack.pop();)))
 
-                            ((Instruction::Opcode::load, FN(MemWord addr=pop(data); data.push(data[addr]);)))
-                            ((Instruction::Opcode::store, FN(MemWord addr=pop(data); data[addr] = pop(data);)))
-                            ((Instruction::Opcode::push, FN(data.push(data[++data.pc]);)))
-                            ((Instruction::Opcode::drop, FN(data.pop())))
-                            ((Instruction::Opcode::dup, FN(data.push(data.top()))))
-                            ((Instruction::Opcode::over, FN(MemWord a = pop(data); MemWord b = data.top(); data.push(a); data.push(b);)))
-                            ((Instruction::Opcode::swap, FN(MemWord a = pop(data); MemWord b = pop(data); data.push(a); data.push(b);)))
-                            ((Instruction::Opcode::pushr, FN(data.return_stack.push(pop(data)))))
-                            ((Instruction::Opcode::popr, FN(data.push(pop(data.return_stack)))))
+                            ((Instruction::Opcode::load, FN(MemWord addr=state.pop(); state.push(state.mem[addr]);)))
+                            ((Instruction::Opcode::store, FN(MemWord addr=state.pop(); state.mem[addr] = state.pop();)))
+                            ((Instruction::Opcode::push, FN(state.push(state.mem[++state.pc]))))
+                            ((Instruction::Opcode::drop, FN(state.pop())))
+                            ((Instruction::Opcode::dup, FN(state.push(state.top()))))
+                            ((Instruction::Opcode::over, FN(MemWord a = state.pop(); MemWord b = state.top(); state.push(a); state.push(b);)))
+                            ((Instruction::Opcode::swap, FN(MemWord a = state.pop(); MemWord b = state.pop(); state.push(a); state.push(b);)))
+                            ((Instruction::Opcode::pushr, FN(state.return_stack.push(state.pop()))))
+                            ((Instruction::Opcode::popr, FN(state.push(state.return_stack.top()); state.return_stack.pop();)))
 
                             ((Instruction::Opcode::noti, giecs::ll::Bitwise<int>::op_not))
                             ((Instruction::Opcode::andi, giecs::ll::Bitwise<int>::op_and))
@@ -117,10 +110,10 @@ class VM
                 class InstructionDecoder : public boost::circular_buffer<Instruction>
                 {
                     private:
-                        State& state;
+                        VM& state;
 
                     public:
-                        InstructionDecoder(State& s)
+                        InstructionDecoder(VM& s)
                             : boost::circular_buffer<Instruction>(16), state(s)
                         {
                         }
@@ -134,7 +127,7 @@ class VM
                                 for(Instruction inst; inst.op != Instruction::Opcode::compose && inst.op != Instruction::Opcode::exit && !this->full();)
                                 {
                                     ++pc;
-                                    inst.op = (typename Instruction::Opcode) this->state[this->state[pc]];
+                                    inst.op = (typename Instruction::Opcode) this->state.mem[this->state.mem[pc]];
                                     inst.pc = pc;
                                     // We know which instructions take more
                                     if(inst.op == Instruction::Opcode::push)
@@ -153,12 +146,12 @@ class VM
                         }
                 }; // class InstructionDecoder
 
-                VM& vm;
+                VM& state;
                 std::queue<Instruction, InstructionDecoder> queue; // could be multiple objects for multithreaded operation
 
             public:
                 Program(VM& vm_, giecs::ProgramBase* ret=nullptr)
-                    : vm(vm_), queue(InstructionDecoder(vm_.state))
+                    : state(vm_), queue(InstructionDecoder(vm_))
                 {
                 }
 
@@ -167,14 +160,14 @@ class VM
                     return this->queue;
                 }
 
-                State& data(void)
+                VM& data(void)
                 {
-                    return this->vm.state;
+                    return this->state;
                 }
 
                 giecs::ProgramBase* next(void)
                 {
-                    return this->vm.get_program(this->vm.state.pc);
+                    return this->state.get_program(this->state.pc);
                 }
         }; // class Word
 }; // class VM
