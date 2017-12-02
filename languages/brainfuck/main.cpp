@@ -9,8 +9,8 @@
 
 int main(int argc, char* argv[])
 {
-    using Memory = std::array<int8_t, 30000>;
-    using Program = std::array<uint8_t, 4096>;
+    using Memory = std::array<short, 30000>;
+    using Program = std::array<uint8_t, 30000>;
     using VM = brainfuck::VM<Memory::iterator, Program::iterator>;
     using BFCore = giecs::Core<VM::Instruction, VM::Operator>;
 
