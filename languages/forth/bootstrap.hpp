@@ -21,7 +21,7 @@ class Bootstrap : public VM<Cell, std::array<Cell, 10000>, std::vector<Cell>, st
         using Instruction = typename fVM::Instruction;
         using Opcode = typename Instruction::Opcode;
 
-        std::istream& stream;
+        std::istream* stream;
         struct Entry
         {
             bool immediate;
@@ -30,16 +30,28 @@ class Bootstrap : public VM<Cell, std::array<Cell, 10000>, std::vector<Cell>, st
 
         std::map<std::string, Entry> dictionary;
 
-        void add_prim(std::string name, Opcode op, bool immediate=false)
+        void compile(Cell a)
+        {
+            this->mem[this->here()++] = a;
+        }
+        void compile(std::string name)
+        {
+            this->compile(this->dictionary[name].xt);
+        }
+        void compile_literal(Cell a)
+        {
+            this->compile("push");
+            this->compile(a);
+        }
+        void compile_prim(std::string name, Opcode op, bool immediate=false)
         {
             Cell addr = here()++;
             this->dictionary[name] = {immediate, addr};
             this->mem[addr] = op;
         }
-
-        void add_comp(std::string name, std::vector<std::string> prg, bool immediate=false)
+        void compile_comp(std::string name, std::vector<std::string> prg, bool immediate=false)
         {
-            this->add_prim(name, Opcode::compose, immediate);
+            this->compile_prim(name, Opcode::compose, immediate);
             for(std::string const& word : prg)
                 this->read_word(word, true);
         }
@@ -81,88 +93,133 @@ class Bootstrap : public VM<Cell, std::array<Cell, 10000>, std::vector<Cell>, st
         };
 
         template <typename Functor>
-        void add_ext(std::string name, Functor const& fn, bool immediate=false)
+        void compile_ext(std::string name, Functor const& fn, bool immediate=false)
         {
             giecs::ProgramBase* prg = new Ext<Functor>(fn, *this);
             Cell addr = here()++;
             this->programs[addr] = prg;
-            this->add_prim(name, Opcode::compose, immediate);
-            this->mem[here()++] = this->dictionary["push"].xt;
-            this->mem[here()++] = addr;
-            this->mem[here()++] = this->dictionary["execute"].xt;
+            this->compile_prim(name, Opcode::compose, immediate);
+            this->compile_literal(addr);
+            this->compile("execute");
         }
 
     public:
-        Bootstrap(std::istream& stream_)
-            : stream(stream_)
+        Bootstrap()
         {
+            this->compiling() = 0;
             this->here() = 0x100;
 
-            add_prim("push", Opcode::push);
-            add_prim("?branch", Opcode::branch);
-            add_prim("exit", Opcode::exit);
-            add_prim("!", Opcode::store);
-            add_prim("@", Opcode::load);
-            add_prim("dup", Opcode::dup);
-            add_prim("over", Opcode::over);
-            add_prim("drop", Opcode::drop);
-            add_prim("swap", Opcode::swap);
-            add_prim(">r", Opcode::pushr);
-            add_prim("r>", Opcode::popr);
+            compile_prim("push", Opcode::push);
+            compile_prim("?branch", Opcode::branch);
+            compile_prim("exit", Opcode::exit);
+            compile_prim("!", Opcode::store);
+            compile_prim("@", Opcode::load);
+            compile_prim("dup", Opcode::dup);
+            compile_prim("over", Opcode::over);
+            compile_prim("drop", Opcode::drop);
+            compile_prim("swap", Opcode::swap);
+            compile_prim(">r", Opcode::pushr);
+            compile_prim("r>", Opcode::popr);
 
-            add_prim("not", Opcode::noti);
-            add_prim("and", Opcode::andi);
-            add_prim("or", Opcode::ori);
-            add_prim("xor", Opcode::xori);
-            add_prim("+", Opcode::addi);
-            add_prim("-", Opcode::subi);
-            add_prim("*", Opcode::muli);
-            add_prim("/", Opcode::divi);
-            add_prim("=", Opcode::eq);
+            compile_prim("negate", Opcode::noti);
+            compile_prim("and", Opcode::andi);
+            compile_prim("or", Opcode::ori);
+            compile_prim("xor", Opcode::xori);
+            compile_prim("+", Opcode::addi);
+            compile_prim("-", Opcode::subi);
+            compile_prim("*", Opcode::muli);
+            compile_prim("/", Opcode::divi);
+            compile_prim("<", Opcode::lti);
+            compile_prim(">", Opcode::gti);
+            compile_prim("=", Opcode::eq);
 
-            add_prim("emit", Opcode::emit);
-            add_prim(".", Opcode::printi);
+            compile_prim("emit", Opcode::emit);
+            compile_prim(".", Opcode::printi);
 
-            add_comp("?", {"@", ".", "exit"});
-            add_comp("execute", {">r", "exit"});
-            add_comp("state", {"0", "@", "exit"});
-            add_comp("[", {"0", "state", "!", "exit"}, true);
-            add_comp("]", {"1", "state", "!", "exit"});
-            //add_comp("constant", {"create", "does>", "@", "exit"}, true);
+            compile_comp("execute", {">r", "exit"});
 
-            add_ext("create", [](Bootstrap& bs)
+            compile_ext(":", [](Bootstrap& bs)
             {
                 std::string name;
-                bs.stream >> name;
-                bs.add_prim(name, Opcode::compose);
-            }, true);
-
-            add_ext("'", [](Bootstrap& bs)
-            {
-                std::string name;
-                bs.stream >> name;
-                bs.push(bs.dictionary[name].xt);
-            }, true);
-
-            add_ext(":", [](Bootstrap& bs)
-            {
-                std::string name;
-                bs.stream >> name;
+                (*bs.stream) >> name;
                 std::cout << "DEFINE " << name << std::endl;
-                bs.add_prim(name, Opcode::compose);
+                bs.compile_prim(name, Opcode::compose);
                 bs.compiling() = 1;
             }, true);
-
-            add_ext(";", [](Bootstrap& bs)
+            compile_ext("create", [](Bootstrap& bs)
             {
-                bs.read_word("exit", true);
+                std::string name;
+                (*bs.stream) >> name;
+                std::cout << "CREATE " << name << std::endl;
+                // TODO
+                bs.compile_prim(name, Opcode::compose);
+                bs.compile_literal(bs.here()+3);
+                bs.compile("exit");
+            });
+            compile_ext("immediate", [](Bootstrap& bs)
+            {
+                for(auto& e : bs.dictionary)
+                {
+                    Cell addr = bs.here() - 1;
+                    if(e.second.xt == addr)
+                    {
+                        e.second.immediate = true;
+                        break;
+                    }
+                }
+            }, true);
+            compile_ext("[']", [](Bootstrap& bs)
+            {
+                std::string name;
+                (*bs.stream) >> name;
+                bs.compile_literal(bs.dictionary[name].xt);
+            }, true);
+            compile_ext("'", [](Bootstrap& bs)
+            {
+                std::string name;
+                (*bs.stream) >> name;
+                bs.compile_literal(bs.dictionary[name].xt);
+            }, true);
+            compile_ext(";", [](Bootstrap& bs)
+            {
+                bs.compile("exit");
                 bs.compiling() = 0;
             }, true);
-
-            add_ext("bye", [](Bootstrap& bs)
+            compile_ext("bye", [](Bootstrap& bs)
             {
                 exit(bs.top());
             });
+            compile_ext("does>", [](Bootstrap& bs)
+            {
+            });
+
+            // only debug
+            compile_ext("memdump", [](Bootstrap& bs)
+            {
+                std::string name;
+                (*bs.stream) >> name;
+                Cell addr = bs.dictionary[name].xt;
+                for(int i=0; i < 16; ++i, ++addr)
+                    std::cout << "Mem[" << addr << "] = " << bs.mem[addr] << std::endl;
+            }, true);
+
+            this->read("\
+: state_ptr 0 ; \
+: here_ptr 1 ; \
+: state state_ptr @ ; \
+: here here_ptr @ ; \
+: [ immediate 0 state_ptr ! ; \
+: ] 1 state_ptr ! ; \
+: , here ! here 1 + here_ptr ! ; \
+: literal ['] push , , ; \
+: if immediate ['] ?branch , here 0 , ; \
+: else immediate 0 literal ['] ?branch , here 0 , swap dup here swap - swap ! ; \
+: then immediate dup here swap - swap ! ; \
+: constant create , does> @ ; \
+: ? @ . ; \
+: >= < negate ; \
+: <= > negate ; \
+                       ");
         }
 
         Cell& compiling(void)
@@ -177,7 +234,6 @@ class Bootstrap : public VM<Cell, std::array<Cell, 10000>, std::vector<Cell>, st
 
         void read_word(std::string word_str, bool compiling)
         {
-            // std::cout << "Compile: " << word_str << std::endl;
             bool immediate = !(compiling || this->compiling());
 
             // find
@@ -202,7 +258,7 @@ class Bootstrap : public VM<Cell, std::array<Cell, 10000>, std::vector<Cell>, st
                     giecs::eval(&p);
                 }
                 else
-                    this->mem[here()++] = addr;
+                    this->compile(addr);
             }
             else
             {
@@ -213,10 +269,7 @@ class Bootstrap : public VM<Cell, std::array<Cell, 10000>, std::vector<Cell>, st
                     if(immediate)
                         this->push(a);
                     else
-                    {
-                        this->mem[here()++] = this->dictionary["push"].xt;
-                        this->mem[here()++] = a;
-                    }
+                        this->compile_literal(a);
                 }
                 catch(std::invalid_argument const&)
                 {
@@ -226,27 +279,38 @@ class Bootstrap : public VM<Cell, std::array<Cell, 10000>, std::vector<Cell>, st
 
         }
 
-        void read(std::string& str)
-        {
-            std::stringstream ss(str);
-            this->read(ss);
-        }
-
-        void read(std::istream& stream)
+        bool read_word(void)
         {
             std::string word_str;
-            stream >> word_str;
-            this->read_word(word_str, false);
+            if((*this->stream) >> word_str)
+            {
+                this->read_word(word_str, false);
+                return true;
+            }
+            return false;
         }
 
-        void repl(void)
+        void read(std::string const& str)
         {
+            std::stringstream ss(str);
+            this->read(&ss);
+        }
+
+        void read(std::istream* stream)
+        {
+            this->stream = stream;
+            while(read_word());
+        }
+
+        void repl(std::istream* stream)
+        {
+            this->stream = stream;
             this->compiling() = 0; // default mode: interpret
 
             while(1)
             {
-                do this->read(this->stream);
-                while(this->stream.peek()!='\n');
+                do this->read_word();
+                while(this->stream->peek() != '\n');
 
                 std::cout << " ok." << std::endl;
             }

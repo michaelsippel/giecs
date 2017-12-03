@@ -72,7 +72,7 @@ class VM : public std::stack<MemWord, DataStackContainer>
 #define FN(def) ([](VM<MemWord, MemContainer, DataStackContainer, ReturnStackContainer>& state){ def ;})
         GIECS_CORE_OPERATOR(Operator,
                             ((Instruction::Opcode::compose, FN(state.return_stack.push(state.pc); state.pc = state.mem[state.pc];)))
-                            ((Instruction::Opcode::branch, FN(if(state.top() == 0) state.pc += state.mem[++state.pc];)))
+                            ((Instruction::Opcode::branch, FN(MemWord off = state.mem[++state.pc]-1; if(state.pop() == 0) state.pc += off;)))
                             ((Instruction::Opcode::exit, FN(state.pc = state.return_stack.top(); state.return_stack.pop();)))
 
                             ((Instruction::Opcode::load, FN(MemWord addr=state.pop(); state.push(state.mem[addr]);)))
@@ -122,9 +122,8 @@ class VM : public std::stack<MemWord, DataStackContainer>
                         {
                             if(this->boost::circular_buffer<Instruction>::empty())
                             {
-                                //std::cout << "BEGIN DECODE" << std::endl;
                                 MemWord pc = state.pc;
-                                for(Instruction inst; inst.op != Instruction::Opcode::compose && inst.op != Instruction::Opcode::exit && !this->full();)
+                                for(Instruction inst; inst.op != Instruction::Opcode::compose && inst.op != Instruction::Opcode::exit && inst.op != Instruction::Opcode::branch && !this->full();)
                                 {
                                     ++pc;
                                     inst.op = (typename Instruction::Opcode) this->state.mem[this->state.mem[pc]];
@@ -133,9 +132,7 @@ class VM : public std::stack<MemWord, DataStackContainer>
                                     if(inst.op == Instruction::Opcode::push)
                                         ++pc;
                                     this->push_back(inst);
-                                    //std::cout << "Instruction " << inst.op << std::endl;
                                 }
-                                //  std::cout << "END DECODE" << std::endl;
                             }
                             return this->boost::circular_buffer<Instruction>::front();
                         }
