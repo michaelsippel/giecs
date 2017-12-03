@@ -12,9 +12,9 @@ namespace ll
 #define OP(name, op)                            \
   LLFN( name )                                  \
   {                                             \
-    val_t a = stack.top();                      \
-    stack.pop();                                \
     val_t b = stack.top();                      \
+    stack.pop();                                \
+    val_t a = stack.top();                      \
     stack.pop();                                \
     cast_t r = cast_t(a) op cast_t(b);          \
     stack.push(val_t(r));                       \
@@ -71,9 +71,9 @@ struct Relation
 #define COMP(name, op) \
     LLFN( name ) \
     { \
-        val_t a = stack.top(); \
-        stack.pop(); \
         val_t b = stack.top(); \
+        stack.pop(); \
+        val_t a = stack.top(); \
         stack.pop(); \
         bool r = cast_t(a) op cast_t(b); \
         stack.push(val_t(r)); \
